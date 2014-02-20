@@ -1,14 +1,34 @@
 #! /usr/bin/env python3
 
 import sys
+import os
 from os import path
+import subprocess
+import tempfile
 
 if not path.isfile("peru"):
     print("No peru file found.")
     sys.exit(1)
 
-def git_module(src=None, dest=None):
-    print("git_module", src, dest)
+def populate_git_module(src, dest, version):
+    # Create a directory under /tmp for the clone.
+    tmpdir = tempfile.mkdtemp()
+    # Clone the src repo into the temp dir.
+    # TODO: Put these in a central, saved location.
+    subprocess.call(["git", "clone", "--mirror", src, tmpdir])
+    # Make sure the dest dir exists.
+    os.makedirs(dest, exist_ok=True)
+    # Checkout the specified revision from the clone into the dest dir.
+    subprocess.call(["git", "--git-dir=" + tmpdir, "--work-tree=" + dest,
+                     "checkout", version, "--", "."])
+
+def git_module(*, name=None, src=None, dest=None, version=None):
+    assert name != None, "git_module must have a name"
+    assert src != None, "git_module must have a src"
+    assert dest != None, "git_module must have a dest"
+    assert version != None, "git_module must have a version"
+    print("checking out git module", name)
+    populate_git_module(src, dest, version)
 
 with open("peru") as perufile:
     code = perufile.read()
