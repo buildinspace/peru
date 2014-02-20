@@ -1,0 +1,16 @@
+#! /usr/bin/env python3
+
+import sys
+from os import path
+
+if not path.isfile("peru"):
+    print("No peru file found.")
+    sys.exit(1)
+
+def git_module(src=None, dest=None):
+    print("git_module", src, dest)
+
+with open("peru") as perufile:
+    code = perufile.read()
+
+exec(code, {"git_module" : git_module})
