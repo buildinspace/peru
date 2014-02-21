@@ -55,7 +55,8 @@ def git_module(*, name=None, src=None, dest=None, version=None):
     assert version != None, "git_module must have a version"
     populate_git_module(src, dest, version)
 
-with open("peru") as perufile:
+peru_file_name = os.getenv("PERU_FILE_NAME") or "peru"
+with open(peru_file_name) as perufile:
     code = perufile.read()
 
 exec(code, {"git_module" : git_module})
