@@ -5,29 +5,52 @@ import os
 from os import path
 import subprocess
 import tempfile
+from urllib import parse
+import shutil
 
 if not path.isfile("peru"):
     print("No peru file found.")
     sys.exit(1)
 
+def git(git_dir, *args):
+    assert git_dir == None or path.isdir(git_dir)
+    command = ["git"]
+    if git_dir:
+        command.append("--git-dir=" + git_dir)
+    command.extend(args)
+    return subprocess.check_output(command, stderr=subprocess.STDOUT,
+                                   universal_newlines=True)
+
+def git_clone_cached(src):
+    escaped = parse.quote(src, safe="")
+    cached_path = path.join(".peru_cache", "git", escaped)
+    if not path.exists(cached_path):
+        try:
+            print("cloning...")
+            os.makedirs(cached_path)
+            git(None, "clone", "--mirror", src, cached_path)
+        except:
+            # Delete the whole thing if the clone failed, to avoid confusing
+            # the cache.
+            shutil.rmtree(cached_path)
+            raise
+    return cached_path
+
 def populate_git_module(src, dest, version):
-    # Create a directory under /tmp for the clone.
-    tmpdir = tempfile.mkdtemp()
-    # Clone the src repo into the temp dir.
-    # TODO: Put these in a central, saved location.
-    subprocess.call(["git", "clone", "--mirror", src, tmpdir])
-    # Make sure the dest dir exists.
+    cached_dir = git_clone_cached(src)
     os.makedirs(dest, exist_ok=True)
+    # TODO: Eventually avoid this fetch by caching outputs.
+    print("fetching...")
+    git(cached_dir, "fetch", "--prune")
     # Checkout the specified revision from the clone into the dest dir.
-    subprocess.call(["git", "--git-dir=" + tmpdir, "--work-tree=" + dest,
-                     "checkout", version, "--", "."])
+    git(cached_dir, "--work-tree=" + dest, "checkout", version, "--", ".")
 
 def git_module(*, name=None, src=None, dest=None, version=None):
+    print("git_module", name)
     assert name != None, "git_module must have a name"
     assert src != None, "git_module must have a src"
     assert dest != None, "git_module must have a dest"
     assert version != None, "git_module must have a version"
-    print("checking out git module", name)
     populate_git_module(src, dest, version)
 
 with open("peru") as perufile:
