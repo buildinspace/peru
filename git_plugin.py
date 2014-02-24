@@ -16,9 +16,7 @@ def git(git_dir, *args):
 
 def git_clone_cached(url):
     escaped = urllib.parse.quote(url, safe="")
-    # Use $PERU_CACHE_NAME if defined, otherwise use the default root path.
-    root_path = os.getenv("PERU_CACHE_NAME") or ".peru-cache"
-    cached_path = path.join(root_path, "git", escaped)
+    cached_path = path.join(peru_cache_path(), "git", escaped)
     if not path.exists(cached_path):
         print("cloning...")
         os.makedirs(cached_path)
