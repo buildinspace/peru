@@ -4,6 +4,8 @@ import shutil
 import subprocess
 import urllib.parse
 
+CACHE_PATH = None
+
 def git(git_dir, *args):
     assert git_dir is None or path.isdir(git_dir) # avoid forgetting this arg
     command = ["git"]
@@ -16,18 +18,18 @@ def git(git_dir, *args):
 
 def git_clone_cached(url):
     escaped = urllib.parse.quote(url, safe="")
-    cached_path = path.join(peru_cache_path(), "git", escaped)
-    if not path.exists(cached_path):
+    repo_path = path.join(CACHE_PATH, "git", escaped)
+    if not path.exists(repo_path):
         print("cloning...")
-        os.makedirs(cached_path)
+        os.makedirs(repo_path)
         try:
-            git(None, "clone", "--mirror", url, cached_path)
+            git(None, "clone", "--mirror", url, repo_path)
         except:
             # Delete the whole thing if the clone failed, to avoid confusing
             # the cache.
-            shutil.rmtree(cached_path)
+            shutil.rmtree(repo_path)
             raise
-    return cached_path
+    return repo_path
 
 
 def get_files_callback(fields, target):
@@ -41,8 +43,11 @@ def get_files_callback(fields, target):
     git(cached_dir, "--work-tree=" + target, "checkout", rev, "--", ".")
 
 
-peru_register(
-    name="git_module",
-    fields=("url", "rev"),
-    get_files_callback = get_files_callback,
-)
+def peru_plugin_main(*args, **kwargs):
+    global CACHE_PATH
+    CACHE_PATH = kwargs["cache_path"]
+    kwargs["register"](
+        name="git_module",
+        fields=("url", "rev"),
+        get_files_callback = get_files_callback,
+    )

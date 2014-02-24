@@ -47,12 +47,11 @@ def peru_cache_path():
     return os.getenv("PERU_CACHE_NAME") or ".peru-cache"
 
 
-def plugin_env():
-    exposed_functions = [
-        peru_register,
-        peru_cache_path,
-    ]
-    return {f.__name__: f for f in exposed_functions}
+def plugin_kwargs():
+    return {
+        "register": peru_register,
+        "cache_path": peru_cache_path(),
+    }
 
 
 def main():
@@ -61,18 +60,17 @@ def main():
         sys.exit(1)
 
     # TODO: stop hardcoding this
-    plugins = ["git_plugin.py"]
+    plugins = ["git_plugin"]
     for plugin_name in plugins:
-        base_dir = os.path.dirname(os.path.realpath(__file__))
-        plugin_path = os.path.join(base_dir, plugin_name)
-        with open(plugin_path) as plugin_file:
-            plugin_code = plugin_file.read()
-        exec(plugin_code, plugin_env())
+        # fromlist just needs to be nonempty here. weird.
+        plugin = __import__("plugins." + plugin_name, fromlist=["dummy"])
+        plugin.peru_plugin_main(**plugin_kwargs())
 
     peru_file_name = os.getenv("PERU_FILE_NAME") or "peru"
     with open(peru_file_name) as peru_file:
         peru_file_code = peru_file.read()
 
+    # TODO: Should this be an import too?
     exec(peru_file_code, dict(peru_file_env))
 
 
