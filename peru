@@ -1,62 +1,66 @@
 #! /usr/bin/env python3
 
-import sys
+import collections
 import os
-from os import path
-import subprocess
-import tempfile
-from urllib import parse
-import shutil
+import sys
 
-if not path.isfile("peru"):
-    print("No peru file found.")
-    sys.exit(1)
+peru_env = {}
+# TODO: "build". "deps"?
+general_fields = ("name", "dest")
 
-def git(git_dir, *args):
-    assert git_dir == None or path.isdir(git_dir)
-    command = ["git"]
-    if git_dir:
-        command.append("--git-dir=" + git_dir)
-    command.extend(args)
-    return subprocess.check_output(command, stderr=subprocess.STDOUT,
-                                   universal_newlines=True)
 
-def git_clone_cached(src):
-    escaped = parse.quote(src, safe="")
-    # Use $PERU_CACHE_NAME if defined, otherwise use the default root path.
-    root_path = os.getenv("PERU_CACHE_NAME") or ".peru-cache"
-    cached_path = path.join(root_path, "git", escaped)
-    if not path.exists(cached_path):
-        try:
-            print("cloning...")
-            os.makedirs(cached_path)
-            git(None, "clone", "--mirror", src, cached_path)
-        except:
-            # Delete the whole thing if the clone failed, to avoid confusing
-            # the cache.
-            shutil.rmtree(cached_path)
-            raise
-    return cached_path
+def validate_plugin(name, fields, callback):
+    assert None not in (name, fields, callback)
+    assert name not in peru_env, "Plugin names must be unique: " + name
+    overlapping_fields = set(fields) & set(general_fields)
+    assert not overlapping_fields, \
+        "Field names already taken: " + ", ".join(overlapping_fields)
 
-def populate_git_module(src, dest, version):
-    cached_dir = git_clone_cached(src)
-    os.makedirs(dest, exist_ok=True)
-    # TODO: Eventually avoid this fetch by caching outputs.
-    print("fetching...")
-    git(cached_dir, "fetch", "--prune")
-    # Checkout the specified revision from the clone into the dest dir.
-    git(cached_dir, "--work-tree=" + dest, "checkout", version, "--", ".")
 
-def git_module(*, name=None, src=None, dest=None, version=None):
-    print("git_module", name)
-    assert name != None, "git_module must have a name"
-    assert src != None, "git_module must have a src"
-    assert dest != None, "git_module must have a dest"
-    assert version != None, "git_module must have a version"
-    populate_git_module(src, dest, version)
+def validate_module(name, fields, kwargs):
+    for field in general_fields + fields:
+        assert field in kwargs, \
+            "{0} requires a {1} field.".format(name, field)
+    for field in kwargs:
+        assert field in general_fields + fields, \
+            "{0} does not allow a {1} field.".format(name, field)
 
-peru_file_name = os.getenv("PERU_FILE_NAME") or "peru"
-with open(peru_file_name) as perufile:
-    code = perufile.read()
 
-exec(code, {"git_module" : git_module})
+def peru_register(*, name=None, fields=None, get_files_callback=None):
+    validate_plugin(name, fields, get_files_callback)
+    def plugin_function(**kwargs):
+        print(name)
+        validate_module(name, fields, kwargs)
+        # TODO: When we have a cache, use that as the target dir instead of the
+        # final dest dir.
+        dest = kwargs["dest"]
+        os.makedirs(dest, exist_ok=True)
+        # TODO: filter out the non-plugin fields.
+        get_files_callback(kwargs, dest)
+    plugin_function.__name__ = name
+    peru_env[name] = plugin_function
+
+
+def main():
+    if not os.path.isfile("peru"):
+        print("No peru file found.")
+        sys.exit(1)
+
+    # TODO: stop hardcoding this
+    plugins = ["git_plugin.py"]
+    for plugin_name in plugins:
+        base_dir = os.path.dirname(os.path.realpath(__file__))
+        plugin_path = os.path.join(base_dir, plugin_name)
+        with open(plugin_path) as plugin_file:
+            plugin_code = plugin_file.read()
+        exec(plugin_code, {"peru_register": peru_register})
+
+    peru_file_name = os.getenv("PERU_FILE_NAME") or "peru"
+    with open(peru_file_name) as peru_file:
+        peru_code = peru_file.read()
+
+    exec(peru_code, dict(peru_env))
+
+
+if __name__ == "__main__":
+    main()
