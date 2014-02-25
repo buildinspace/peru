@@ -4,6 +4,7 @@ import collections
 import hashlib
 import json
 import os
+import shutil
 import sys
 
 peru_file_env = {}
@@ -52,25 +53,51 @@ def has_cached_files(key):
     return os.path.isdir(cached_files_path(key))
 
 
+def save_files_to_cache(key, filtered_kwargs, get_files_callback):
+    print("writing cache", key)
+    p = cached_files_path(key)
+    os.makedirs(p)
+    get_files_callback(filtered_kwargs, p)
+
+
+def retrieve_files_from_cache(key, dest):
+    print('retrieving cache', key)
+    # shutil.copytree has the unfortunate restriction that the destination dir
+    # can't already exist. So we have to do this stuff manually.
+    # http://stackoverflow.com/a/12514470/823869
+    # TODO: Make the cache an internal git repository and let git handle all
+    #       this stuff for us.
+    src = cached_files_path(key)
+    for item in os.listdir(src):
+        s = os.path.join(src, item)
+        d = os.path.join(dest, item)
+        if os.path.isdir(s):
+            shutil.copytree(s, d, symlinks=True)
+        else:
+            shutil.copy2(s, d, follow_symlinks=False)
+
+
 def peru_register(*, name=None, fields=None, get_files_callback=None):
-    validate_plugin(name, fields, get_files_callback)
+    plugin_name = name
+    validate_plugin(plugin_name, fields, get_files_callback)
+
     def plugin_function(**kwargs):
-        print(name)
-        validate_rule(name, fields, kwargs)
+        validate_rule(plugin_name, fields, kwargs)
         # TODO: When we have a cache, use that as the target dir instead of the
         # final dest dir.
+        rule_name = kwargs["name"]
         dest = kwargs["dest"]
+        print(plugin_name, rule_name)
         os.makedirs(dest, exist_ok=True)
         filtered_kwargs = {key: val for key, val in kwargs.items()
                            if key in fields}
         cache_key = rule_hash(filtered_kwargs)
         if not has_cached_files(cache_key):
-            print(cache_key + " is not in cache!")
-        # TODO: Get from cache here, instead of getting
-        #       directly from the plugin.
-        get_files_callback(filtered_kwargs, dest)
-    plugin_function.__name__ = name
-    peru_file_env[name] = plugin_function
+            save_files_to_cache(cache_key, filtered_kwargs, get_files_callback)
+        retrieve_files_from_cache(cache_key, dest)
+
+    plugin_function.__name__ = plugin_name
+    peru_file_env[plugin_name] = plugin_function
 
 
 def peru_cache_root():
