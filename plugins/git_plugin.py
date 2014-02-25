@@ -32,15 +32,26 @@ def git_clone_cached(url):
     return repo_path
 
 
+def git_already_has_rev(repo, rev):
+    try:
+        # make sure it exists
+        git(repo, "cat-file", "-e", rev)
+        # get the hash for this rev
+        output = git(repo, "rev-parse", rev)
+    except:
+        return False
+    # Only return true for revs that are absolute hashes.
+    # TODO: Should we assume that tags are reliable?
+    return output.strip() == rev
+
+
 def get_files_callback(fields, target):
     url = fields["url"]
     rev = fields["rev"]
     cached_dir = git_clone_cached(url)
-    # TODO: Eventually avoid this fetch for moving targets by caching outputs.
-    # TODO: Also, check to see if rev is a literal hash, and don't fetch if we
-    #       already have it.
-    print("fetching...")
-    git(cached_dir, "fetch", "--prune")
+    if not git_already_has_rev(cached_dir, rev):
+        print("fetching...")
+        git(cached_dir, "fetch", "--prune")
     # Checkout the specified revision from the clone into the target dir.
     git(cached_dir, "--work-tree=" + target, "checkout", rev, "--", ".")
 
