@@ -29,12 +29,14 @@ END
 chmod 755 $shim_dir/git
 export PATH=$shim_dir:$PATH
 
-# create a git repo under /tmp with two versions of a text file
+# create a git repo under /tmp with some files
 lib_repo=`mktemp -d`
 cd $lib_repo
 git init -q
 echo hi v1 > libfile
-git add libfile
+mkdir subdir
+echo stuff > subdir/subfile
+git add -A
 git commit -qam "libfile v1"
 first_commit=`git rev-parse HEAD`
 echo hi v2 > libfile
