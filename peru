@@ -9,36 +9,47 @@ import sys
 
 peru_file_env = {}
 # TODO: "build". "deps"?
-general_fields = ("name", "dest")
+required_general_fields = {"name", "dest"}
+all_general_fields = {"build"} | required_general_fields
+general_fields_to_hash = {"build"}
 
 
-def validate_plugin(name, fields, callback):
-    assert None not in (name, fields, callback)
+def validate_plugin(name, required_fields, optional_fields, callback):
+    assert None not in (name, callback)
     assert name not in peru_file_env, "Plugin names must be unique: " + name
-    overlapping_fields = set(fields) & set(general_fields)
+    assert isinstance(required_fields, set)
+    if optional_fields:
+        assert isinstance(optional_fields, set)
+        assert not (required_fields & optional_fields), \
+            "Mandatory and optional fields must not overlap."
+        all_plugin_fields = required_fields | optional_fields
+    else:
+        all_plugin_fields = required_fields
+    overlapping_fields = all_plugin_fields & all_general_fields
     assert not overlapping_fields, \
         "Field names already taken: " + ", ".join(overlapping_fields)
 
 
-def validate_rule(name, fields, kwargs):
-    for field in general_fields + fields:
+def validate_rule(name, all_fields, required_fields, kwargs):
+    for field in required_fields:
         assert field in kwargs, \
             "{0} requires a {1} field.".format(name, field)
     for field in kwargs:
-        assert field in general_fields + fields, \
+        assert field in all_fields, \
             "{0} does not allow a {1} field.".format(name, field)
 
 
-# TODO: Some general fields (like "build") should be included in
-# this hash as well.
-def rule_hash(filtered_kwargs):
+def rule_hash(kwargs, all_plugin_fields):
     # To hash this dictionary of fields, serialize it as a JSON string, and
     # take the SHA1 of that string. Dictionary key order is unspecified, so
     # "sort_keys" keeps our hash stable. Specifying separators makes the JSON
     # slightly more compact, and protects us against changes in the default.
     # "ensure_ascii" defaults to true, so specifying it just protects us from
     # changes in the default.
-    json_representation = json.dumps(filtered_kwargs, sort_keys=True,
+    hashable_kwargs = {key: val for key, val in kwargs.items()
+                       if key in all_plugin_fields
+                       or key in general_fields_to_hash}
+    json_representation = json.dumps(hashable_kwargs, sort_keys=True,
                                      ensure_ascii=True, separators=(',', ':'))
     sha1 = hashlib.sha1()
     sha1.update(json_representation.encode("utf8"))
@@ -69,21 +80,28 @@ def retrieve_files_from_cache(key, dest):
     distutils.dir_util.copy_tree(src, dest, preserve_symlinks=True)
 
 
-def peru_register(*, name=None, fields=None, get_files_callback=None):
+def peru_register(*, name=None, required_fields=None, get_files_callback=None,
+                  optional_fields=None):
     plugin_name = name
-    validate_plugin(plugin_name, fields, get_files_callback)
+    validate_plugin(plugin_name, required_fields, optional_fields,
+                    get_files_callback)
+    all_required_fields = required_general_fields | required_fields
+    all_plugin_fields = required_fields
+    if optional_fields:
+        all_plugin_fields |= optional_fields
+    all_fields = all_general_fields | all_plugin_fields
 
     def plugin_function(**kwargs):
-        validate_rule(plugin_name, fields, kwargs)
+        validate_rule(plugin_name, all_fields, all_required_fields, kwargs)
         # TODO: When we have a cache, use that as the target dir instead of the
         # final dest dir.
         rule_name = kwargs["name"]
         dest = kwargs["dest"]
+        cache_key = rule_hash(kwargs, all_plugin_fields)
         print(plugin_name, rule_name)
         os.makedirs(dest, exist_ok=True)
         filtered_kwargs = {key: val for key, val in kwargs.items()
-                           if key in fields}
-        cache_key = rule_hash(filtered_kwargs)
+                           if key in all_plugin_fields}
         if not has_cached_files(cache_key):
             save_files_to_cache(cache_key, filtered_kwargs, get_files_callback)
         retrieve_files_from_cache(cache_key, dest)
