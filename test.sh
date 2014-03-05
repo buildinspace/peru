@@ -54,6 +54,7 @@ git_module(
     dest = "lib_dest",
     rev = "$1",
     #build = "echo built stuff > builtfile",
+    #subdir = "subdir"
 )
 END
 }
@@ -70,6 +71,13 @@ sed -i 's/#build/build/' $exe_repo/peru
 $repo_root/peru
 if [ "$(cat lib_dest/builtfile)" != "built stuff" ] ; then
   fail "builtfile didn't get built"
+fi
+
+# uncomment the subdir field and check that subfile ends up in lib_dest
+sed -i 's/#subdir/subdir/' $exe_repo/peru
+$repo_root/peru
+if [ "$(cat lib_dest/subfile)" != "stuff" ] ; then
+  fail "the subdir field didn't work"
 fi
 
 # point to the second commit and confirm that we get it
