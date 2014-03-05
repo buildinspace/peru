@@ -53,15 +53,23 @@ git_module(
     url = "$lib_repo",
     dest = "lib_dest",
     rev = "$1",
+    #build = "echo built stuff > builtfile",
 )
 END
 }
 write_peru_file_at_rev $first_commit
 
-# invoke peru to pull in the libfile at the first commit
+# invoke peru to pull in the first commit
 $repo_root/peru
 if [ "$(cat lib_dest/libfile)" != "hi v1" ] ; then
   fail "libfile doesn't match"
+fi
+
+# uncomment the build command and confirm it gets built
+sed -i 's/#build/build/' $exe_repo/peru
+$repo_root/peru
+if [ "$(cat lib_dest/builtfile)" != "built stuff" ] ; then
+  fail "builtfile didn't get built"
 fi
 
 # point to the second commit and confirm that we get it
