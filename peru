@@ -11,8 +11,8 @@ import tempfile
 
 peru_file_env = {}
 required_general_fields = {"name", "dest"}
-all_general_fields = {"build"} | required_general_fields
-general_fields_to_hash = {"build"}
+all_general_fields = {"build", "subdir"} | required_general_fields
+general_fields_to_hash = {"build", "subdir"}
 
 
 def validate_plugin(name, all_plugin_fields, required_plugin_fields, callback):
@@ -57,7 +57,8 @@ def has_cached_files(cache_key):
     return os.path.isdir(cached_files_path(cache_key))
 
 
-def save_files_to_cache(cache_key, filtered_kwargs, build, get_files_callback):
+def save_files_to_cache(cache_key, filtered_kwargs, build, subdir,
+                        get_files_callback):
     print("writing cache", cache_key)
 
     # Invoke the appropriate plugin (e.g. git_plugin) to dump all the specified
@@ -71,8 +72,13 @@ def save_files_to_cache(cache_key, filtered_kwargs, build, get_files_callback):
         print('building "{0}"...'.format(build))
         subprocess.check_call(build, shell=True, cwd=temp_path)
 
+    # If the user supplied a subdir, set the copy src to that.
+    src = temp_path
+    if subdir:
+        src = os.path.join(temp_path, subdir)
+
     # Finally, copy all the resulting files into the cache.
-    distutils.dir_util.copy_tree(temp_path, cached_files_path(cache_key),
+    distutils.dir_util.copy_tree(src, cached_files_path(cache_key),
                                  preserve_symlinks=True)
 
 
@@ -103,12 +109,13 @@ def peru_register(*, name=None, required_fields=None, get_files_callback=None,
         rule_name = kwargs["name"]
         dest = kwargs["dest"]
         build = kwargs.get("build")
+        subdir = kwargs.get("subdir")
         cache_key = rule_hash(kwargs, all_plugin_fields)
         print(plugin_name, rule_name)
         filtered_kwargs = {key: val for key, val in kwargs.items()
                            if key in all_plugin_fields}
         if not has_cached_files(cache_key):
-            save_files_to_cache(cache_key, filtered_kwargs, build,
+            save_files_to_cache(cache_key, filtered_kwargs, build, subdir,
                                 get_files_callback)
         retrieve_files_from_cache(cache_key, dest)
 
