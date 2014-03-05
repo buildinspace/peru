@@ -5,33 +5,26 @@ import distutils.dir_util
 import hashlib
 import json
 import os
+import subprocess
 import sys
+import tempfile
 
 peru_file_env = {}
-# TODO: "build". "deps"?
 required_general_fields = {"name", "dest"}
 all_general_fields = {"build"} | required_general_fields
 general_fields_to_hash = {"build"}
 
 
-def validate_plugin(name, required_fields, optional_fields, callback):
+def validate_plugin(name, all_plugin_fields, required_plugin_fields, callback):
     assert None not in (name, callback)
     assert name not in peru_file_env, "Plugin names must be unique: " + name
-    assert isinstance(required_fields, set)
-    if optional_fields:
-        assert isinstance(optional_fields, set)
-        assert not (required_fields & optional_fields), \
-            "Mandatory and optional fields must not overlap."
-        all_plugin_fields = required_fields | optional_fields
-    else:
-        all_plugin_fields = required_fields
     overlapping_fields = all_plugin_fields & all_general_fields
     assert not overlapping_fields, \
         "Field names already taken: " + ", ".join(overlapping_fields)
 
 
-def validate_rule(name, all_fields, required_fields, kwargs):
-    for field in required_fields:
+def validate_rule(name, all_fields, all_required_fields, kwargs):
+    for field in all_required_fields:
         assert field in kwargs, \
             "{0} requires a {1} field.".format(name, field)
     for field in kwargs:
@@ -56,26 +49,38 @@ def rule_hash(kwargs, all_plugin_fields):
     return sha1.hexdigest()
 
 
-def cached_files_path(key):
-    return os.path.join(peru_cache_root(), "cache", key)
+def cached_files_path(cache_key):
+    return os.path.join(peru_cache_root(), "cache", cache_key)
 
 
-def has_cached_files(key):
-    return os.path.isdir(cached_files_path(key))
+def has_cached_files(cache_key):
+    return os.path.isdir(cached_files_path(cache_key))
 
 
-def save_files_to_cache(key, filtered_kwargs, get_files_callback):
-    print("writing cache", key)
-    p = cached_files_path(key)
-    os.makedirs(p)
-    get_files_callback(filtered_kwargs, p)
+def save_files_to_cache(cache_key, filtered_kwargs, build, get_files_callback):
+    print("writing cache", cache_key)
+
+    # Invoke the appropriate plugin (e.g. git_plugin) to dump all the specified
+    # files into a temporary directory.
+    os.makedirs("/tmp/peru", exist_ok=True)
+    temp_path = tempfile.mkdtemp(dir="/tmp/peru")
+    get_files_callback(filtered_kwargs, temp_path)
+
+    # If the user supplied a build command, run that command on the files.
+    if build:
+        print('building "{0}"...'.format(build))
+        subprocess.check_call(build, shell=True, cwd=temp_path)
+
+    # Finally, copy all the resulting files into the cache.
+    distutils.dir_util.copy_tree(temp_path, cached_files_path(cache_key),
+                                 preserve_symlinks=True)
 
 
-def retrieve_files_from_cache(key, dest):
-    print('retrieving cache', key)
+def retrieve_files_from_cache(cache_key, dest):
+    print('retrieving cache', cache_key)
     # TODO: Make the cache an internal git repository and let git handle all
     #       this stuff for us.
-    src = cached_files_path(key)
+    src = cached_files_path(cache_key)
     # shutil.copytree doesn't work if dest already exists. Use this instead.
     distutils.dir_util.copy_tree(src, dest, preserve_symlinks=True)
 
@@ -83,13 +88,13 @@ def retrieve_files_from_cache(key, dest):
 def peru_register(*, name=None, required_fields=None, get_files_callback=None,
                   optional_fields=None):
     plugin_name = name
-    validate_plugin(plugin_name, required_fields, optional_fields,
-                    get_files_callback)
     all_required_fields = required_general_fields | required_fields
     all_plugin_fields = required_fields
     if optional_fields:
         all_plugin_fields |= optional_fields
     all_fields = all_general_fields | all_plugin_fields
+    validate_plugin(plugin_name, all_plugin_fields, required_fields,
+                    get_files_callback)
 
     def plugin_function(**kwargs):
         validate_rule(plugin_name, all_fields, all_required_fields, kwargs)
@@ -97,13 +102,14 @@ def peru_register(*, name=None, required_fields=None, get_files_callback=None,
         # final dest dir.
         rule_name = kwargs["name"]
         dest = kwargs["dest"]
+        build = kwargs.get("build")
         cache_key = rule_hash(kwargs, all_plugin_fields)
         print(plugin_name, rule_name)
-        os.makedirs(dest, exist_ok=True)
         filtered_kwargs = {key: val for key, val in kwargs.items()
                            if key in all_plugin_fields}
         if not has_cached_files(cache_key):
-            save_files_to_cache(cache_key, filtered_kwargs, get_files_callback)
+            save_files_to_cache(cache_key, filtered_kwargs, build,
+                                get_files_callback)
         retrieve_files_from_cache(cache_key, dest)
 
     plugin_function.__name__ = plugin_name
