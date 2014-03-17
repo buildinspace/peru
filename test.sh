@@ -45,13 +45,13 @@ exe_repo=`mktemp -d`
 cd $exe_repo
 write_peru_file_at_rev() {
   cat << END > $exe_repo/peru
-[module lib]
-    type = git
-    url = $lib_repo
-    dest = lib_dest
-    rev = $1
-    #build = echo built stuff > builtfile
-    #subdir = subdir
+rule lib:
+    type: git
+    url: $lib_repo
+    dest: lib_dest
+    rev: $1
+    #build: echo built stuff > builtfile
+    #subdir: subdir
 END
 }
 write_peru_file_at_rev $first_commit
@@ -63,7 +63,7 @@ echo exe path $exe_repo
 # invoke peru to pull in the first commit
 $repo_root/peru
 if [ "$(cat lib_dest/libfile)" != "hi v1" ] ; then
-  fail "libfile doesn't match"
+  fail "libfile doesn't match -- is anything working?!"
 fi
 
 # uncomment the build command and confirm it gets built

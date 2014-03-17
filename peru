@@ -1,7 +1,6 @@
 #! /usr/bin/env python3
 
 import collections
-import configparser
 import distutils.dir_util
 import hashlib
 import json
@@ -10,9 +9,19 @@ import subprocess
 import sys
 import tempfile
 
+sys.path.append(
+    os.path.join(
+        os.path.dirname(os.path.realpath(__file__)),
+        "third-party", "PyYAML-3.10", "lib3"))
+import yaml
+
+
 plugins = {}
+
 required_general_fields = {"type", "dest"}
+
 all_general_fields = {"build", "subdir"} | required_general_fields
+
 general_fields_to_hash = {"type", "build", "subdir"}
 
 
@@ -103,8 +112,7 @@ def peru_register(*, name=None, required_fields=None, get_files_callback=None,
     validate_plugin(plugin_name, all_plugin_fields, required_fields,
                     get_files_callback)
 
-    def plugin_function(rule):
-        rule_name = rule.name.split()[1]
+    def plugin_function(rule_name, rule):
         validate_rule(plugin_name, all_fields, all_required_fields, rule)
         dest = rule["dest"]
         build = rule.get("build")
@@ -136,13 +144,13 @@ def plugin_kwargs():
 
 def execute_peru_config(config):
     for section_name, section in config.items():
-        if section_name.split()[0] == "module":
+        if section_name.split()[0] == "rule":
+            rule_name = section_name.split()[1]
             assert "type" in section, "All rules must specify a type."
             type_name = section["type"]
             assert type_name in plugins, \
                 'Type "{0}" is not defined.'.format(type_name)
-            plugins[type_name](section)
-
+            plugins[type_name](rule_name, section)
 
 
 def main():
@@ -158,8 +166,8 @@ def main():
         print("No peru file found.")
         sys.exit(1)
 
-    config = configparser.ConfigParser()
-    config.read(peru_file_name)
+    with open(peru_file_name) as peru_file:
+        config = yaml.safe_load(peru_file)
 
     execute_peru_config(config)
 
