@@ -12,9 +12,15 @@ def git(git_dir, *args):
     if git_dir:
         command.append("--git-dir=" + git_dir)
     command.extend(args)
-    return subprocess.check_output(
-        command, stderr=subprocess.STDOUT, universal_newlines=True)
-
+    process = subprocess.Popen(
+            command, stdin=subprocess.DEVNULL, stdout=subprocess.PIPE,
+            stderr=subprocess.STDOUT, universal_newlines=True)
+    output, _ = process.communicate()
+    if process.returncode != 0:
+        raise RuntimeError("Command exited with error code {0}:\n$ {1}\n{2}"
+                           .format(process.returncode, " ".join(command),
+                                   output))
+    return output
 
 def git_clone_cached(url):
     escaped = urllib.parse.quote(url, safe="")

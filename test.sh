@@ -12,9 +12,6 @@ fail() {
   # print the line where fail() is called, followed by arguments
   echo
   echo Error line ${BASH_LINENO[$((${#BASH_LINENO[@]} - 2))]}: $*
-  echo git log $git_log
-  echo lib path $lib_repo
-  echo exe path $exe_repo
   exit 1
 }
 
@@ -59,6 +56,10 @@ git_module(
 END
 }
 write_peru_file_at_rev $first_commit
+
+echo git log $git_log
+echo lib path $lib_repo
+echo exe path $exe_repo
 
 # invoke peru to pull in the first commit
 $repo_root/peru
