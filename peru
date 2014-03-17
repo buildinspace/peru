@@ -25,6 +25,16 @@ all_general_fields = {"build", "subdir"} | required_general_fields
 general_fields_to_hash = {"type", "build", "subdir"}
 
 
+def is_verbose():
+    return "-v" in sys.argv or "--verbose" in sys.argv
+
+
+# TODO: This function is sort of duplicated in git_plugin.py.
+def verbose(*args, **kwargs):
+    if is_verbose():
+        print(*args, **kwargs)
+
+
 def validate_plugin(name, all_plugin_fields, required_plugin_fields, callback):
     assert None not in (name, callback)
     assert name not in plugins, "Plugin names must be unique: " + name
@@ -69,7 +79,7 @@ def has_cached_files(cache_key):
 
 def save_files_to_cache(cache_key, filtered_fields, build, subdir,
                         get_files_callback):
-    print("writing cache", cache_key)
+    verbose("writing cache", cache_key)
 
     # Invoke the appropriate plugin (e.g. git_plugin) to dump all the specified
     # files into a temporary directory.
@@ -79,7 +89,7 @@ def save_files_to_cache(cache_key, filtered_fields, build, subdir,
 
     # If the user supplied a build command, run that command on the files.
     if build:
-        print('building "{0}"...'.format(build))
+        verbose('building "{0}"...'.format(build))
         subprocess.check_call(build, shell=True, cwd=temp_path)
 
     # If the user supplied a subdir, set the copy src to that.
@@ -93,7 +103,7 @@ def save_files_to_cache(cache_key, filtered_fields, build, subdir,
 
 
 def retrieve_files_from_cache(cache_key, dest):
-    print('retrieving cache', cache_key)
+    verbose('retrieving cache', cache_key)
     # TODO: Make the cache an internal git repository and let git handle all
     #       this stuff for us.
     src = cached_files_path(cache_key)
@@ -118,7 +128,7 @@ def peru_register(*, name=None, required_fields=None, get_files_callback=None,
         build = rule.get("build")
         subdir = rule.get("subdir")
         cache_key = rule_hash(rule, all_plugin_fields)
-        print(plugin_name, rule_name)
+        verbose(plugin_name, rule_name)
         filtered_fields = {key: val for key, val in rule.items()
                            if key in all_plugin_fields}
         if not has_cached_files(cache_key):
@@ -139,6 +149,7 @@ def plugin_kwargs():
     return {
         "register": peru_register,
         "cache_root": peru_cache_root,
+        "verbose": is_verbose(),
     }
 
 

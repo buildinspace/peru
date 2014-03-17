@@ -4,7 +4,15 @@ import shutil
 import subprocess
 import urllib.parse
 
+
 peru_cache_root = None
+is_verbose = False
+
+
+def verbose(*args, **kwargs):
+    if is_verbose:
+        print(*args, **kwargs)
+
 
 def git(git_dir, *args):
     assert git_dir is None or path.isdir(git_dir) # avoid forgetting this arg
@@ -22,11 +30,12 @@ def git(git_dir, *args):
                                    output))
     return output
 
+
 def git_clone_cached(url):
     escaped = urllib.parse.quote(url, safe="")
     repo_path = path.join(peru_cache_root(), "git", escaped)
     if not path.exists(repo_path):
-        print("cloning...")
+        verbose("cloning...")
         os.makedirs(repo_path)
         try:
             git(None, "clone", "--mirror", url, repo_path)
@@ -56,15 +65,16 @@ def get_files_callback(fields, target):
     rev = fields["rev"]
     cached_dir = git_clone_cached(url)
     if not git_already_has_rev(cached_dir, rev):
-        print("fetching...")
+        verbose("fetching...")
         git(cached_dir, "fetch", "--prune")
     # Checkout the specified revision from the clone into the target dir.
     git(cached_dir, "--work-tree=" + target, "checkout", rev, "--", ".")
 
 
 def peru_plugin_main(*args, **kwargs):
-    global peru_cache_root
+    global peru_cache_root, is_verbose
     peru_cache_root = kwargs["cache_root"]
+    is_verbose = kwargs["verbose"]
     kwargs["register"](
         name="git",
         required_fields={"url", "rev"},
