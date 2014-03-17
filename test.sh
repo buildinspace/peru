@@ -45,14 +45,13 @@ exe_repo=`mktemp -d`
 cd $exe_repo
 write_peru_file_at_rev() {
   cat << END > $exe_repo/peru
-git_module(
-    name = "lib",
-    url = "$lib_repo",
-    dest = "lib_dest",
-    rev = "$1",
-    #build = "echo built stuff > builtfile",
-    #subdir = "subdir"
-)
+[module lib]
+    type = git
+    url = $lib_repo
+    dest = lib_dest
+    rev = $1
+    #build = echo built stuff > builtfile
+    #subdir = subdir
 END
 }
 write_peru_file_at_rev $first_commit

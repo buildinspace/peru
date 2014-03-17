@@ -66,7 +66,7 @@ def peru_plugin_main(*args, **kwargs):
     global peru_cache_root
     peru_cache_root = kwargs["cache_root"]
     kwargs["register"](
-        name="git_module",
+        name="git",
         required_fields={"url", "rev"},
         optional_fields = set(),
         get_files_callback = get_files_callback,

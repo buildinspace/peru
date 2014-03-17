@@ -1,6 +1,7 @@
 #! /usr/bin/env python3
 
 import collections
+import configparser
 import distutils.dir_util
 import hashlib
 import json
@@ -9,37 +10,37 @@ import subprocess
 import sys
 import tempfile
 
-peru_file_env = {}
-required_general_fields = {"name", "dest"}
+plugins = {}
+required_general_fields = {"type", "dest"}
 all_general_fields = {"build", "subdir"} | required_general_fields
-general_fields_to_hash = {"build", "subdir"}
+general_fields_to_hash = {"type", "build", "subdir"}
 
 
 def validate_plugin(name, all_plugin_fields, required_plugin_fields, callback):
     assert None not in (name, callback)
-    assert name not in peru_file_env, "Plugin names must be unique: " + name
+    assert name not in plugins, "Plugin names must be unique: " + name
     overlapping_fields = all_plugin_fields & all_general_fields
     assert not overlapping_fields, \
         "Field names already taken: " + ", ".join(overlapping_fields)
 
 
-def validate_rule(name, all_fields, all_required_fields, kwargs):
+def validate_rule(name, all_fields, all_required_fields, rule):
     for field in all_required_fields:
-        assert field in kwargs, \
+        assert field in rule, \
             "{0} requires a {1} field.".format(name, field)
-    for field in kwargs:
+    for field in rule:
         assert field in all_fields, \
             "{0} does not allow a {1} field.".format(name, field)
 
 
-def rule_hash(kwargs, all_plugin_fields):
+def rule_hash(rule, all_plugin_fields):
     # To hash this dictionary of fields, serialize it as a JSON string, and
     # take the SHA1 of that string. Dictionary key order is unspecified, so
     # "sort_keys" keeps our hash stable. Specifying separators makes the JSON
     # slightly more compact, and protects us against changes in the default.
     # "ensure_ascii" defaults to true, so specifying it just protects us from
     # changes in the default.
-    hashable_kwargs = {key: val for key, val in kwargs.items()
+    hashable_kwargs = {key: val for key, val in rule.items()
                        if key in all_plugin_fields
                        or key in general_fields_to_hash}
     json_representation = json.dumps(hashable_kwargs, sort_keys=True,
@@ -57,7 +58,7 @@ def has_cached_files(cache_key):
     return os.path.isdir(cached_files_path(cache_key))
 
 
-def save_files_to_cache(cache_key, filtered_kwargs, build, subdir,
+def save_files_to_cache(cache_key, filtered_fields, build, subdir,
                         get_files_callback):
     print("writing cache", cache_key)
 
@@ -65,7 +66,7 @@ def save_files_to_cache(cache_key, filtered_kwargs, build, subdir,
     # files into a temporary directory.
     os.makedirs("/tmp/peru", exist_ok=True)
     temp_path = tempfile.mkdtemp(dir="/tmp/peru")
-    get_files_callback(filtered_kwargs, temp_path)
+    get_files_callback(filtered_fields, temp_path)
 
     # If the user supplied a build command, run that command on the files.
     if build:
@@ -102,25 +103,23 @@ def peru_register(*, name=None, required_fields=None, get_files_callback=None,
     validate_plugin(plugin_name, all_plugin_fields, required_fields,
                     get_files_callback)
 
-    def plugin_function(**kwargs):
-        validate_rule(plugin_name, all_fields, all_required_fields, kwargs)
-        # TODO: When we have a cache, use that as the target dir instead of the
-        # final dest dir.
-        rule_name = kwargs["name"]
-        dest = kwargs["dest"]
-        build = kwargs.get("build")
-        subdir = kwargs.get("subdir")
-        cache_key = rule_hash(kwargs, all_plugin_fields)
+    def plugin_function(rule):
+        rule_name = rule.name.split()[1]
+        validate_rule(plugin_name, all_fields, all_required_fields, rule)
+        dest = rule["dest"]
+        build = rule.get("build")
+        subdir = rule.get("subdir")
+        cache_key = rule_hash(rule, all_plugin_fields)
         print(plugin_name, rule_name)
-        filtered_kwargs = {key: val for key, val in kwargs.items()
+        filtered_fields = {key: val for key, val in rule.items()
                            if key in all_plugin_fields}
         if not has_cached_files(cache_key):
-            save_files_to_cache(cache_key, filtered_kwargs, build, subdir,
+            save_files_to_cache(cache_key, filtered_fields, build, subdir,
                                 get_files_callback)
         retrieve_files_from_cache(cache_key, dest)
 
     plugin_function.__name__ = plugin_name
-    peru_file_env[plugin_name] = plugin_function
+    plugins[plugin_name] = plugin_function
 
 
 def peru_cache_root():
@@ -135,11 +134,18 @@ def plugin_kwargs():
     }
 
 
-def main():
-    if not os.path.isfile("peru"):
-        print("No peru file found.")
-        sys.exit(1)
+def execute_peru_config(config):
+    for section_name, section in config.items():
+        if section_name.split()[0] == "module":
+            assert "type" in section, "All rules must specify a type."
+            type_name = section["type"]
+            assert type_name in plugins, \
+                'Type "{0}" is not defined.'.format(type_name)
+            plugins[type_name](section)
 
+
+
+def main():
     # TODO: stop hardcoding this
     plugins = ["git_plugin"]
     for plugin_name in plugins:
@@ -148,11 +154,14 @@ def main():
         plugin.peru_plugin_main(**plugin_kwargs())
 
     peru_file_name = os.getenv("PERU_FILE_NAME") or "peru"
-    with open(peru_file_name) as peru_file:
-        peru_file_code = peru_file.read()
+    if not os.path.isfile(peru_file_name):
+        print("No peru file found.")
+        sys.exit(1)
 
-    # TODO: Should this be an import too?
-    exec(peru_file_code, dict(peru_file_env))
+    config = configparser.ConfigParser()
+    config.read(peru_file_name)
+
+    execute_peru_config(config)
 
 
 if __name__ == "__main__":
