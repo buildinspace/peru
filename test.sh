@@ -52,6 +52,12 @@ rule lib:
     rev: $1
     #build: echo built stuff > builtfile
     #subdir: subdir
+
+# Reference the same repo through the local plugin, to test that too.
+rule locallib:
+    type: local
+    path: $lib_repo
+    dest: local_lib_dest
 END
 }
 write_peru_file_at_rev $first_commit
@@ -64,6 +70,11 @@ echo exe path $exe_repo
 $repo_root/peru
 if [ "$(cat lib_dest/libfile)" != "hi v1" ] ; then
   fail "libfile doesn't match -- is anything working?!"
+fi
+
+# make sure the local rule was pulled in too
+if [ "$(cat local_lib_dest/libfile)" != "hi v2" ] ; then
+  fail "libfile doesn't match in the local rule"
 fi
 
 # uncomment the build command and confirm it gets built
