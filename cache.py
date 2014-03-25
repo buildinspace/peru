@@ -1,20 +1,25 @@
-import distutils
+import distutils.dir_util
 import os
+import shutil
 
-def cache_root():
-    return os.getenv("PERU_CACHE_NAME") or ".peru-cache"
+class Cache:
+    def __init__(self, root):
+        self.root = root
+        os.makedirs(root, exist_ok=True)
 
-def cached_files_path(cache_key):
-    return os.path.join(cache_root(), "cache", cache_key)
+    def _cache_path(self, cache_key):
+        return os.path.join(self.root, "cache", cache_key)
 
-def has_cached_files(cache_key):
-    return os.path.isdir(cached_files_path(cache_key))
+    def has(self, cache_key):
+        return os.path.isdir(self._cache_path(cache_key))
 
-def save_files_to_cache(cache_key, path):
-    distutils.dir_util.copy_tree(src, cached_files_path(cache_key),
-                                preserve_symlinks=True)
+    def put(self, cache_key, src_dir):
+        if self.has(cache_key):
+            shutil.rmtree(self._cache_path(cache_key))
+        os.makedirs(self._cache_path(cache_key))
+        distutils.dir_util.copy_tree(src_dir, self._cache_path(cache_key),
+                                     preserve_symlinks=True)
 
-
-def retrieve_files_from_cache(cache_key, dest):
-    src = cached_files_path(cache_key)
-    distutils.dir_util.copy_tree(src, dest, preserve_symlinks=True)
+    def get(self, cache_key, dest_dir):
+        src_dir = self._cache_path(cache_key)
+        distutils.dir_util.copy_tree(src_dir, dest_dir, preserve_symlinks=True)
