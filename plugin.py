@@ -1,6 +1,5 @@
 import collections
 import os
-import os.path
 
 def _plugin_kwargs(runtime):
     return {
