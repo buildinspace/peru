@@ -30,6 +30,14 @@ class ToplevelModule:
         else:
             raise RuntimeError('unknown type "{}"'.format(type_))
 
+    def build(path):
+        #TODO: deps
+        if "default" in self.fields:
+            return self.fields["default"].build(path)
+        else:
+            return Rule(self, {}).build(path)
+
+
 
 class RemoteModule:
     def __init__(self, name, d):
