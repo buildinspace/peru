@@ -1,8 +1,8 @@
 import os
 import subprocess
 import sys
-import tempfile
 
+# TODO: Replace this with pip and also peru bootstrapping.
 sys.path.append(
     os.path.join(
         os.path.dirname(os.path.realpath(__file__)),
@@ -66,6 +66,10 @@ class Module:
         if bad_keys:
             raise RuntimeError("unknown module fields: {}".format(
                 ", ".join(bad_keys)))
+        overlapping_names = rules.keys() & modules.keys()
+        if overlapping_names:
+            raise RuntimeError("rules and modules with the same name: " +
+                ", ".join(overlapping_names))
         self.fields = blob
         self.rules = rules
         self.modules = modules
@@ -103,9 +107,10 @@ class Module:
                 return
             working_dir = runtime.tmp_dir()
             self.remote.get_files(working_dir)
-        # TODO: imports here
+        self.fetch_imports(runtime, rule, working_dir)
         if "build" in rule.fields:
             command = rule.fields["build"]
+            # TODO: imports_env
             subprocess.check_call(command, shell=True, cwd=working_dir)
         if self.remote:
             export_dir = working_dir
@@ -113,6 +118,28 @@ class Module:
                 export_dir = os.path.join(export_dir, rule.fields["export"])
             assert os.path.isdir(export_dir)
             runtime.cache.put(key, export_dir)
+
+    def fetch_imports(self, runtime, rule, working_dir):
+        imports = {}
+        imports.update(self.fields.get("imports", {}))
+        imports.update(rule.fields.get("imports", {}))
+        for target, import_path in imports.items():
+            parts = target.split('.')
+            module = self.modules[parts[0]]
+            if len(parts) == 1:
+                rule = module.default_rule
+            elif len(parts) == 2:
+                rule = module.rules[parts[1]]
+            else:
+                # TODO: Rework this when we support remote peru files.
+                raise RuntimeError("We don't support big imports yet.")
+            # ensure the rule is in cache
+            module.build_rule(runtime, rule)
+            # import the build outputs
+            key = module.rule_key(rule)
+            dest = os.path.join(working_dir, import_path)
+            os.makedirs(dest, exist_ok=True)
+            runtime.cache.get(key, dest)
 
     def rule_key(self, rule):
         data = {
