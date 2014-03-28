@@ -4,14 +4,14 @@ import json
 import os
 import shutil
 
-def compute_key(obj):
+def compute_key(data):
     # To hash this dictionary of fields, serialize it as a JSON string, and
     # take the SHA1 of that string. Dictionary key order is unspecified, so
     # "sort_keys" keeps our hash stable. Specifying separators makes the
     # JSON slightly more compact, and protects us against changes in the
     # default.  "ensure_ascii" defaults to true, so specifying it just
     # protects us from changes in the default.
-    json_representation = json.dumps(obj, sort_keys=True,
+    json_representation = json.dumps(data, sort_keys=True,
                                      ensure_ascii=True,
                                      separators=(',', ':'))
     sha1 = hashlib.sha1()

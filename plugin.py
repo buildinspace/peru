@@ -1,5 +1,6 @@
 import collections
 import os
+import sys
 
 def _entry_point_kwargs(runtime, plugins):
     def plugin_register(name, *args, **kwargs):
@@ -7,8 +8,10 @@ def _entry_point_kwargs(runtime, plugins):
         plugins[name] = plugin
 
     return {
+        # TODO: make this not a function
+        "cache_root": lambda: runtime.cache.root,
         "register": plugin_register,
-        "cache_root": runtime.cache.root,
+        "runtime": runtime,
         "verbose": runtime.verbose,
     }
 
@@ -16,14 +19,16 @@ def load_plugins(runtime):
     plugins_path = os.path.join(os.path.dirname(__file__), "plugins")
     plugins = {}
 
+    # TODO: Be less evil.
+    sys.path.append(plugins_path)
+
     for name in os.listdir(plugins_path):
         if not name.endswith("_plugin.py"):
             continue
         with open(os.path.join(plugins_path, name)) as f:
             code = f.read()
-        env = {}
-        exec(code, env)
-        entry_point = env["peru_plugin_main"]
+        plugin_module = __import__(name[:-3])
+        entry_point = plugin_module.peru_plugin_main
         entry_point(**_entry_point_kwargs(runtime, plugins))
 
     return plugins

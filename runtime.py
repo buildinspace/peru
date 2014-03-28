@@ -10,3 +10,8 @@ class Runtime:
         cache_root = os.getenv("PERU_CACHE_NAME") or ".peru-cache"
         self.cache = cache.Cache(cache_root)
         self.plugins = plugin.load_plugins(self)
+        self.working_dir = "."
+
+    def log(self, msg):
+        if self.verbose:
+            print(msg)
