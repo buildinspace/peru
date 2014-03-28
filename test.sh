@@ -55,7 +55,7 @@ rule lib:
 
 # Reference the same repo through the local plugin, to test that too.
 rule locallib:
-    type: local
+    type: path
     path: $lib_repo
     dest: local_lib_dest
 END

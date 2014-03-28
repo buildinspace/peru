@@ -164,7 +164,7 @@ def execute_peru_config(config):
 
 def main():
     # TODO: stop hardcoding this
-    plugins = ["git_plugin", "local_plugin"]
+    plugins = ["git_plugin", "path_plugin"]
     for plugin_name in plugins:
         # fromlist just needs to be nonempty here. weird.
         plugin = __import__("plugins." + plugin_name, fromlist=["dummy"])

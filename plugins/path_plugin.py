@@ -8,7 +8,7 @@ def get_files_callback(fields, target):
 
 def peru_plugin_main(*args, **kwargs):
     kwargs["register"](
-        name="local",
+        name="path",
         required_fields={"path"},
         optional_fields = set(),
         get_files_callback = get_files_callback,
