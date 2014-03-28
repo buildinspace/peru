@@ -51,10 +51,6 @@ def extract_remote(runtime, blob, module_name):
     remote_fields = plugin.extract_fields(blob, module_name)
     return Remote(plugin, remote_fields)
 
-def tmp_dir():
-    os.makedirs("/tmp/peru", exist_ok=True)
-    return tempfile.mkdtemp(dir="/tmp/peru")
-
 class Remote:
     def __init__(self, plugin, fields):
         self.plugin = plugin
@@ -91,7 +87,7 @@ class Module:
         if len(path) == 1 and path[0] in self.rules:
             return self.build_rule(runtime, self.rules[path[0]])
         if path[0] not in self.modules:
-            raise RuntimeError("No module named " + path[0])
+            raise RuntimeError("no rule or module named " + path[0])
         return self.modules[path[0]].build(runtime, path[1:])
 
     # Building a rule is done differently depending on whether the rule is part
@@ -105,7 +101,7 @@ class Module:
             key = self.rule_key(rule)
             if runtime.cache.has(key):
                 return
-            working_dir = tmp_dir()
+            working_dir = runtime.tmp_dir()
             self.remote.get_files(working_dir)
         # TODO: imports here
         if "build" in rule.fields:
