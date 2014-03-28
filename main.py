@@ -7,9 +7,9 @@ import runtime
 import module
 
 def main():
-    peru_file_name = os.getenv("PERU_FILE_NAME") or "peru"
+    peru_file_name = os.getenv("PERU_FILE_NAME") or "peru.yaml"
     if not os.path.isfile(peru_file_name):
-        print("no peru file found")
+        print(peru_file_name + " not found.")
         sys.exit(1)
     r = runtime.Runtime()
     m = module.parse(r, peru_file_name)

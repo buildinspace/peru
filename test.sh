@@ -48,7 +48,7 @@ second_commit=`git rev-parse HEAD`
 exe_repo=`mktemp -d`
 cd $exe_repo
 write_peru_file_at_rev() {
-  cat << END > $exe_repo/peru
+  cat << END > $exe_repo/peru.yaml
 imports:
     lib: lib_dest/
     pathlib: path_lib_dest/
@@ -87,14 +87,14 @@ if [ "$(cat path_lib_dest/libfile)" != "hi v2" ] ; then
 fi
 
 # uncomment the build command and confirm it gets built
-sed -i 's/#build/build/' $exe_repo/peru
+sed -i 's/#build/build/' $exe_repo/peru.yaml
 run_peru
 if [ "$(cat lib_dest/builtfile)" != "built stuff" ] ; then
   fail "builtfile didn't get built"
 fi
 
 # uncomment the export field and check that subfile ends up in lib_dest
-sed -i 's/#export/export/' $exe_repo/peru
+sed -i 's/#export/export/' $exe_repo/peru.yaml
 run_peru
 if [ "$(cat lib_dest/subfile)" != "stuff" ] ; then
   fail "the export field didn't work"
