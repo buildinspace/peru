@@ -36,3 +36,14 @@ class Plugin:
         self.optional_fields = optional_fields
         self.field_names = required_fields | optional_fields
         self.get_files_callback = get_files_callback
+
+    def extract_fields(self, blob, module_name):
+        plugin_fields = {}
+        for field in list(blob.keys()):
+            if field in self.field_names:
+                plugin_fields[field] = blob.pop(field)
+        missing_fields = self.required_fields - plugin_fields.keys()
+        if missing_fields:
+            raise RuntimeError("{} module {} is missing fields: {}".format(
+                self.name, module_name, ", ".join(missing_fields)))
+        return plugin_fields
