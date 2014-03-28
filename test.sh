@@ -15,6 +15,10 @@ fail() {
   exit 1
 }
 
+run_peru() {
+  $repo_root/main.py
+}
+
 # Shim git in the $PATH so that all calls are logged.
 shim_dir=`mktemp -d`
 git_log=`mktemp`
@@ -45,19 +49,24 @@ exe_repo=`mktemp -d`
 cd $exe_repo
 write_peru_file_at_rev() {
   cat << END > $exe_repo/peru
-rule lib:
+imports:
+    lib: lib_dest/
+    pathlib: path_lib_dest/
+
+module lib:
     type: git
     url: $lib_repo
-    dest: lib_dest
     rev: $1
-    #build: echo built stuff > builtfile
-    #subdir: subdir
+    default_rule: builtfile
 
-# Reference the same repo through the local plugin, to test that too.
-rule locallib:
+    rule builtfile:
+        #build: echo built stuff > builtfile
+        #export: subdir/
+
+# Reference the same repo through the path plugin, to test that too.
+module pathlib:
     type: path
     path: $lib_repo
-    dest: local_lib_dest
 END
 }
 write_peru_file_at_rev $first_commit
@@ -67,33 +76,33 @@ echo lib path $lib_repo
 echo exe path $exe_repo
 
 # invoke peru to pull in the first commit
-$repo_root/peru
+run_peru
 if [ "$(cat lib_dest/libfile)" != "hi v1" ] ; then
   fail "libfile doesn't match -- is anything working?!"
 fi
 
-# make sure the local rule was pulled in too
-if [ "$(cat local_lib_dest/libfile)" != "hi v2" ] ; then
-  fail "libfile doesn't match in the local rule"
+# make sure the path rule was pulled in too
+if [ "$(cat path_lib_dest/libfile)" != "hi v2" ] ; then
+  fail "libfile doesn't match in the path module"
 fi
 
 # uncomment the build command and confirm it gets built
 sed -i 's/#build/build/' $exe_repo/peru
-$repo_root/peru
+run_peru
 if [ "$(cat lib_dest/builtfile)" != "built stuff" ] ; then
   fail "builtfile didn't get built"
 fi
 
-# uncomment the subdir field and check that subfile ends up in lib_dest
-sed -i 's/#subdir/subdir/' $exe_repo/peru
-$repo_root/peru
+# uncomment the export field and check that subfile ends up in lib_dest
+sed -i 's/#export/export/' $exe_repo/peru
+run_peru
 if [ "$(cat lib_dest/subfile)" != "stuff" ] ; then
-  fail "the subdir field didn't work"
+  fail "the export field didn't work"
 fi
 
 # point to the second commit and confirm that we get it
 write_peru_file_at_rev $second_commit
-$repo_root/peru
+run_peru
 if [ "$(cat lib_dest/libfile)" != "hi v2" ] ; then
   fail "libfile doesn't match"
 fi
@@ -113,7 +122,7 @@ cd $exe_repo
 
 # Use peru to get the new version. This should cause a fetch.
 write_peru_file_at_rev $third_commit
-$repo_root/peru
+run_peru
 if [ "$(cat lib_dest/libfile)" != "hi v3" ] ; then
   fail "libfile doesn't match"
 fi
@@ -124,7 +133,7 @@ fi
 
 # Point to master and run peru again, which should cause another fetch.
 write_peru_file_at_rev master
-$repo_root/peru
+run_peru
 num_fetches=`grep fetch $git_log | wc -l`
 if [ $num_fetches != 2 ] ; then
   fail expected 2 fetches, found $num_fetches in $git_log
