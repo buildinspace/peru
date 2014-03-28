@@ -1,56 +1,36 @@
-import module
+import os
+import sys
+
+sys.path.append(
+    os.path.join(
+        os.path.dirname(os.path.realpath(__file__)),
+        "third-party", "PyYAML-3.10", "lib3"))
+import yaml
+
 import rule
-import plugin
 
-class ToplevelModule:
-    field_names = {"import"}
+def parse(filename):
+    with open(filename) as f:
+        blob = yaml.safe_load(f.read())
 
-    def __init__(self, d):
-        self.fields = {}
-        self.children = {}
-        for name, val in d.items():
-            parts = key.split()
-            if len(parts) > 2 or len(parts) == 0:
-                raise RuntimeError('bad field "{}"'.format(name))
-            elif len(parts) == 1:
-                if name not in self.field_names:
-                    raise RuntimeError('unknown field "{}"'.format(name))
-                fields[name] = val
-            else:
-                type_, name = parts
-                self._add_child(type_, name, val)
+    rules = extract_rules(blob)
+    return Module(blob, rules)
 
-    def _add_child(type_, name, val):
-        if name in self.children:
-            raise RuntimeError('"{}" already defined'.format(name))
-        if type_ == "rule":
-            self.children[name] = rule.Rule(name, val)
-        elif type_ == "module":
-            self.children[name] = RemoteModule(name, val)
-        else:
-            raise RuntimeError('unknown type "{}"'.format(type_))
+def extract_rules(blob):
+    rules = {}
+    for field in list(blob.keys()):
+        parts = field.split()
+        if len(parts) == 2 and parts[0] == "rule":
+            inner_blob = blob.pop(field) # remove the field from blob
+            name = parts[1]
+            rules[name] = rule.Rule(inner_blob)
+    return rules
 
-    def build(path):
-        #TODO: deps
-        if "default" in self.fields:
-            return self.fields["default"].build(path)
-        else:
-            return Rule(self, {}).build(path)
-
-
-
-class RemoteModule:
-    def __init__(self, name, d):
-        self.name = name
-        if "type" not in d:
-            raise RuntimeError('module "{}" must have a "type" field'
-                               .format(name))
-        self.plugin = plugin.get(d["type"])
-        plugin_fields = {key: val for key, val in d.items()
-                         if key in plugin.field_names}
-        rest = {key: val for key, val in d.itemd()
-                if key not in plugin.field_names and key != "type"}
-        for key in rest:
-            if key not in ToplevelModule.field_names:
-                raise RuntimeError('unknown field "{}"'.format(key))
-
+class Module:
+    def __init__(self, blob, rules):
+        field_names = {"imports"}
+        bad_keys = blob.keys() - field_names
+        if bad_keys:
+            raise RuntimeError("unknown module fields: " + ", ".join(bad_keys))
+        self.fields = blob
+        self.rules = rules
