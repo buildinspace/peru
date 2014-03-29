@@ -4,16 +4,6 @@ import shutil
 import subprocess
 import urllib.parse
 
-
-peru_cache_root = None
-is_verbose = False
-
-
-def verbose(*args, **kwargs):
-    if is_verbose:
-        print(*args, **kwargs)
-
-
 def git(git_dir, *args):
     assert git_dir is None or path.isdir(git_dir) # avoid forgetting this arg
     command = ["git"]
@@ -30,12 +20,11 @@ def git(git_dir, *args):
                                    output))
     return output
 
-
-def git_clone_cached(url):
+def git_clone_cached(runtime, url):
     escaped = urllib.parse.quote(url, safe="")
-    repo_path = path.join(peru_cache_root(), "git", escaped)
+    repo_path = path.join(runtime.cache.root, "git", escaped)
     if not path.exists(repo_path):
-        verbose("cloning...")
+        runtime.log("cloning...")
         os.makedirs(repo_path)
         try:
             git(None, "clone", "--mirror", url, repo_path)
@@ -45,7 +34,6 @@ def git_clone_cached(url):
             shutil.rmtree(repo_path)
             raise
     return repo_path
-
 
 def git_already_has_rev(repo, rev):
     try:
@@ -59,25 +47,23 @@ def git_already_has_rev(repo, rev):
     # TODO: Should we assume that tags are reliable?
     return output.strip() == rev
 
-
-def get_files_callback(fields, target):
+def get_files_callback(runtime, fields, target):
     url = fields["url"]
     rev = fields["rev"]
-    cached_dir = git_clone_cached(url)
+    cached_dir = git_clone_cached(runtime, url)
     if not git_already_has_rev(cached_dir, rev):
-        verbose("fetching...")
+        runtime.log("fetching...")
         git(cached_dir, "fetch", "--prune")
     # Checkout the specified revision from the clone into the target dir.
     git(cached_dir, "--work-tree=" + target, "checkout", rev, "--", ".")
 
-
 def peru_plugin_main(*args, **kwargs):
-    global peru_cache_root, is_verbose
-    peru_cache_root = kwargs["cache_root"]
-    is_verbose = kwargs["verbose"]
+    runtime = kwargs["runtime"]
+    def callback_wrapper(fields, target):
+        return get_files_callback(runtime, fields, target)
     kwargs["register"](
         name="git",
         required_fields={"url", "rev"},
         optional_fields = set(),
-        get_files_callback = get_files_callback,
+        get_files_callback = callback_wrapper,
     )

@@ -8,11 +8,8 @@ def _entry_point_kwargs(runtime, plugins):
         plugins[name] = plugin
 
     return {
-        # TODO: make this not a function
-        "cache_root": lambda: runtime.cache.root,
         "register": plugin_register,
         "runtime": runtime,
-        "verbose": runtime.verbose,
     }
 
 def load_plugins(runtime):
