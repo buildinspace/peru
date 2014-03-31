@@ -49,7 +49,7 @@ def git_already_has_rev(repo, rev):
 
 def get_files_callback(runtime, fields, target):
     url = fields["url"]
-    rev = fields["rev"]
+    rev = fields.get("rev", "master")
     cached_dir = git_clone_cached(runtime, url)
     if not git_already_has_rev(cached_dir, rev):
         runtime.log("fetching...")
@@ -63,7 +63,7 @@ def peru_plugin_main(*args, **kwargs):
         return get_files_callback(runtime, fields, target)
     kwargs["register"](
         name="git",
-        required_fields={"url", "rev"},
-        optional_fields = set(),
+        required_fields={"url"},
+        optional_fields = {"rev"},
         get_files_callback = callback_wrapper,
     )
