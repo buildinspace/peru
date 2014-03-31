@@ -57,9 +57,8 @@ module lib:
     type: git
     url: $lib_repo
     rev: $1
-    default_rule: builtfile
 
-    rule builtfile:
+    rule:
         #build: echo built stuff > builtfile
         #export: subdir/
 

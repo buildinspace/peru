@@ -19,6 +19,8 @@ def parse(runtime, filename):
     modules = extract_modules(runtime, blob)
     return Module(blob, rules, modules=modules)
 
+# Only parses fields like "rule foo". The default rule (just "rule") is left
+# in, and parsed by the Rule class.
 def extract_rules(blob):
     rules = {}
     for field in list(blob.keys()):
@@ -61,7 +63,7 @@ class Remote:
 
 class Module:
     def __init__(self, blob, rules, *, modules={}, name=None, remote=None):
-        field_names = {"imports", "default_rule"}
+        field_names = {"imports", "rule"}
         bad_keys = blob.keys() - field_names
         if bad_keys:
             raise RuntimeError("unknown module fields: {}".format(
@@ -75,13 +77,8 @@ class Module:
         self.modules = modules
         self.name = name
         self.remote = remote
-        if "default_rule" in self.fields:
-            d = self.fields["default_rule"]
-            if d not in self.rules:
-                raise RuntimeError(
-                    "default_rule set to {}, but there is no rule by that name"
-                    .format(d))
-            self.default_rule = self.rules[d]
+        if "rule" in self.fields:
+            self.default_rule = rule.Rule(self.fields["rule"])
         else:
             self.default_rule = rule.Rule({})
 
