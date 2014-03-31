@@ -53,18 +53,15 @@ imports:
     lib: lib_dest/
     pathlib: path_lib_dest/
 
-module lib:
-    type: git
+git module lib:
     url: $lib_repo
     rev: $1
-
     rule:
         #build: echo built stuff > builtfile
         #export: subdir/
 
 # Reference the same repo through the path plugin, to test that too.
-module pathlib:
-    type: path
+path module pathlib:
     path: $lib_repo
 END
 }

@@ -35,18 +35,15 @@ def extract_modules(runtime, blob):
     modules = {}
     for field in list(blob.keys()):
         parts = field.split()
-        if len(parts) == 2 and parts[0] == "module":
+        if len(parts) == 3 and parts[1] == "module":
+            type_, _, name = parts
             inner_blob = blob.pop(field) # remove the field from blob
-            name = parts[1]
-            remote = extract_remote(runtime, inner_blob, name)
+            remote = extract_remote(runtime, type_, inner_blob, name)
             rules = extract_rules(inner_blob)
             modules[name] = Module(inner_blob, rules, name=name, remote=remote)
     return modules
 
-def extract_remote(runtime, blob, module_name):
-    if "type" not in blob:
-        raise RuntimeError("Remote modules must have a type.")
-    type_ = blob.pop("type")
+def extract_remote(runtime, type_, blob, module_name):
     if type_ not in runtime.plugins:
         raise RuntimeError("Unknown module type: " + type_)
     plugin = runtime.plugins[type_]
