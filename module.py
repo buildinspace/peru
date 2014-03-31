@@ -28,7 +28,7 @@ def extract_rules(blob):
         if len(parts) == 2 and parts[0] == "rule":
             inner_blob = blob.pop(field) # remove the field from blob
             name = parts[1]
-            rules[name] = rule.Rule(inner_blob)
+            rules[name] = rule.Rule(name, inner_blob)
     return rules
 
 def extract_modules(runtime, blob):
@@ -75,9 +75,9 @@ class Module:
         self.name = name
         self.remote = remote
         if "rule" in self.fields:
-            self.default_rule = rule.Rule(self.fields["rule"])
+            self.default_rule = rule.Rule("<default>", self.fields["rule"])
         else:
-            self.default_rule = rule.Rule({})
+            self.default_rule = rule.Rule("<default>", {})
 
     def build(self, runtime, path):
         if len(path) == 0:
@@ -101,11 +101,14 @@ class Module:
                 return
             working_dir = runtime.tmp_dir()
             self.remote.get_files(working_dir)
-        self.fetch_imports(runtime, rule, working_dir)
+        env_imports = self.fetch_imports_and_return_env(
+            runtime, rule, working_dir)
         if "build" in rule.fields:
             command = rule.fields["build"]
-            # TODO: imports_env
-            subprocess.check_call(command, shell=True, cwd=working_dir)
+            env = dict(os.environ)
+            env.update(env_imports)
+            subprocess.check_call(command, shell=True, cwd=working_dir,
+                                  env=env)
         if self.remote:
             export_dir = working_dir
             if "export" in rule.fields:
@@ -113,10 +116,11 @@ class Module:
             assert os.path.isdir(export_dir)
             runtime.cache.put(key, export_dir)
 
-    def fetch_imports(self, runtime, rule, working_dir):
+    def fetch_imports_and_return_env(self, runtime, rule, working_dir):
         imports = {}
         imports.update(self.fields.get("imports", {}))
         imports.update(rule.fields.get("imports", {}))
+        env = {}
         for target, import_path in imports.items():
             parts = target.split('.')
             module = self.modules[parts[0]]
@@ -131,9 +135,15 @@ class Module:
             module.build_rule(runtime, rule)
             # import the build outputs
             key = module.rule_key(rule)
-            dest = os.path.join(working_dir, import_path)
-            os.makedirs(dest, exist_ok=True)
+            if import_path[0] == "$":
+                # environment import
+                dest = runtime.tmp_dir()
+                env[import_path[1:]] = dest
+            else:
+                dest = os.path.join(working_dir, import_path)
+                os.makedirs(dest, exist_ok=True)
             runtime.cache.get(key, dest)
+        return env
 
     def rule_key(self, rule):
         data = {

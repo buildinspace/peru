@@ -3,7 +3,8 @@ import json
 import subprocess
 
 class Rule:
-    def __init__(self, blob):
+    def __init__(self, name, blob):
+        self.name = name
         if blob is None:
             blob = {}
         field_names = {"build", "export", "imports"}

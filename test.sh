@@ -52,6 +52,10 @@ write_peru_file_at_rev() {
 imports:
     lib: lib_dest/
     pathlib: path_lib_dest/
+    pathlib.env_var_test: \$env_var
+
+rule:
+    build: cp \$env_var/env_var_input env_var_output
 
 git module lib:
     url: $lib_repo
@@ -63,6 +67,9 @@ git module lib:
 # Reference the same repo through the path plugin, to test that too.
 path module pathlib:
     path: $lib_repo
+
+    rule env_var_test:
+        build: echo env file contents > env_var_input
 END
 }
 write_peru_file_at_rev $first_commit
@@ -80,6 +87,11 @@ fi
 # make sure the path rule was pulled in too
 if [ "$(cat path_lib_dest/libfile)" != "hi v2" ] ; then
   fail "libfile doesn't match in the path module"
+fi
+
+# make sure the env var input worked
+if [ "$(cat env_var_output)" != "env file contents" ] ; then
+  fail "environment variable import didn't work"
 fi
 
 # uncomment the build command and confirm it gets built
