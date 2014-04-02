@@ -13,8 +13,10 @@ def main():
         sys.exit(1)
     r = runtime.Runtime()
     m = module.parse(r, peru_file_name)
-    if len(sys.argv) > 1:
-        target = sys.argv[1].split('.')
+    flags = {"-v", "--verbose"}
+    args = [arg for arg in sys.argv if arg not in flags]
+    if len(args) > 1:
+        target = args[1].split('.')
     else:
         target = []
     m.build(r, target)
