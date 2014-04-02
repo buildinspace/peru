@@ -1,9 +1,9 @@
 import os
-import plugin
 import sys
 import tempfile
 
-import cache
+from . import cache
+from . import plugin
 
 class Runtime:
     def __init__(self):

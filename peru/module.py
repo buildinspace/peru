@@ -6,11 +6,11 @@ import sys
 sys.path.append(
     os.path.join(
         os.path.dirname(os.path.realpath(__file__)),
-        "third-party", "PyYAML-3.10", "lib3"))
+        "..", "third-party", "PyYAML-3.10", "lib3"))
 import yaml
 
-import cache
-import rule
+from . import cache
+from . import rule
 
 def parse(runtime, filename):
     with open(filename) as f:

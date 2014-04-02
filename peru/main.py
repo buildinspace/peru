@@ -3,8 +3,8 @@
 import os
 import sys
 
-import runtime
-import module
+from . import runtime
+from . import module
 
 def main():
     peru_file_name = os.getenv("PERU_FILE_NAME") or "peru.yaml"
@@ -18,6 +18,3 @@ def main():
     else:
         target = []
     m.build(r, target)
-
-if __name__ == '__main__':
-    main()

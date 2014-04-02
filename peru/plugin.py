@@ -13,7 +13,7 @@ def _entry_point_kwargs(runtime, plugins):
     }
 
 def load_plugins(runtime):
-    plugins_path = os.path.join(os.path.dirname(__file__), "plugins")
+    plugins_path = os.path.join(os.path.dirname(__file__), "..", "plugins")
     plugins = {}
 
     # TODO: Be less evil.

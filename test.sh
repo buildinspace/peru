@@ -16,7 +16,7 @@ fail() {
 }
 
 run_peru() {
-  $repo_root/main.py
+  "$repo_root/peru.sh"
 }
 
 # Shim git in the $PATH so that all calls are logged.
