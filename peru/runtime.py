@@ -20,5 +20,4 @@ class Runtime:
     def tmp_dir(self):
         os.makedirs("/tmp/peru", exist_ok=True)
         temp = tempfile.mkdtemp(dir="/tmp/peru")
-        self.log("temp dir: " + temp)
         return temp

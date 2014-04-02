@@ -20,11 +20,11 @@ def git(git_dir, *args):
                                    output))
     return output
 
-def git_clone_cached(runtime, url):
+def git_clone_cached(runtime, url, name):
     escaped = urllib.parse.quote(url, safe="")
     repo_path = path.join(runtime.cache.root, "git", escaped)
     if not path.exists(repo_path):
-        runtime.log("cloning...")
+        runtime.log("cloning {}...".format(name))
         os.makedirs(repo_path)
         try:
             git(None, "clone", "--mirror", url, repo_path)
@@ -47,20 +47,20 @@ def git_already_has_rev(repo, rev):
     # TODO: Should we assume that tags are reliable?
     return output.strip() == rev
 
-def get_files_callback(runtime, fields, target):
+def get_files_callback(runtime, fields, target, name):
     url = fields["url"]
     rev = fields.get("rev", "master")
-    cached_dir = git_clone_cached(runtime, url)
+    cached_dir = git_clone_cached(runtime, url, name)
     if not git_already_has_rev(cached_dir, rev):
-        runtime.log("fetching...")
+        runtime.log("fetching {}...".format(name))
         git(cached_dir, "fetch", "--prune")
     # Checkout the specified revision from the clone into the target dir.
     git(cached_dir, "--work-tree=" + target, "checkout", rev, "--", ".")
 
 def peru_plugin_main(*args, **kwargs):
     runtime = kwargs["runtime"]
-    def callback_wrapper(fields, target):
-        return get_files_callback(runtime, fields, target)
+    def callback_wrapper(fields, target, name):
+        return get_files_callback(runtime, fields, target, name)
     kwargs["register"](
         name="git",
         required_fields={"url"},

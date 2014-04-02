@@ -48,15 +48,16 @@ def extract_remote(runtime, type_, blob, module_name):
         raise RuntimeError("Unknown module type: " + type_)
     plugin = runtime.plugins[type_]
     remote_fields = plugin.extract_fields(blob, module_name)
-    return Remote(plugin, remote_fields)
+    return Remote(plugin, remote_fields, module_name)
 
 class Remote:
-    def __init__(self, plugin, fields):
+    def __init__(self, plugin, fields, name):
+        self.name = name
         self.plugin = plugin
         self.fields = fields
 
     def get_files(self, path):
-        self.plugin.get_files_callback(self.fields, path)
+        self.plugin.get_files_callback(self.fields, path, self.name)
 
 class Module:
     def __init__(self, blob, rules, *, modules={}, name=None, remote=None):
