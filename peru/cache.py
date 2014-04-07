@@ -3,6 +3,8 @@ import hashlib
 import json
 import os
 import shutil
+import tarfile
+import tempfile
 
 def compute_key(data):
     # To hash this dictionary of fields, serialize it as a JSON string, and
@@ -35,6 +37,18 @@ class Cache:
         os.makedirs(self._cache_path(cache_key))
         distutils.dir_util.copy_tree(src_dir, self._cache_path(cache_key),
                                      preserve_symlinks=True)
+
+    def put_tree(self, src_dir):
+        fd, path = tempfile.mkstemp()
+        os.close(fd)
+        with tarfile.TarFile.gzopen(path, "w") as tar:
+            for item in os.listdir(src_dir):
+                tar.add(os.path.join(src_dir, item))
+        with open(path, "rb") as tar:
+            hash_ = hashlib.sha1(tar.read()).hexdigest()
+        os.makedirs(os.path.join(self.root, "tree"), exist_ok=True)
+        shutil.move(path, os.path.join(self.root, "tree", hash_))
+        return hash_
 
     def get(self, cache_key, dest_dir):
         src_dir = self._cache_path(cache_key)
