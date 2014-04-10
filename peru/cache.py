@@ -23,6 +23,7 @@ class Cache:
         self.trees_path = os.path.join(root, "trees")
         os.makedirs(self.trees_path, exist_ok=True)
         self._git("init", "--bare")
+        # TODO: Disable automatic gc somehow.
 
     def _git(self, *args, work_tree=None):
         command = ["git"]
@@ -47,4 +48,9 @@ class Cache:
         self._git("read-tree", "--empty")
         self._git("add", "-A", work_tree=src)
         hash_ = self._git("write-tree")
-        return hash_
+        return hash_.strip()
+
+    def tree_status(self, hash_, dest):
+        self._git("read-tree", hash_)
+        out = self._git("status", "--porcelain", work_tree=dest)
+        return out
