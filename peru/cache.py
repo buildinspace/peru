@@ -1,10 +1,7 @@
-import distutils.dir_util
 import hashlib
 import json
 import os
-import shutil
-import tarfile
-import tempfile
+import subprocess
 
 def compute_key(data):
     # To hash this dictionary of fields, serialize it as a JSON string, and
@@ -23,33 +20,31 @@ def compute_key(data):
 class Cache:
     def __init__(self, root):
         self.root = root
-        os.makedirs(root, exist_ok=True)
+        self.trees_path = os.path.join(root, "trees")
+        os.makedirs(self.trees_path, exist_ok=True)
+        self._git("init", "--bare")
 
-    def _cache_path(self, cache_key):
-        return os.path.join(self.root, "cache", cache_key)
+    def _git(self, *args, work_tree=None):
+        command = ["git"]
+        command.append("--git-dir=" + self.trees_path)
+        if work_tree:
+            command.append("--work-tree=" + work_tree)
+        command.extend(args)
+        process = subprocess.Popen(
+            command,
+            stdin=subprocess.DEVNULL,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.STDOUT,
+            universal_newlines=True)
+        output, _ = process.communicate()
+        if process.returncode != 0:
+            raise RuntimeError(
+                "git exited with error code {0}:\n$ {1}\n{2}".format(
+                    process.returncode, " ".join(command), output))
+        return output
 
-    def has(self, cache_key):
-        return os.path.isdir(self._cache_path(cache_key))
-
-    def put(self, cache_key, src_dir):
-        if self.has(cache_key):
-            shutil.rmtree(self._cache_path(cache_key))
-        os.makedirs(self._cache_path(cache_key))
-        distutils.dir_util.copy_tree(src_dir, self._cache_path(cache_key),
-                                     preserve_symlinks=True)
-
-    def put_tree(self, src_dir):
-        fd, path = tempfile.mkstemp()
-        os.close(fd)
-        with tarfile.TarFile.gzopen(path, "w") as tar:
-            for item in os.listdir(src_dir):
-                tar.add(os.path.join(src_dir, item))
-        with open(path, "rb") as tar:
-            hash_ = hashlib.sha1(tar.read()).hexdigest()
-        os.makedirs(os.path.join(self.root, "tree"), exist_ok=True)
-        shutil.move(path, os.path.join(self.root, "tree", hash_))
+    def put_tree(self, src):
+        self._git("read-tree", "--empty")
+        self._git("add", "-A", work_tree=src)
+        hash_ = self._git("write-tree")
         return hash_
-
-    def get(self, cache_key, dest_dir):
-        src_dir = self._cache_path(cache_key)
-        distutils.dir_util.copy_tree(src_dir, dest_dir, preserve_symlinks=True)
