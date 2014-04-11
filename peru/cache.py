@@ -1,3 +1,4 @@
+import collections
 import hashlib
 import json
 import os
@@ -52,5 +53,27 @@ class Cache:
 
     def tree_status(self, hash_, dest):
         self._git("read-tree", hash_)
-        out = self._git("status", "--porcelain", work_tree=dest)
-        return out
+        # TODO: Test this with weird file names, like with newlines.
+        out = self._git("status", "--porcelain", "-z", work_tree=dest)
+        present = set()
+        added = set()
+        deleted = set()
+        modified = set()
+        for line in out.strip("\0").split("\0"):
+            status = line[:2]
+            file_ = line[3:]
+            if status == "A ":
+                present.add(file_)
+            elif status == "??":
+                added.add(file_)
+            elif status == "AD":
+                deleted.add(file_)
+            elif status == "AM":
+                modified.add(file_)
+            else:
+                raise RuntimeError("Unknown git status: " + status)
+        return TreeStatus(present, added, deleted, modified)
+
+TreeStatus = collections.namedtuple(
+    "TreeStatus",
+    ["present", "added", "deleted", "modified"])
