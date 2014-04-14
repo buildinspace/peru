@@ -61,12 +61,15 @@ class Cache:
             # branch does exist, do the equivalent of checkout for a bare repo
             self._git("symbolic-ref", "HEAD", "refs/heads/" + name)
         self._git("add", "--all", work_tree=src)
-        commit_message = name
-        if blob:
-            commit_message += "\n\n" + blob
-        self._git("commit", "--message", commit_message, work_tree=src)
+        commit_message = name + ("\n\n" + blob if blob else "")
+        self._git("commit", "--allow-empty", "--message", commit_message,
+                  work_tree=src)
         hash_ = self._git("write-tree")
         return hash_.strip()
+
+    def get_tree(self, hash_, dest):
+        self._git("read-tree", hash_)
+        self._git("checkout-index", "--all", work_tree=dest)
 
     def tree_status(self, hash_, dest):
         self._git("read-tree", hash_)
