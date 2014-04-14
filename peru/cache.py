@@ -26,7 +26,10 @@ class Cache:
         self._git("init", "--bare")
         # TODO: Disable automatic gc somehow.
 
-    def _git(self, *args, work_tree=None):
+    class GitError(RuntimeError):
+        pass
+
+    def _git(self, *args, work_tree=None, input=None):
         command = ["git"]
         command.append("--git-dir=" + self.trees_path)
         if work_tree:
@@ -34,20 +37,34 @@ class Cache:
         command.extend(args)
         process = subprocess.Popen(
             command,
-            stdin=subprocess.DEVNULL,
+            stdin=subprocess.PIPE,
             stdout=subprocess.PIPE,
             stderr=subprocess.STDOUT,
             universal_newlines=True)
-        output, _ = process.communicate()
+        output, _ = process.communicate(input=input)
         if process.returncode != 0:
-            raise RuntimeError(
-                "git exited with error code {0}:\n$ {1}\n{2}".format(
-                    process.returncode, " ".join(command), output))
+            raise self.GitError(
+                'git command "{}" returned error code {}:\n{}'.format(
+                    " ".join(command),
+                    process.returncode,
+                    output))
         return output
 
-    def put_tree(self, src):
-        self._git("read-tree", "--empty")
-        self._git("add", "-A", work_tree=src)
+    def put_tree(self, src, name, blob=None):
+        try:
+            # throw if branch doesn't exist
+            self._git("show-ref", "--verify", "--quiet", "refs/heads/" + name)
+        except self.GitError:
+            # branch doesn't exist, create it
+            self._git("checkout", "--orphan", name, work_tree=src)
+        else:
+            # branch does exist, do the equivalent of checkout for a bare repo
+            self._git("symbolic-ref", "HEAD", "refs/heads/" + name)
+        self._git("add", "--all", work_tree=src)
+        commit_message = name
+        if blob:
+            commit_message += "\n\n" + blob
+        self._git("commit", "--message", commit_message, work_tree=src)
         hash_ = self._git("write-tree")
         return hash_.strip()
 
