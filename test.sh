@@ -31,12 +31,20 @@ chmod 755 $shim_dir/git
 export PATH=$shim_dir:$PATH
 
 # create a git repo under /tmp with some files
-lib_repo=`mktemp -d`
+submodule_repo=`mktemp -d --tmpdir sub.XXXXXX`
+cd $submodule_repo
+git init -q
+echo subrepo contents > subrepofile
+git add -A
+git commit -qm "submodule repo commit"
+lib_repo=`mktemp -d --tmpdir lib.XXXXXX`
 cd $lib_repo
 git init -q
 echo hi v1 > libfile
 mkdir subdir
 echo stuff > subdir/subfile
+# add the subrepo to test subrepo fetching too
+git submodule add -q $submodule_repo submodule
 git add -A
 git commit -qam "libfile v1"
 first_commit=`git rev-parse HEAD`
@@ -45,7 +53,7 @@ git commit -qam "libfile v2"
 second_commit=`git rev-parse HEAD`
 
 # create a peru project that references that git repo
-exe_repo=`mktemp -d`
+exe_repo=`mktemp -d --tmpdir exe.XXXXXX`
 cd $exe_repo
 write_peru_file_at_rev() {
   cat << END > $exe_repo/peru.yaml
@@ -92,6 +100,11 @@ fi
 # make sure the env var input worked
 if [ "$(cat env_var_output)" != "env file contents" ] ; then
   fail "environment variable import didn't work"
+fi
+
+# make sure the subrepo contents made it too
+if [ "$(cat lib_dest/submodule/subrepofile)" != "subrepo contents" ] ; then
+  fail "subrepo contents didn't get pulled in"
 fi
 
 # uncomment the build command and confirm it gets built
