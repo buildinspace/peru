@@ -1,34 +1,29 @@
-import collections
-import os
-import sys
+import pkgutil
 
-def _entry_point_kwargs(runtime, plugins):
+from . import plugins
+
+
+def _entry_point_kwargs(runtime, plugins_dict):
     def plugin_register(name, *args, **kwargs):
         plugin = Plugin(name, *args, **kwargs)
-        plugins[name] = plugin
+        plugins_dict[name] = plugin
 
     return {
         "register": plugin_register,
         "runtime": runtime,
     }
 
+
 def load_plugins(runtime):
-    plugins_path = os.path.join(os.path.dirname(__file__), "..", "plugins")
-    plugins = {}
-
-    # TODO: Be less evil.
-    sys.path.append(plugins_path)
-
-    for name in os.listdir(plugins_path):
-        if not name.endswith("_plugin.py"):
-            continue
-        with open(os.path.join(plugins_path, name)) as f:
-            code = f.read()
-        plugin_module = __import__(name[:-3])
+    plugins_dict = {}
+    for _, name, _ in pkgutil.iter_modules(plugins.__path__):
+        plugin_module = __import__(plugins.__name__ + "." + name,
+                                   fromlist="dummy")
         entry_point = plugin_module.peru_plugin_main
-        entry_point(**_entry_point_kwargs(runtime, plugins))
+        entry_point(**_entry_point_kwargs(runtime, plugins_dict))
 
-    return plugins
+    return plugins_dict
+
 
 class Plugin:
     def __init__(self, name, required_fields, optional_fields,

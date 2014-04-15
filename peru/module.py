@@ -1,12 +1,6 @@
 import os
 import subprocess
 import sys
-
-# TODO: Replace this with pip and also peru bootstrapping.
-sys.path.append(
-    os.path.join(
-        os.path.dirname(os.path.realpath(__file__)),
-        "..", "third-party", "PyYAML-3.10", "lib3"))
 import yaml
 
 from . import cache

@@ -4,4 +4,6 @@
 
 repo_root=$(dirname $(realpath $BASH_SOURCE))
 
-PYTHONPATH="$repo_root" "$repo_root/bin/peru" "$@"
+yaml_path="$repo_root/third-party/PyYAML-3.10/lib3"
+
+PYTHONPATH="$repo_root:$yaml_path" "$repo_root/bin/peru" "$@"
