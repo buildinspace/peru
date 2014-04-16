@@ -4,6 +4,7 @@ import json
 import os
 import subprocess
 
+
 def compute_key(data):
     # To hash this dictionary of fields, serialize it as a JSON string, and
     # take the SHA1 of that string. Dictionary key order is unspecified, so
@@ -18,9 +19,12 @@ def compute_key(data):
     sha1.update(json_representation.encode("utf8"))
     return sha1.hexdigest()
 
+
 class Cache:
     def __init__(self, root):
         self.root = root
+        self.keys_path = os.path.join(root, "keys")
+        os.makedirs(self.keys_path, exist_ok=True)
         self.trees_path = os.path.join(root, "trees")
         os.makedirs(self.trees_path, exist_ok=True)
         self._git("init", "--bare")
@@ -93,6 +97,15 @@ class Cache:
             else:
                 raise RuntimeError("Unknown git status: " + status)
         return TreeStatus(present, added, deleted, modified)
+
+    def put_key(self, key, val):
+        with open(os.path.join(self.keys_path, key), "w") as f:
+            f.write(val)
+
+    def get_key(self, key):
+        with open(os.path.join(self.keys_path, key)) as f:
+            return f.read()
+
 
 TreeStatus = collections.namedtuple(
     "TreeStatus",
