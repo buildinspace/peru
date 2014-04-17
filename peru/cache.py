@@ -56,7 +56,7 @@ class Cache:
                     output))
         return output
 
-    def put_tree(self, src, name, blob=None):
+    def import_tree(self, src, name, blob=None):
         try:
             # throw if branch doesn't exist
             self._git("show-ref", "--verify", "--quiet", "refs/heads/" + name)
@@ -73,8 +73,11 @@ class Cache:
         hash_ = self._git("write-tree")
         return hash_.strip()
 
-    def get_tree(self, hash_, dest):
+    # TODO: This method needs to take a filesystem lock.  Probably all of them
+    # do.
+    def export_tree(self, hash_, dest):
         self._git("read-tree", hash_)
+        os.makedirs(dest, exist_ok=True)
         self._git("checkout-index", "--all", work_tree=dest)
 
     def tree_status(self, hash_, dest):
@@ -101,12 +104,19 @@ class Cache:
         return TreeStatus(present, added, deleted, modified)
 
     def tmp_file(self):
-        tmp_fd, tmp_path = tempfile.mkstemp(dir=self.tmp_path)
-        os.close(tmp_fd)
-        return tmp_path
+        fd, path = tempfile.mkstemp(dir=self.tmp_path)
+        os.close(fd)
+        os.chmod(path, 0o644)  # See comment in tmp_dir().
+        return path
 
     def tmp_dir(self):
-        return tempfile.mkdtemp(dir=self.tmp_path)
+        # Restrictive permissions are a security measure for temp files created
+        # in a shared location like /tmp. Our temp directory is under
+        # .peru-cache/, so we don't need to be extra restrictive. Also weird
+        # permissions confuse utilities like os.makedirs(exist_ok=True).
+        path = tempfile.mkdtemp(dir=self.tmp_path)
+        os.chmod(path, 0o755)
+        return path
 
 
 class KeyVal:

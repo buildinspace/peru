@@ -62,6 +62,7 @@ class Remote:
         })
         return digest
 
+    # TODO: Imports should be included before this tree hits the cache.
     def get_tree(self, cache):
         key = self.cache_key()
         if key in cache.keyval:
@@ -70,7 +71,7 @@ class Remote:
         tmp_dir = cache.tmp_dir()
         try:
             self.plugin.get_files_callback(self.fields, tmp_dir, self.name)
-            tree = cache.put_tree(tmp_dir, self.name)
+            tree = cache.import_tree(tmp_dir, self.name)
         finally:
             shutil.rmtree(tmp_dir)
         cache.keyval[key] = tree
