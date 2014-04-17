@@ -2,7 +2,9 @@ import collections
 import hashlib
 import json
 import os
+import shutil
 import subprocess
+import tempfile
 
 
 def compute_key(data):
@@ -23,6 +25,8 @@ def compute_key(data):
 class Cache:
     def __init__(self, root):
         self.root = root
+        self.tmp_path = os.path.join(root, "tmp")
+        os.makedirs(self.tmp_path, exist_ok=True)
         self.keys_path = os.path.join(root, "keys")
         os.makedirs(self.keys_path, exist_ok=True)
         self.trees_path = os.path.join(root, "trees")
@@ -99,8 +103,11 @@ class Cache:
         return TreeStatus(present, added, deleted, modified)
 
     def put_key(self, key, val):
-        with open(os.path.join(self.keys_path, key), "w") as f:
+        # Write to a tmp file first, to avoid partial reads.
+        tmp_fd, tmp_path = tempfile.mkstemp(dir=self.tmp_path)
+        with open(tmp_fd, "w") as f:
             f.write(val)
+        shutil.move(tmp_path, os.path.join(self.keys_path, key))
 
     def get_key(self, key):
         with open(os.path.join(self.keys_path, key)) as f:
