@@ -14,6 +14,7 @@ def _entry_point_kwargs(runtime, plugins_dict):
     }
 
 
+# TODO: Stop taking this argument. Plugins shouldn't be in-process.
 def load_plugins(runtime):
     plugins_dict = {}
     for _, name, _ in pkgutil.iter_modules(plugins.__path__):

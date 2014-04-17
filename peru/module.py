@@ -1,10 +1,11 @@
 import os
+import shutil
 import subprocess
-import sys
 import yaml
 
 from . import cache
 from . import rule
+
 
 def parse(runtime, filename):
     with open(filename) as f:
@@ -13,6 +14,7 @@ def parse(runtime, filename):
     modules = extract_modules(runtime, blob)
     return Module(blob, rules, modules=modules)
 
+
 # Only parses fields like "rule foo". The default rule (just "rule") is left
 # in, and parsed by the Rule class.
 def extract_rules(blob):
@@ -20,10 +22,11 @@ def extract_rules(blob):
     for field in list(blob.keys()):
         parts = field.split()
         if len(parts) == 2 and parts[0] == "rule":
-            inner_blob = blob.pop(field) # remove the field from blob
+            inner_blob = blob.pop(field)  # remove the field from blob
             name = parts[1]
             rules[name] = rule.Rule(name, inner_blob)
     return rules
+
 
 def extract_modules(runtime, blob):
     modules = {}
@@ -31,11 +34,12 @@ def extract_modules(runtime, blob):
         parts = field.split()
         if len(parts) == 3 and parts[1] == "module":
             type_, _, name = parts
-            inner_blob = blob.pop(field) # remove the field from blob
+            inner_blob = blob.pop(field)  # remove the field from blob
             remote = extract_remote(runtime, type_, inner_blob, name)
             rules = extract_rules(inner_blob)
             modules[name] = Module(inner_blob, rules, name=name, remote=remote)
     return modules
+
 
 def extract_remote(runtime, type_, blob, module_name):
     if type_ not in runtime.plugins:
@@ -44,14 +48,34 @@ def extract_remote(runtime, type_, blob, module_name):
     remote_fields = plugin.extract_fields(blob, module_name)
     return Remote(plugin, remote_fields, module_name)
 
+
 class Remote:
     def __init__(self, plugin, fields, name):
         self.name = name
         self.plugin = plugin
         self.fields = fields
 
-    def get_files(self, path):
-        self.plugin.get_files_callback(self.fields, path, self.name)
+    def _cache_key(self):
+        digest = cache.compute_key({
+            "plugin": self.plugin.name,
+            "fields": self.fields,
+        })
+        return digest
+
+    def get_tree(self, cache_instance):
+        key = self._cache_key()
+        if cache_instance.has_key(key):
+            # tree is already in cache
+            return cache_instance.get_key(key)
+        tmp_dir = cache_instance.tmp_dir()
+        try:
+            self.plugin.get_files_callback(self.fields, tmp_dir, self.name)
+            tree = cache_instance.put_tree(tmp_dir, self.name)
+        finally:
+            shutil.rmtree(tmp_dir)
+        cache_instance.put_key(key, tree)
+        return tree
+
 
 class Module:
     def __init__(self, blob, rules, *, modules={}, name=None, remote=None):
@@ -63,7 +87,7 @@ class Module:
         overlapping_names = rules.keys() & modules.keys()
         if overlapping_names:
             raise RuntimeError("rules and modules with the same name: " +
-                ", ".join(overlapping_names))
+                               ", ".join(overlapping_names))
         self.fields = blob
         self.rules = rules
         self.modules = modules

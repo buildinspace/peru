@@ -14,9 +14,8 @@ def compute_key(data):
     # JSON slightly more compact, and protects us against changes in the
     # default.  "ensure_ascii" defaults to true, so specifying it just
     # protects us from changes in the default.
-    json_representation = json.dumps(data, sort_keys=True,
-                                     ensure_ascii=True,
-                                     separators=(',', ':'))
+    json_representation = json.dumps(
+        data, sort_keys=True, ensure_ascii=True, separators=(',', ':'))
     sha1 = hashlib.sha1()
     sha1.update(json_representation.encode("utf8"))
     return sha1.hexdigest()
@@ -104,14 +103,25 @@ class Cache:
 
     def put_key(self, key, val):
         # Write to a tmp file first, to avoid partial reads.
-        tmp_fd, tmp_path = tempfile.mkstemp(dir=self.tmp_path)
-        with open(tmp_fd, "w") as f:
+        tmp_path = self.tmp_file()
+        with open(tmp_path, "w") as f:
             f.write(val)
         shutil.move(tmp_path, os.path.join(self.keys_path, key))
 
     def get_key(self, key):
         with open(os.path.join(self.keys_path, key)) as f:
             return f.read()
+
+    def has_key(self, key):
+        return os.path.exists(os.path.join(self.keys_path, key))
+
+    def tmp_file(self):
+        tmp_fd, tmp_path = tempfile.mkstemp(dir=self.tmp_path)
+        os.close(tmp_fd)
+        return tmp_path
+
+    def tmp_dir(self):
+        return tempfile.mkdtemp(dir=self.tmp_path)
 
 
 TreeStatus = collections.namedtuple(
