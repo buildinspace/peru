@@ -3,7 +3,7 @@ import shutil
 import subprocess
 import yaml
 
-from . import cache
+from . import cache as cache_module
 from . import rule
 
 
@@ -55,25 +55,25 @@ class Remote:
         self.plugin = plugin
         self.fields = fields
 
-    def _cache_key(self):
-        digest = cache.compute_key({
+    def cache_key(self):
+        digest = cache_module.compute_key({
             "plugin": self.plugin.name,
             "fields": self.fields,
         })
         return digest
 
-    def get_tree(self, cache_instance):
-        key = self._cache_key()
-        if cache_instance.has_key(key):
+    def get_tree(self, cache):
+        key = self.cache_key()
+        if key in cache.keyval:
             # tree is already in cache
-            return cache_instance.get_key(key)
-        tmp_dir = cache_instance.tmp_dir()
+            return cache.keyval[key]
+        tmp_dir = cache.tmp_dir()
         try:
             self.plugin.get_files_callback(self.fields, tmp_dir, self.name)
-            tree = cache_instance.put_tree(tmp_dir, self.name)
+            tree = cache.put_tree(tmp_dir, self.name)
         finally:
             shutil.rmtree(tmp_dir)
-        cache_instance.put_key(key, tree)
+        cache.keyval[key] = tree
         return tree
 
 
@@ -169,4 +169,4 @@ class Module:
             "remote": self.remote.fields,
             "rule": rule.fields,
         }
-        return cache.compute_key(data)
+        return cache_module.compute_key(data)

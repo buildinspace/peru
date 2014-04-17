@@ -26,12 +26,11 @@ class Cache:
         self.root = root
         self.tmp_path = os.path.join(root, "tmp")
         os.makedirs(self.tmp_path, exist_ok=True)
-        self.keys_path = os.path.join(root, "keys")
-        os.makedirs(self.keys_path, exist_ok=True)
+        self.keyval = KeyVal(self)
         self.trees_path = os.path.join(root, "trees")
         os.makedirs(self.trees_path, exist_ok=True)
         self._git("init", "--bare")
-        # TODO: Disable automatic gc somehow.
+        # TODO: Disable automatic gc somehow?
 
     class GitError(RuntimeError):
         pass
@@ -101,20 +100,6 @@ class Cache:
                 raise RuntimeError("Unknown git status: " + status)
         return TreeStatus(present, added, deleted, modified)
 
-    def put_key(self, key, val):
-        # Write to a tmp file first, to avoid partial reads.
-        tmp_path = self.tmp_file()
-        with open(tmp_path, "w") as f:
-            f.write(val)
-        shutil.move(tmp_path, os.path.join(self.keys_path, key))
-
-    def get_key(self, key):
-        with open(os.path.join(self.keys_path, key)) as f:
-            return f.read()
-
-    def has_key(self, key):
-        return os.path.exists(os.path.join(self.keys_path, key))
-
     def tmp_file(self):
         tmp_fd, tmp_path = tempfile.mkstemp(dir=self.tmp_path)
         os.close(tmp_fd)
@@ -122,6 +107,30 @@ class Cache:
 
     def tmp_dir(self):
         return tempfile.mkdtemp(dir=self.tmp_path)
+
+
+class KeyVal:
+    def __init__(self, cache):
+        self.cache = cache
+        self.keyval_root = os.path.join(cache.root, "keyval")
+        os.makedirs(self.keyval_root, exist_ok=True)
+
+    def __getitem__(self, key):
+        with open(self.key_path(key)) as f:
+            return f.read()
+
+    def __setitem__(self, key, val):
+        # Write to a tmp file first, to avoid partial reads.
+        tmp_path = self.cache.tmp_file()
+        with open(tmp_path, "w") as f:
+            f.write(val)
+        shutil.move(tmp_path, self.key_path(key))
+
+    def __contains__(self, key):
+        return os.path.isfile(self.key_path(key))
+
+    def key_path(self, key):
+        return os.path.join(self.keyval_root, key)
 
 
 TreeStatus = collections.namedtuple(
