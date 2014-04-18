@@ -30,6 +30,8 @@ class Cache:
         self.trees_path = os.path.join(root, "trees")
         os.makedirs(self.trees_path, exist_ok=True)
         self._git("init", "--bare")
+        self._git("config", "user.name", "peru")
+        self._git("config", "user.email", "peru")
         # TODO: Disable automatic gc somehow?
 
     class GitError(RuntimeError):
@@ -43,6 +45,7 @@ class Cache:
         command.extend(args)
         process = subprocess.Popen(
             command,
+            env=self._git_env(),
             stdin=subprocess.PIPE,
             stdout=subprocess.PIPE,
             stderr=subprocess.STDOUT,
@@ -55,6 +58,16 @@ class Cache:
                     process.returncode,
                     output))
         return output
+
+    # Prevents git from reading any global configs.
+    def _git_env(self):
+        vars_to_delete = ["HOME", "XDG_CONFIG_HOME"]
+        env = dict(os.environ)
+        for var in vars_to_delete:
+            if var in env:
+                del env[var]
+        env["GIT_CONFIG_NOSYSTEM"] = "true"
+        return env
 
     def import_tree(self, src, name, blob=None):
         try:
