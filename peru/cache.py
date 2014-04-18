@@ -28,11 +28,29 @@ class Cache:
         os.makedirs(self.tmp_path, exist_ok=True)
         self.keyval = KeyVal(self)
         self.trees_path = os.path.join(root, "trees")
-        os.makedirs(self.trees_path, exist_ok=True)
+        self._init_trees()
+
+    def _init_trees(self):
+        empty_rev_path = os.path.join(self.trees_path, "empty_rev")
+        if os.path.exists(self.trees_path):
+            with open(empty_rev_path) as f:
+                self._empty_rev = f.read()
+            return
+
+        os.makedirs(self.trees_path)
         self._git("init", "--bare")
         self._git("config", "user.name", "peru")
         self._git("config", "user.email", "peru")
-        # TODO: Disable automatic gc somehow?
+        tmp_dir = self.tmp_dir()
+        try:
+            self._git("checkout", "--orphan", "<empty>", work_tree=tmp_dir)
+            self._git("commit", "--allow-empty", "--message", "<empty>",
+                      work_tree=tmp_dir)
+        finally:
+            shutil.rmtree(tmp_dir)
+        self._empty_rev = self._git("rev-parse", "HEAD").strip()
+        with open(empty_rev_path, "w") as f:
+            f.write(self._empty_rev)
 
     class GitError(RuntimeError):
         pass
@@ -83,39 +101,29 @@ class Cache:
         commit_message = name + ("\n\n" + blob if blob else "")
         self._git("commit", "--allow-empty", "--message", commit_message,
                   work_tree=src)
-        hash_ = self._git("write-tree")
+        hash_ = self._git("rev-parse", "HEAD")
         return hash_.strip()
 
     # TODO: This method needs to take a filesystem lock.  Probably all of them
     # do.
-    def export_tree(self, hash_, dest):
-        self._git("read-tree", hash_)
+    def export_tree(self, hash_, dest, previous_rev=None):
+        if previous_rev is None:
+            previous_rev = self._empty_rev
+        previous_hash = self._resolve_hash(previous_rev)
+
+        # We can't checkout without a work tree, so just overwrite HEAD and
+        # reset the index.
+        with open(os.path.join(self.trees_path, "HEAD"), "w") as HEAD:
+            HEAD.write(previous_hash)
+        self._git("read-tree", "HEAD")
+
         os.makedirs(dest, exist_ok=True)
-        self._git("checkout-index", "--all", work_tree=dest)
+        self._git("checkout", hash_, work_tree=dest)
 
-    def tree_status(self, hash_, dest):
-        self._git("read-tree", hash_)
-        # TODO: Test this with weird file names, like with newlines.
-        out = self._git("status", "--porcelain", "-z", work_tree=dest)
-        present = set()
-        added = set()
-        deleted = set()
-        modified = set()
-        for line in out.strip("\0").split("\0"):
-            status = line[:2]
-            file_ = line[3:]
-            if status == "A ":
-                present.add(file_)
-            elif status == "??":
-                added.add(file_)
-            elif status == "AD":
-                deleted.add(file_)
-            elif status == "AM":
-                modified.add(file_)
-            else:
-                raise RuntimeError("Unknown git status: " + status)
-        return TreeStatus(present, added, deleted, modified)
+    def _resolve_hash(self, rev):
+        return self._git("rev-parse", rev).strip()
 
+    # TODO: Have tmp_file and tmp_dir return a nice context manager.
     def tmp_file(self):
         fd, path = tempfile.mkstemp(dir=self.tmp_path)
         os.close(fd)
