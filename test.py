@@ -15,17 +15,18 @@ r.verbose = True
 
 c = r.cache
 
-m = module.Remote(r.plugins["git"],
-                  {"url": "https://github.com/oconnor663/peru.git"},
-                  "mygitremote")
+m = module.Remote("mygitremote",
+                  imports={},
+                  plugin=r.plugins["git"],
+                  plugin_fields={
+                      "url": "https://github.com/oconnor663/peru.git",
+                  })
+
 
 t = m.get_tree(c)
 print(t)
 
-myrule = rule.Rule("funrule", {
-    "build": "mkdir foo; cp LICENSE foo/bar",
-    "export": "foo",
-})
+myrule = rule.Rule("funrule", {}, "mkdir foo; cp LICENSE foo/bar", "foo")
 
 t2 = myrule.get_tree(c, t)
 print(t2)

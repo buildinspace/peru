@@ -6,22 +6,23 @@ from . import cache as cache_module
 
 
 class Rule:
-    def __init__(self, name, blob):
+    def __init__(self, name, imports, build_command, export):
         self.name = name
-        if blob is None:
-            blob = {}
-        field_names = {"build", "export", "imports"}
-        bad_keys = blob.keys() - field_names
-        if bad_keys:
-            raise RuntimeError("unknown rule fields: " + ", ".join(bad_keys))
-        self.fields = blob
+        self.imports = imports
+        self.build_command = build_command
+        self.export = export
 
-    def cache_key(self, input_tree):
-        digest = cache_module.compute_key({
-            "input_tree": input_tree,
-            "fields": self.fields,
+    def cache_key(self, module_tree):
+        return cache_module.compute_key({
+            # TODO: Figure out how to get import trees in here.
+            "module_tree": module_tree,
+            "build": self.build_command,
+            "export": self.export,
         })
-        return digest
+
+    def build(self, path):
+        if self.build_command:
+            subprocess.check_call(self.build_command, shell=True, cwd=path)
 
     # TODO: Handle imports.
     def get_tree(self, cache, input_tree):
@@ -32,12 +33,10 @@ class Rule:
         tmp_dir = cache.tmp_dir()
         try:
             cache.export_tree(input_tree, tmp_dir)
-            if "build" in self.fields:
-                subprocess.check_call(self.fields["build"], shell=True,
-                                      cwd=tmp_dir)
+            self.build(tmp_dir)
             export_dir = tmp_dir
-            if "export" in self.fields:
-                export_dir = os.path.join(tmp_dir, self.fields["export"])
+            if self.export:
+                export_dir = os.path.join(tmp_dir, self.export)
             tree = cache.import_tree(export_dir, self.name)
         finally:
             # TODO: Test that everything in the temp dir gets cleaned.

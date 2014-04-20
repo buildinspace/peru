@@ -50,15 +50,17 @@ def extract_remote(runtime, type_, blob, module_name):
 
 
 class Remote:
-    def __init__(self, plugin, fields, name):
+    def __init__(self, name, imports, plugin, plugin_fields):
         self.name = name
+        self.imports = imports
         self.plugin = plugin
-        self.fields = fields
+        self.plugin_fields = plugin_fields
 
     def cache_key(self):
         digest = cache_module.compute_key({
+            # TODO: Get imports in here
             "plugin": self.plugin.name,
-            "fields": self.fields,
+            "plugin_fields": self.plugin_fields,
         })
         return digest
 
@@ -70,7 +72,9 @@ class Remote:
             return cache.keyval[key]
         tmp_dir = cache.tmp_dir()
         try:
-            self.plugin.get_files_callback(self.fields, tmp_dir, self.name)
+            self.plugin.get_files_callback(self.plugin_fields,
+                                           tmp_dir,
+                                           self.name)
             tree = cache.import_tree(tmp_dir, self.name)
         finally:
             shutil.rmtree(tmp_dir)
