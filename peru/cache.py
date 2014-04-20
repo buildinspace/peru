@@ -31,26 +31,12 @@ class Cache:
         self._init_trees()
 
     def _init_trees(self):
-        empty_rev_path = os.path.join(self.trees_path, "empty_rev")
         if os.path.exists(self.trees_path):
-            with open(empty_rev_path) as f:
-                self._empty_rev = f.read()
             return
-
         os.makedirs(self.trees_path)
         self._git("init", "--bare")
         self._git("config", "user.name", "peru")
         self._git("config", "user.email", "peru")
-        tmp_dir = self.tmp_dir()
-        try:
-            self._git("checkout", "--orphan", "<empty>", work_tree=tmp_dir)
-            self._git("commit", "--allow-empty", "--message", "<empty>",
-                      work_tree=tmp_dir)
-        finally:
-            shutil.rmtree(tmp_dir)
-        self._empty_rev = self._git("rev-parse", "HEAD").strip()
-        with open(empty_rev_path, "w") as f:
-            f.write(self._empty_rev)
 
     class GitError(RuntimeError):
         pass
@@ -69,6 +55,7 @@ class Cache:
             stderr=subprocess.STDOUT,
             universal_newlines=True)
         output, _ = process.communicate(input=input)
+        output = output.strip()
         if process.returncode != 0:
             raise self.GitError(
                 'git command "{}" returned error code {}:\n{}'.format(
@@ -88,8 +75,13 @@ class Cache:
         return env
 
     def import_tree(self, src, name, blob=None):
+        # We're going to return a tree hash to the caller, but we want a real
+        # commit representing that tree to be stored in a real branch. That's
+        # both because we don't want this tree to get garbage-collected, and
+        # because it's nicer for debugging to be able to see the output of your
+        # rules.
         try:
-            # throw if branch doesn't exist
+            # throws if branch doesn't exist
             self._git("show-ref", "--verify", "--quiet", "refs/heads/" + name)
         except self.GitError:
             # branch doesn't exist, create it
@@ -101,27 +93,36 @@ class Cache:
         commit_message = name + ("\n\n" + blob if blob else "")
         self._git("commit", "--allow-empty", "--message", commit_message,
                   work_tree=src)
-        hash_ = self._git("rev-parse", "HEAD")
-        return hash_.strip()
+        tree = self._git("write-tree", "HEAD")
+        return tree
+
+    def _dummy_commit(self, tree):
+        if tree is None:
+            self._git("read-tree", "--empty")
+            tree = self._git("write-tree")
+        self._git("read-tree", tree)
+        return self._git("commit-tree", "-m", "<dummy>", tree)
 
     # TODO: This method needs to take a filesystem lock.  Probably all of them
     # do.
-    def export_tree(self, hash_, dest, previous_rev=None):
-        if previous_rev is None:
-            previous_rev = self._empty_rev
-        previous_hash = self._resolve_hash(previous_rev)
+    def export_tree(self, tree, dest, previous_tree=None):
+        # We want to use git-checkout semantics, and for that we need commits
+        # instead of trees.
+        previous_commit = self._dummy_commit(previous_tree)
+        next_commit = self._dummy_commit(tree)
 
-        # We can't checkout without a work tree, so just overwrite HEAD and
-        # reset the index.
+        # We need HEAD to be previous_commit, but we can't run git-checkout
+        # in a bare repo. Just write to the HEAD file instead.
         with open(os.path.join(self.trees_path, "HEAD"), "w") as HEAD:
-            HEAD.write(previous_hash)
+            HEAD.write(previous_commit)
+        # And reset the index.
         self._git("read-tree", "HEAD")
 
         os.makedirs(dest, exist_ok=True)
-        self._git("checkout", hash_, work_tree=dest)
+        self._git("checkout", next_commit, work_tree=dest)
 
     def _resolve_hash(self, rev):
-        return self._git("rev-parse", rev).strip()
+        return self._git("rev-parse", rev)
 
     # TODO: Have tmp_file and tmp_dir return a nice context manager.
     def tmp_file(self):
