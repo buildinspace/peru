@@ -118,7 +118,8 @@ class Cache:
         # And reset the index.
         self._git("read-tree", "HEAD")
 
-        os.makedirs(dest, exist_ok=True)
+        if not os.path.exists(dest):
+            os.makedirs(dest)
         self._git("checkout", next_commit, work_tree=dest)
 
     def _resolve_hash(self, rev):

@@ -2,48 +2,41 @@
 
 import os
 import sys
+import shutil
+import tempfile
 
 sys.path.append(os.path.join(os.path.dirname(__file__),
                              "third-party/PyYAML-3.10/lib3"))
 
-from peru import runtime, module, rule
+from peru.runtime import Runtime
+from peru.parser import Parser
+from peru.resolver import Resolver
 
-os.environ["PERU_CACHE_NAME"] = "/tmp/f1"
 
-r = runtime.Runtime()
+cache_path = "/tmp/testcache"
+if os.path.exists(cache_path):
+    shutil.rmtree(cache_path)
+os.environ["PERU_CACHE_NAME"] = cache_path
+
+r = Runtime()
 r.verbose = True
 
-c = r.cache
+parser = Parser(r.plugins)
 
-m = module.Remote("mygitremote",
-                  imports={},
-                  plugin=r.plugins["git"],
-                  plugin_fields={
-                      "url": "https://github.com/oconnor663/peru.git",
-                  })
+scope = parser.parse_string("""
+git module test:
+    url: https://github.com/oconnor663/peru.git
 
+    rule license:
+        build: mkdir out; cp LICENSE out
+        export: out
+""")
 
-t = m.get_tree(c)
-print(t)
+resolver = Resolver(scope, r.cache)
 
-myrule = rule.Rule("funrule", {}, "mkdir foo; cp LICENSE foo/bar", "foo")
+tree = resolver.get_tree("test.license")
+print("test.license tree:", tree)
 
-t2 = myrule.get_tree(c, t)
-print(t2)
-
-
-from peru.parser import Parser
-
-p = Parser(r.plugins)
-
-code = """
-git module foo:
-    url: bar baz
-    rule bing:
-        build: magic command
-"""
-
-scope = p.parse_string(code)
-print(scope)
-print(scope["foo"].plugin_fields)
-print(scope["foo.bing"].build_command)
+export_path = tempfile.mkdtemp()
+print("export dir", export_path)
+r.cache.export_tree(tree, export_path)
