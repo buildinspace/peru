@@ -30,3 +30,20 @@ myrule = rule.Rule("funrule", {}, "mkdir foo; cp LICENSE foo/bar", "foo")
 
 t2 = myrule.get_tree(c, t)
 print(t2)
+
+
+from peru.parser import Parser
+
+p = Parser(r.plugins)
+
+code = """
+git module foo:
+    url: bar baz
+    rule bing:
+        build: magic command
+"""
+
+scope = p.parse_string(code)
+print(scope)
+print(scope["foo"].plugin_fields)
+print(scope["foo.bing"].build_command)
