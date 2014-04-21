@@ -10,17 +10,17 @@ class RemoteModule:
         self.plugin = plugin
         self.plugin_fields = plugin_fields
 
-    def cache_key(self):
+    def cache_key(self, resolver):
+        import_trees = resolver.resolve_import_trees(self.imports)
         digest = compute_key({
-            # TODO: Get imports in here
+            "import_trees": import_trees,
             "plugin": self.plugin.name,
             "plugin_fields": self.plugin_fields,
         })
         return digest
 
-    # TODO: Imports should be included before this tree hits the cache.
-    def get_tree(self, cache):
-        key = self.cache_key()
+    def get_tree(self, cache, resolver):
+        key = self.cache_key(resolver)
         if key in cache.keyval:
             # tree is already in cache
             return cache.keyval[key]
@@ -28,6 +28,7 @@ class RemoteModule:
         try:
             self.plugin.get_files_callback(
                 self.plugin_fields, tmp_dir, self.name)
+            resolver.apply_imports(self.imports, tmp_dir)
             tree = cache.import_tree(tmp_dir, self.name)
         finally:
             shutil.rmtree(tmp_dir)

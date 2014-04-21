@@ -2,7 +2,7 @@ import os
 import shutil
 import subprocess
 
-from . import cache as cache_module
+from .cache import compute_key
 
 
 class Rule:
@@ -12,10 +12,11 @@ class Rule:
         self.build_command = build_command
         self.export = export
 
-    def cache_key(self, module_tree):
-        return cache_module.compute_key({
-            # TODO: Figure out how to get import trees in here.
-            "module_tree": module_tree,
+    def cache_key(self, resolver, input_tree):
+        import_trees = resolver.resolve_import_trees(self.imports)
+        return compute_key({
+            "input_tree": input_tree,
+            "import_trees": import_trees,
             "build": self.build_command,
             "export": self.export,
         })
@@ -24,15 +25,15 @@ class Rule:
         if self.build_command:
             subprocess.check_call(self.build_command, shell=True, cwd=path)
 
-    # TODO: Handle imports.
-    def get_tree(self, cache, input_tree):
-        key = self.cache_key(input_tree)
+    def get_tree(self, cache, resolver, input_tree):
+        key = self.cache_key(resolver, input_tree)
         if key in cache.keyval:
             return cache.keyval[key]
 
         tmp_dir = cache.tmp_dir()
         try:
             cache.export_tree(input_tree, tmp_dir)
+            resolver.apply_imports(self.imports, tmp_dir)
             self.do_build(tmp_dir)
             export_dir = tmp_dir
             if self.export:

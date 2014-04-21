@@ -3,7 +3,7 @@ import shutil
 import subprocess
 import yaml
 
-from . import cache as cache_module
+from .cache import compute_key
 from . import rule
 
 
@@ -57,7 +57,7 @@ class Remote:
         self.plugin_fields = plugin_fields
 
     def cache_key(self):
-        digest = cache_module.compute_key({
+        digest = compute_key({
             # TODO: Get imports in here
             "plugin": self.plugin.name,
             "plugin_fields": self.plugin_fields,
@@ -174,4 +174,4 @@ class Module:
             "remote": self.remote.fields,
             "rule": rule.fields,
         }
-        return cache_module.compute_key(data)
+        return compute_key(data)

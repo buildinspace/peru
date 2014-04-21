@@ -24,18 +24,35 @@ r.verbose = True
 parser = Parser(r.plugins)
 
 scope = parser.parse_string("""
-git module test:
+git module peru:
     url: https://github.com/oconnor663/peru.git
 
+    imports:
+        dotfiles.vimrc: module_vimrc_dir/
+
     rule license:
-        build: mkdir out; cp LICENSE out
+        imports:
+            dotfiles.vimrc: rule_vimrc_dir/
+
+        build: |
+            mkdir out
+            cp LICENSE out
+            cp module_vimrc_dir/vimrc out/module_vimrc
+            cp rule_vimrc_dir/vimrc out/rule_vimrc
+        export: out
+
+git module dotfiles:
+    url: https://github.com/oconnor663/dotfiles.git
+
+    rule vimrc:
+        build: mkdir out; cp vimrc out
         export: out
 """)
 
 resolver = Resolver(scope, r.cache)
 
-tree = resolver.get_tree("test.license")
-print("test.license tree:", tree)
+tree = resolver.get_tree("peru.license")
+print("peru.license tree:", tree)
 
 export_path = tempfile.mkdtemp()
 print("export dir", export_path)

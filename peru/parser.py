@@ -16,13 +16,13 @@ class Parser:
     def parse_string(self, yaml_str):
         blob = yaml.safe_load(yaml_str)
         scope = {}
-        rules = self.extract_rules(blob)
+        rules = self._extract_rules(blob)
         _add_to_scope(scope, rules)
-        modules = self.extract_modules(blob)
+        modules = self._extract_modules(blob)
         _add_to_scope(scope, modules)
         return scope
 
-    def extract_rules(self, blob):
+    def _extract_rules(self, blob):
         rules = {}
         for field in list(blob.keys()):
             parts = field.split()
@@ -32,14 +32,14 @@ class Parser:
                 rules[name] = self._build_rule(name, inner_blob)
         return rules
 
-    def extract_modules(self, blob):
+    def _extract_modules(self, blob):
         scope = {}
         for field in list(blob.keys()):
             parts = field.split()
             if len(parts) == 3 and parts[1] == "module":
                 type, _, name = parts
                 inner_blob = blob.pop(field)  # remove the field from blob
-                rules = self.extract_rules(inner_blob)
+                rules = self._extract_rules(inner_blob)
                 module = self._build_remote_module(name, type, inner_blob)
                 module_scope = {name: module}
                 _add_to_scope(module_scope, rules, prefix=name + ".")
