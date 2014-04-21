@@ -125,7 +125,10 @@ class Cache:
 
         if not os.path.exists(dest):
             os.makedirs(dest)
-        self._git("checkout", next_commit, work_tree=dest)
+
+        # TODO: Stop using --force. Instead, unify all imports into a single
+        # tree, so that we can do real cleanup.
+        self._git("checkout", "--force", next_commit, work_tree=dest)
 
     def _resolve_hash(self, rev):
         return self._git("rev-parse", rev)
