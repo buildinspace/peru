@@ -21,7 +21,8 @@ class Rule:
             "export": self.export,
         })
 
-    def do_build(self, path):
+    def do_build(self, resolver, path):
+        resolver.apply_imports(self.imports, path)
         if self.build_command:
             subprocess.check_call(self.build_command, shell=True, cwd=path)
 
@@ -33,8 +34,7 @@ class Rule:
         tmp_dir = cache.tmp_dir()
         try:
             cache.export_tree(input_tree, tmp_dir)
-            resolver.apply_imports(self.imports, tmp_dir)
-            self.do_build(tmp_dir)
+            self.do_build(resolver, tmp_dir)
             export_dir = tmp_dir
             if self.export:
                 export_dir = os.path.join(tmp_dir, self.export)

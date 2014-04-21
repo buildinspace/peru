@@ -8,20 +8,19 @@ import tempfile
 sys.path.append(os.path.join(os.path.dirname(__file__),
                              "third-party/PyYAML-3.10/lib3"))
 
-from peru.runtime import Runtime
+from peru.cache import Cache
 from peru.parser import Parser
 from peru.resolver import Resolver
+from peru.runtime import Runtime
 
 
 cache_path = "/tmp/testcache"
 if os.path.exists(cache_path):
     shutil.rmtree(cache_path)
-os.environ["PERU_CACHE_NAME"] = cache_path
+cache = Cache(cache_path)
 
-r = Runtime()
-r.verbose = True
-
-parser = Parser(r.plugins)
+runtime = Runtime(cache)
+parser = Parser(runtime.plugins)
 
 local_module = parser.parse_string("""
 git module peru:
@@ -49,11 +48,11 @@ git module dotfiles:
         export: out
 """)
 
-resolver = Resolver(local_module.scope, r.cache)
+resolver = Resolver(local_module.scope, cache)
 
 tree = resolver.get_tree("peru.license")
 print("peru.license tree:", tree)
 
 export_path = tempfile.mkdtemp()
 print("export dir", export_path)
-r.cache.export_tree(tree, export_path)
+cache.export_tree(tree, export_path)
