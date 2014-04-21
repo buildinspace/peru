@@ -58,6 +58,9 @@ class Parser:
 
     def _build_rule(self, name, blob):
         _validate_name(name)
+        if blob is None:
+            # Rules can be totally empty, which makes them a no-op.
+            blob = {}
         rule = Rule(name,
                     blob.pop("imports", {}),
                     blob.pop("build", None),

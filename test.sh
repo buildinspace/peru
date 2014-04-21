@@ -15,10 +15,6 @@ fail() {
   exit 1
 }
 
-run_peru() {
-  "$repo_root/peru.sh"
-}
-
 # Shim git in the $PATH so that all calls are logged.
 shim_dir=`mktemp -d`
 git_log=`mktemp`
@@ -58,26 +54,19 @@ cd $exe_repo
 write_peru_file_at_rev() {
   cat << END > $exe_repo/peru.yaml
 imports:
-    lib: lib_dest/
+    lib.build_lib: lib_dest/
     pathlib: path_lib_dest/
-    pathlib.env_var_test: \$env_var
-
-rule:
-    build: cp \$env_var/env_var_input env_var_output
 
 git module lib:
     url: $lib_repo
     rev: $1
-    rule:
+    rule build_lib:
         #build: echo built stuff > builtfile
         #export: subdir/
 
 # Reference the same repo through the path plugin, to test that too.
 path module pathlib:
     path: $lib_repo
-
-    rule env_var_test:
-        build: echo env file contents > env_var_input
 END
 }
 write_peru_file_at_rev $first_commit
@@ -85,6 +74,10 @@ write_peru_file_at_rev $first_commit
 echo git log $git_log
 echo lib path $lib_repo
 echo exe path $exe_repo
+
+run_peru() {
+  "$repo_root/peru.sh"
+}
 
 # invoke peru to pull in the first commit
 run_peru
@@ -95,11 +88,6 @@ fi
 # make sure the path rule was pulled in too
 if [ "$(cat path_lib_dest/libfile)" != "hi v2" ] ; then
   fail "libfile doesn't match in the path module"
-fi
-
-# make sure the env var input worked
-if [ "$(cat env_var_output)" != "env file contents" ] ; then
-  fail "environment variable import didn't work"
 fi
 
 # make sure the subrepo contents made it too
