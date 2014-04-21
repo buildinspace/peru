@@ -23,7 +23,7 @@ r.verbose = True
 
 parser = Parser(r.plugins)
 
-scope = parser.parse_string("""
+local_module = parser.parse_string("""
 git module peru:
     url: https://github.com/oconnor663/peru.git
 
@@ -49,7 +49,7 @@ git module dotfiles:
         export: out
 """)
 
-resolver = Resolver(scope, r.cache)
+resolver = Resolver(local_module.scope, r.cache)
 
 tree = resolver.get_tree("peru.license")
 print("peru.license tree:", tree)
