@@ -89,6 +89,11 @@ class Cache:
         else:
             # branch does exist, do the equivalent of checkout for a bare repo
             self._git("symbolic-ref", "HEAD", "refs/heads/" + name)
+
+        # The index can contain weird state regarding submodules. Clear it out
+        # first to be safe.
+        self._git("read-tree", "--empty")
+
         self._git("add", "--all", work_tree=src)
         commit_message = name + ("\n\n" + blob if blob else "")
         self._git("commit", "--allow-empty", "--message", commit_message,

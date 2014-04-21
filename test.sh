@@ -92,7 +92,7 @@ fi
 
 # make sure the subrepo contents made it too
 if [ "$(cat lib_dest/submodule/subrepofile)" != "subrepo contents" ] ; then
-  fail "subrepo contents didn't get pulled in"
+  fail "subrepo contents didn't get pulled in from git module"
 fi
 
 # uncomment the build command and confirm it gets built

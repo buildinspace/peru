@@ -10,12 +10,16 @@ class Resolver:
         self.cache = cache
 
     def resolve_import_trees(self, imports):
+        # Iterate over sorted items so that the order is always consistent.
+        # This avoids having different error messages from one run to the next,
+        # which you might see if you run into a bug in the cache state.
         return {self.get_tree(target): path
-                for target, path in imports.items()}
+                for target, path in sorted(imports.items())}
 
     def apply_imports(self, imports, dest):
         import_trees = self.resolve_import_trees(imports)
-        for tree, path in import_trees.items():
+        # As above, make sure to iterate over imports in sorted order.
+        for tree, path in sorted(import_trees.items()):
             import_dest = os.path.join(dest, path)
             # TODO: clean previous trees
             self.cache.export_tree(tree, import_dest)
