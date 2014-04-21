@@ -11,7 +11,10 @@ class RemoteModule:
         self.plugin_fields = plugin_fields
 
     def cache_key(self, resolver):
-        import_trees = resolver.resolve_import_trees(self.imports)
+        # TODO: This logic is duplicated in Rule.
+        trees = resolver.resolve_trees(self.imports.keys())
+        import_trees = {trees[target]: path
+                        for target, path in self.imports.items()}
         digest = compute_key({
             "import_trees": import_trees,
             "plugin": self.plugin.name,

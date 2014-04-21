@@ -13,7 +13,10 @@ class Rule:
         self.export = export
 
     def cache_key(self, resolver, input_tree):
-        import_trees = resolver.resolve_import_trees(self.imports)
+        # TODO: This logic is duplicated in RemoteModule.
+        trees = resolver.resolve_trees(self.imports.keys())
+        import_trees = {trees[target]: path
+                        for target, path in self.imports.items()}
         return compute_key({
             "input_tree": input_tree,
             "import_trees": import_trees,
