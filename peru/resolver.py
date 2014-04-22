@@ -9,17 +9,21 @@ class Resolver:
         self.scope = scope
         self.cache = cache
 
-    def resolve_trees(self, targets):
-        # Iterate over sorted items so that the order is always consistent.
-        # This avoids having different error messages from one run to the next,
-        # which you might see if you run into a bug in the cache state.
-        return {target: self.get_tree(target) for target in sorted(targets)}
+    def resolve_imports(self, imports):
+        # We always want to resolve (and eventually apply) imports in the same
+        # order, so that any conflicts or other errors we run into will be
+        # deterministic. Sort the imports alphabetically by name, and return
+        # the resolved trees in the same order.
+        #
+        # NB: Resolving imports builds them if they haven't been built before.
+        trees = []
+        for target, path in sorted(imports.items()):
+            tree = self.get_tree(target)
+            trees.append((tree, path))
+        return tuple(trees)
 
     def apply_imports(self, imports, dest):
-        trees = self.resolve_trees(imports.keys())
-        # As above, make sure to iterate over imports in sorted order.
-        for target, path in sorted(imports.items()):
-            tree = trees[target]
+        for tree, path in self.resolve_imports(imports):
             import_dest = os.path.join(dest, path)
             # TODO: clean previous trees
             self.cache.export_tree(tree, import_dest)
