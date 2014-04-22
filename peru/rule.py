@@ -6,26 +6,19 @@ from .cache import compute_key
 
 
 class Rule:
-    def __init__(self, name, imports, build_command, export):
+    def __init__(self, name, build_command, export):
         self.name = name
-        self.imports = imports
         self.build_command = build_command
         self.export = export
 
     def cache_key(self, resolver, input_tree):
-        # TODO: This logic is duplicated in RemoteModule.
-        trees = resolver.resolve_trees(self.imports.keys())
-        import_trees = {trees[target]: path
-                        for target, path in self.imports.items()}
         return compute_key({
             "input_tree": input_tree,
-            "import_trees": import_trees,
             "build": self.build_command,
             "export": self.export,
         })
 
     def do_build(self, resolver, path):
-        resolver.apply_imports(self.imports, path)
         if self.build_command:
             subprocess.check_call(self.build_command, shell=True, cwd=path)
 

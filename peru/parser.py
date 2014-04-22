@@ -62,7 +62,6 @@ class Parser:
             # Rules can be totally empty, which makes them a no-op.
             blob = {}
         rule = Rule(name,
-                    blob.pop("imports", {}),
                     blob.pop("build", None),
                     blob.pop("export", None))
         if blob:

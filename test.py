@@ -30,14 +30,10 @@ git module peru:
         dotfiles.vimrc: module_vimrc_dir/
 
     rule license:
-        imports:
-            dotfiles.vimrc: rule_vimrc_dir/
-
         build: |
             mkdir out
             cp LICENSE out
             cp module_vimrc_dir/vimrc out/module_vimrc
-            cp rule_vimrc_dir/vimrc out/rule_vimrc
         export: out
 
 git module dotfiles:
