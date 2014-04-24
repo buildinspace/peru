@@ -78,31 +78,32 @@ class Cache:
         env["GIT_CONFIG_NOSYSTEM"] = "true"
         return env
 
-    def import_tree(self, src, name, blob=None):
+    def _save_tree_to_branch(self, tree, name, message=None):
+        if message is None:
+            message = name
+        try:
+            # throws if branch doesn't exist
+            self._git("show-ref", "--verify", "--quiet", "refs/heads/" + name)
+        except self.GitError:
+            # branch doesn't exist, create an orphan commit
+            commit = self._git("commit-tree", "-m", message, tree)
+        else:
+            # branch does exist, use it as the parent
+            parent = self._git("rev-parse", name)
+            commit = self._git("commit-tree", "-m", message, "-p", parent,
+                               tree)
+        self._git("branch", "-f", name, commit)
+
+    def import_tree(self, src, name):
         # We're going to return a tree hash to the caller, but we want a real
         # commit representing that tree to be stored in a real branch. That's
         # both because we don't want this tree to get garbage-collected, and
         # because it's nicer for debugging to be able to see the output of your
         # rules.
-        try:
-            # throws if branch doesn't exist
-            self._git("show-ref", "--verify", "--quiet", "refs/heads/" + name)
-        except self.GitError:
-            # branch doesn't exist, create it
-            self._git("checkout", "--orphan", name, work_tree=src)
-        else:
-            # branch does exist, do the equivalent of checkout for a bare repo
-            self._git("symbolic-ref", "HEAD", "refs/heads/" + name)
-
-        # The index can contain weird state regarding submodules. Clear it out
-        # first to be safe.
-        self._git("read-tree", "--empty")
-
+        self._git("read-tree", "--empty")  # clear the index for safety
         self._git("add", "--all", work_tree=src)
-        commit_message = name + ("\n\n" + blob if blob else "")
-        self._git("commit", "--allow-empty", "--message", commit_message,
-                  work_tree=src)
-        tree = self._git("write-tree", "HEAD")
+        tree = self._git("write-tree")
+        self._save_tree_to_branch(tree, name)
         return tree
 
     def _dummy_commit(self, tree):
