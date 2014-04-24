@@ -39,7 +39,15 @@ class Cache:
         self._git("config", "user.email", "peru")
 
     class GitError(RuntimeError):
-        pass
+        def __init__(self, command, output, errorcode):
+            self.command = " ".join(command)
+            self.output = output
+            self.errorcode = errorcode
+            message = 'git command "{}" returned error code {}:\n{}'.format(
+                self.command,
+                self.errorcode,
+                self.output)
+            RuntimeError.__init__(self, message)
 
     def _git(self, *args, work_tree=None, input=None):
         command = ["git"]
@@ -57,11 +65,7 @@ class Cache:
         output, _ = process.communicate(input=input)
         output = output.strip()
         if process.returncode != 0:
-            raise self.GitError(
-                'git command "{}" returned error code {}:\n{}'.format(
-                    " ".join(command),
-                    process.returncode,
-                    output))
+            raise self.GitError(command, output, process.returncode)
         return output
 
     # Prevents git from reading any global configs.
