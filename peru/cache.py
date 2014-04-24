@@ -106,6 +106,25 @@ class Cache:
         self._save_tree_to_branch(tree, name)
         return tree
 
+    def _unify_tree(self, name, root_tree=None, import_trees=()):
+        if root_tree:
+            self._git("read-tree", root_tree)
+        else:
+            self._git("read-tree", "--empty")
+
+        for tree, path in import_trees:
+            if not path.endswith("/"):
+                path += "/"  # git demands a trailing slash
+            # Normally read-tree with --prefix wants to make sure changes don't
+            # stomp on the working copy. The -i flag tells it to pretend the
+            # working copy doesn't exist. (Which is important, because we don't
+            # have one right now!)
+            self._git("read-tree", "-i", "--prefix=" + path, tree)
+
+        unified_tree = self._git("write-tree")
+        self._save_tree_to_branch(unified_tree, name)
+        return unified_tree
+
     def _dummy_commit(self, tree):
         if tree is None:
             self._git("read-tree", "--empty")
