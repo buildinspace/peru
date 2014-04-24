@@ -120,11 +120,7 @@ class Cache:
         previous_commit = self._dummy_commit(previous_tree)
         next_commit = self._dummy_commit(tree)
 
-        # We need HEAD to be previous_commit, but we can't run git-checkout
-        # in a bare repo. Just write to the HEAD file instead.
-        with open(os.path.join(self.trees_path, "HEAD"), "w") as HEAD:
-            HEAD.write(previous_commit)
-        # And reset the index.
+        self._git("update-ref", "--no-deref", "HEAD", previous_commit)
         self._git("read-tree", "HEAD")
 
         if not os.path.exists(dest):
