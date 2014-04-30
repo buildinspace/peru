@@ -111,17 +111,19 @@ class Cache:
         else:
             self._git("read-tree", "--empty")
 
-        # The git docs say that a --prefix value must end in a slash. That
-        # doesn't seem to be true in practice, but better safe than sorry.
-        if not merge_path.endswith("/"):
-            merge_path += "/"
-
         # The --prefix argument to read-tree chokes on paths that contain dot
         # or dot-dot. Instead of "./", it wants the empty string. Oblige it.
         # TODO: This could change the meaning of .. with respect to symlinks.
         #       Should we ban .. entirely in import paths?
         prefix = os.path.normpath(merge_path)
         prefix = "" if prefix == "." else prefix
+
+        # The git docs say that a --prefix value must end in a slash. That
+        # doesn't seem to be true in practice, but better safe than sorry. Note
+        # that git treats "--prefix=/" as the root of the tree, so this doesn't
+        # break that case.
+        if not prefix.endswith("/"):
+            prefix += "/"
 
         # Normally read-tree with --prefix wants to make sure changes don't
         # stomp on the working copy. The -i flag tells it to pretend the
