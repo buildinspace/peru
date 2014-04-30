@@ -54,7 +54,7 @@ cd $exe_repo
 write_peru_file_at_rev() {
   cat << END > $exe_repo/peru.yaml
 imports:
-    lib.build_lib: lib_dest/
+    lib.build_lib: ./lib_dest/  # <-- testing the ./ relative path
     pathlib: path_lib_dest/
 
 git module lib:

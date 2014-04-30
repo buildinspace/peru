@@ -116,11 +116,18 @@ class Cache:
         if not merge_path.endswith("/"):
             merge_path += "/"
 
+        # The --prefix argument to read-tree chokes on paths that contain dot
+        # or dot-dot. Instead of "./", it wants the empty string. Oblige it.
+        # TODO: This could change the meaning of .. with respect to symlinks.
+        #       Should we ban .. entirely in import paths?
+        prefix = os.path.normpath(merge_path)
+        prefix = "" if prefix == "." else prefix
+
         # Normally read-tree with --prefix wants to make sure changes don't
         # stomp on the working copy. The -i flag tells it to pretend the
         # working copy doesn't exist. (Which is important, because we don't
         # have one right now!)
-        self._git("read-tree", "-i", "--prefix=" + merge_path, merge_tree)
+        self._git("read-tree", "-i", "--prefix", prefix, merge_tree)
 
         unified_tree = self._git("write-tree")
         return unified_tree
