@@ -1,4 +1,4 @@
-import os
+import collections
 
 from .remote_module import RemoteModule
 from .rule import Rule
@@ -9,24 +9,31 @@ class Resolver:
         self.scope = scope
         self.cache = cache
 
-    def resolve_imports(self, imports):
+    def resolve_imports_to_treepaths(self, imports):
         # We always want to resolve (and eventually apply) imports in the same
         # order, so that any conflicts or other errors we run into will be
         # deterministic. Sort the imports alphabetically by name, and return
         # the resolved trees in the same order.
         #
         # NB: Resolving imports builds them if they haven't been built before.
-        trees = []
+        treepaths = []
         for target, path in sorted(imports.items()):
             tree = self.get_tree(target)
-            trees.append((tree, path))
-        return tuple(trees)
+            treepath = TreePath(tree, path, target)
+            treepaths.append(treepath)
+        return tuple(treepaths)
 
-    def apply_imports(self, imports, dest):
-        for tree, path in self.resolve_imports(imports):
-            import_dest = os.path.join(dest, path)
-            # TODO: clean previous trees
-            self.cache.export_tree(tree, import_dest)
+    def merge_import_trees(self, imports):
+        treepaths = self.resolve_imports_to_treepaths(imports)
+        unified_tree = None
+        for import_tree, import_path, target in treepaths:
+            unified_tree = self.cache.merge_trees(
+                unified_tree, import_tree, import_path)
+        return unified_tree
+
+    def apply_imports(self, imports, path):
+        unified_imports_tree = self.merge_import_trees(imports)
+        self.cache.export_tree(unified_imports_tree, path)
 
     def get_tree(self, target_str):
         target = self.get_target(target_str)
@@ -56,3 +63,5 @@ class Resolver:
         if parent_str == "":
             raise RuntimeError('Target "{}" has no parent.'.format(target_str))
         return self.get_target(parent_str)
+
+TreePath = collections.namedtuple("TreePath", ["tree", "path", "target"])

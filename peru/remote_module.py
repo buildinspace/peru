@@ -12,7 +12,8 @@ class RemoteModule:
 
     def cache_key(self, resolver):
         # NB: Resolving imports builds them if they haven't been built before.
-        import_trees = resolver.resolve_imports(self.imports)
+        import_treepaths = resolver.resolve_imports_to_treepaths(self.imports)
+        import_trees = [(tree, path) for tree, path, _ in import_treepaths]
         digest = compute_key({
             "import_trees": import_trees,
             "plugin": self.plugin.name,
@@ -30,7 +31,7 @@ class RemoteModule:
             self.plugin.get_files_callback(
                 self.plugin_fields, tmp_dir, self.name)
             resolver.apply_imports(self.imports, tmp_dir)
-            tree = cache.import_tree(tmp_dir, self.name)
+            tree = cache.import_tree(tmp_dir)
         finally:
             shutil.rmtree(tmp_dir)
         cache.keyval[key] = tree

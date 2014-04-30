@@ -78,7 +78,7 @@ class Cache:
         env["GIT_CONFIG_NOSYSTEM"] = "true"
         return env
 
-    def _save_tree_to_branch(self, tree, name, message=None):
+    def save_tree(self, tree, name, message=None):
         if message is None:
             message = name
         try:
@@ -94,7 +94,7 @@ class Cache:
                                tree)
         self._git("branch", "-f", name, commit)
 
-    def import_tree(self, src, name):
+    def import_tree(self, src):
         # We're going to return a tree hash to the caller, but we want a real
         # commit representing that tree to be stored in a real branch. That's
         # both because we don't want this tree to get garbage-collected, and
@@ -103,26 +103,26 @@ class Cache:
         self._git("read-tree", "--empty")  # clear the index for safety
         self._git("add", "--all", work_tree=src)
         tree = self._git("write-tree")
-        self._save_tree_to_branch(tree, name)
         return tree
 
-    def _unify_tree(self, name, root_tree=None, import_trees=()):
-        if root_tree:
-            self._git("read-tree", root_tree)
+    def merge_trees(self, base_tree, merge_tree, merge_path):
+        if base_tree:
+            self._git("read-tree", base_tree)
         else:
             self._git("read-tree", "--empty")
 
-        for tree, path in import_trees:
-            if not path.endswith("/"):
-                path += "/"  # git demands a trailing slash
-            # Normally read-tree with --prefix wants to make sure changes don't
-            # stomp on the working copy. The -i flag tells it to pretend the
-            # working copy doesn't exist. (Which is important, because we don't
-            # have one right now!)
-            self._git("read-tree", "-i", "--prefix=" + path, tree)
+        # The git docs say that a --prefix value must end in a slash. That
+        # doesn't seem to be true in practice, but better safe than sorry.
+        if not merge_path.endswith("/"):
+            merge_path += "/"
+
+        # Normally read-tree with --prefix wants to make sure changes don't
+        # stomp on the working copy. The -i flag tells it to pretend the
+        # working copy doesn't exist. (Which is important, because we don't
+        # have one right now!)
+        self._git("read-tree", "-i", "--prefix=" + merge_path, merge_tree)
 
         unified_tree = self._git("write-tree")
-        self._save_tree_to_branch(unified_tree, name)
         return unified_tree
 
     def _dummy_commit(self, tree):

@@ -34,7 +34,7 @@ class Rule:
             export_dir = tmp_dir
             if self.export:
                 export_dir = os.path.join(tmp_dir, self.export)
-            tree = cache.import_tree(export_dir, self.name)
+            tree = cache.import_tree(export_dir)
         finally:
             # TODO: Test that everything in the temp dir gets cleaned.
             shutil.rmtree(tmp_dir)
