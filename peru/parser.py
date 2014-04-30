@@ -1,7 +1,6 @@
 import re
 import yaml
 
-from .local_module import LocalModule
 from .remote_module import RemoteModule
 from .rule import Rule
 
@@ -16,8 +15,7 @@ class Parser:
 
     def parse_string(self, yaml_str):
         blob = yaml.safe_load(yaml_str)
-        local_module = self._build_local_module(blob)
-        return local_module
+        return self._parse_toplevel(blob)
 
     def _extract_rules(self, blob):
         rules = {}
@@ -69,18 +67,17 @@ class Parser:
                                ", ".join(blob.keys()))
         return rule
 
-    def _build_local_module(self, blob):
+    def _parse_toplevel(self, blob):
         scope = {}
         rules = self._extract_rules(blob)
         _add_to_scope(scope, rules)
         modules = self._extract_modules(blob)
         _add_to_scope(scope, modules)
         imports = blob.pop("imports", {})
-        local_module = LocalModule(scope, imports)
         if blob:
             raise RuntimeError("Unknown toplevel fields: " +
                                ", ".join(blob.keys()))
-        return local_module
+        return (scope, imports)
 
 
 def _validate_name(name):

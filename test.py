@@ -9,6 +9,7 @@ sys.path.append(os.path.join(os.path.dirname(__file__),
                              "third-party/PyYAML-3.10/lib3"))
 
 from peru.cache import Cache
+from peru.local_module import LocalModule
 from peru.parser import Parser
 from peru.resolver import Resolver
 from peru.runtime import Runtime
@@ -22,7 +23,7 @@ cache = Cache(cache_path)
 runtime = Runtime(cache)
 parser = Parser(runtime.plugins)
 
-local_module = parser.parse_string("""
+scope, imports = parser.parse_string("""
 git module peru:
     url: https://github.com/oconnor663/peru.git
 
@@ -44,7 +45,8 @@ git module dotfiles:
         export: out
 """)
 
-resolver = Resolver(local_module.scope, cache)
+local_module = LocalModule(imports)
+resolver = Resolver(scope, cache)
 
 tree = resolver.get_tree("peru.license")
 print("peru.license tree:", tree)

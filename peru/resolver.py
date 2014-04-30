@@ -46,13 +46,6 @@ class Resolver:
         else:
             raise NotImplementedError("What is this? " + type(target))
 
-    def build_locally(self, target_str, path):
-        target = self.get_target(target_str)
-        if not isinstance(target, Rule) or "." in target_str:
-            raise RuntimeError('Target "{}" is not a local rule.'.format(
-                target_str))
-        target.do_build(self, path)
-
     def get_target(self, target_str):
         if target_str not in self.scope:
             raise RuntimeError("Unknown target: " + repr(target_str))

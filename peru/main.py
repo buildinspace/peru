@@ -4,6 +4,7 @@ import os
 import sys
 
 from .cache import Cache
+from .local_module import LocalModule
 from .parser import Parser
 from .resolver import Resolver
 from .runtime import Runtime
@@ -18,11 +19,11 @@ def main():
     cache = Cache(cache_root)
     runtime = Runtime(cache)
     parser = Parser(runtime.plugins)
-    local_module = parser.parse_file(peru_file)
-    resolver = Resolver(local_module.scope, cache)
+    scope, imports = parser.parse_file(peru_file)
+    resolver = Resolver(scope, cache)
+    local_module = LocalModule(imports)
 
-    path = "./"
-    resolver.apply_imports(local_module.imports, path)
+    local_module.apply_imports(resolver)
     if len(sys.argv) > 1:
         for target_str in sys.argv[1:]:
-            resolver.build_locally(target_str, path)
+            local_module.do_build(resolver, target_str)
