@@ -63,7 +63,7 @@ class Cache:
             stderr=subprocess.STDOUT,
             universal_newlines=True)
         output, _ = process.communicate(input=input)
-        output = output.strip()
+        output = output.rstrip()
         if process.returncode != 0:
             raise self.GitError(command, output, process.returncode)
         return output
@@ -105,6 +105,24 @@ class Cache:
         tree = self._git("write-tree")
         return tree
 
+    def tree_status(self, tree, path):
+        self._checkout_dummy_commit(tree)
+        output = self._git("status", "-z", "--untracked=no", work_tree=path)
+        modified = set()
+        deleted = set()
+        for line in output.split("\0"):
+            if line == "":
+                continue
+            prefix = line[:2]
+            file = line[3:]
+            if prefix == " M":
+                modified.add(file)
+            elif prefix == " D":
+                deleted.add(file)
+            else:
+                raise RuntimeError("Unexpected status line: " + repr(line))
+        return TreeStatus(modified, deleted)
+
     def merge_trees(self, base_tree, merge_tree, merge_path):
         if base_tree:
             self._git("read-tree", base_tree)
@@ -141,20 +159,19 @@ class Cache:
         self._git("read-tree", tree)
         return self._git("commit-tree", "-m", "<dummy>", tree)
 
+    def _checkout_dummy_commit(self, tree):
+        dummy = self._dummy_commit(tree)  # includes a call to read-tree
+        self._git("update-ref", "--no-deref", "HEAD", dummy)
+        return dummy
+
     # TODO: This method needs to take a filesystem lock.  Probably all of them
     # do.
     def export_tree(self, tree, dest, previous_tree=None):
-        # We want to use git-checkout semantics, and for that we need commits
-        # instead of trees.
-        previous_commit = self._dummy_commit(previous_tree)
-        next_commit = self._dummy_commit(tree)
-
-        self._git("update-ref", "--no-deref", "HEAD", previous_commit)
-        self._git("read-tree", "HEAD")
-
         if not os.path.exists(dest):
             os.makedirs(dest)
 
+        next_commit = self._dummy_commit(tree)
+        self._checkout_dummy_commit(previous_tree)
         self._git("checkout", next_commit, work_tree=dest)
 
     def _resolve_hash(self, rev):
@@ -201,6 +218,4 @@ class KeyVal:
         return os.path.join(self.keyval_root, key)
 
 
-TreeStatus = collections.namedtuple(
-    "TreeStatus",
-    ["present", "added", "deleted", "modified"])
+TreeStatus = collections.namedtuple("TreeStatus", ["modified", "deleted"])
