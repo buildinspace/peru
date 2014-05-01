@@ -164,11 +164,23 @@ class Cache:
         self._git("update-ref", "--no-deref", "HEAD", dummy)
         return dummy
 
+    def _throw_if_dirty(self, tree, path):
+        modified, deleted = self.tree_status(tree, path)
+        if modified or deleted:
+            message = "Imports are dirty. Giving up."
+            if modified:
+                message += "\n\nModified:\n  " + "\n  ".join(sorted(modified))
+            if deleted:
+                message += "\n\nDeleted:\n  " + "\n  ".join(sorted(deleted))
+            raise RuntimeError(message)
+
     # TODO: This method needs to take a filesystem lock.  Probably all of them
     # do.
     def export_tree(self, tree, dest, previous_tree=None):
         if not os.path.exists(dest):
             os.makedirs(dest)
+
+        self._throw_if_dirty(previous_tree, dest)
 
         next_commit = self._dummy_commit(tree)
         self._checkout_dummy_commit(previous_tree)
