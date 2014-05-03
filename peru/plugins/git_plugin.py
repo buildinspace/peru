@@ -1,21 +1,24 @@
+#! /usr/bin/env python3
+
 import configparser
 import os
 from os import path
 import shutil
 import subprocess
+import sys
 import urllib.parse
 
 
 class GitJob:
-    def __init__(self, runtime, name, fields, target):
-        self.runtime = runtime
-        self.name = name
-        self.fields = fields
-        self.target = target
+    def __init__(self, cache_path, dest, url, rev):
+        self.cache_path = cache_path
+        self.dest = dest
+        self.url = url
+        self.rev = rev
         self.run()
 
     def git(self, git_dir, *args):
-        if self.runtime.verbose and set(args) & {"clone", "fetch", "checkout"}:
+        if set(args) & {"clone", "fetch", "checkout"}:
             logline = "git " + " ".join(args)
             if len(logline) > 80:
                 logline = logline[:77] + "..."
@@ -38,7 +41,7 @@ class GitJob:
 
     def git_clone_cached(self, url):
         escaped = urllib.parse.quote(url, safe="")
-        repo_path = path.join(self.runtime.cache.root, "git", escaped)
+        repo_path = path.join(self.cache_path, escaped)
         if not path.exists(repo_path):
             os.makedirs(repo_path)
             try:
@@ -83,23 +86,33 @@ class GitJob:
             self.checkout_tree(sub_clone, sub_rev, sub_full_path)
 
     def run(self):
-        url = self.fields["url"]
-        rev = self.fields.get("rev", "master")
-        cached_dir = self.git_clone_cached(url)
-        if not self.git_already_has_rev(cached_dir, rev):
+        cached_dir = self.git_clone_cached(self.url)
+        if not self.git_already_has_rev(cached_dir, self.rev):
             self.git(cached_dir, "fetch", "--prune")
-        self.checkout_tree(cached_dir, rev, self.target)
+        self.checkout_tree(cached_dir, self.rev, self.dest)
 
 
-def peru_plugin_main(*args, **kwargs):
-    runtime = kwargs["runtime"]
+def main():
+    sys.argv.pop(0)  # exe name
+    assert sys.argv.pop(0) == "fetch"
+    dest = sys.argv.pop(0)
 
-    def callback(fields, target, name):
-        GitJob(runtime, name, fields, target)
+    url = None
+    rev = "master"
 
-    kwargs["register"](
-        name="git",
-        required_fields={"url"},
-        optional_fields={"rev"},
-        get_files_callback=callback,
-    )
+    while sys.argv:
+        name = sys.argv.pop(0)
+        val = sys.argv.pop(0)
+        if name == "url":
+            url = val
+        elif name == "rev":
+            rev = val
+        else:
+            raise RuntimeError("Unknown plugin field name: " + name)
+
+    assert url is not None
+
+    GitJob(os.environ["PERU_PLUGIN_CACHE"], dest, url, rev)
+
+if __name__ == "__main__":
+    main()

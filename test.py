@@ -10,9 +10,8 @@ sys.path.append(os.path.join(os.path.dirname(__file__),
 
 from peru.cache import Cache
 from peru.local_module import LocalModule
-from peru.parser import Parser
+from peru.parser import parse_string
 from peru.resolver import Resolver
-from peru.runtime import Runtime
 
 
 cache_path = "/tmp/testcache"
@@ -20,10 +19,7 @@ if os.path.exists(cache_path):
     shutil.rmtree(cache_path)
 cache = Cache(cache_path)
 
-runtime = Runtime(cache)
-parser = Parser(runtime.plugins)
-
-scope, imports = parser.parse_string("""
+scope, imports = parse_string("""
 git module peru:
     url: https://github.com/oconnor663/peru.git
 

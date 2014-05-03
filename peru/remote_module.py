@@ -1,13 +1,14 @@
 import shutil
 
 from .cache import compute_key
+from .plugin import plugin_fetch
 
 
 class RemoteModule:
-    def __init__(self, name, imports, plugin, plugin_fields):
+    def __init__(self, name, type, imports, plugin_fields):
         self.name = name
+        self.type = type
         self.imports = imports
-        self.plugin = plugin
         self.plugin_fields = plugin_fields
 
     def cache_key(self, resolver):
@@ -16,7 +17,7 @@ class RemoteModule:
         import_trees = [(tree, path) for tree, path, _ in import_treepaths]
         digest = compute_key({
             "import_trees": import_trees,
-            "plugin": self.plugin.name,
+            "type": self.type,
             "plugin_fields": self.plugin_fields,
         })
         return digest
@@ -28,8 +29,7 @@ class RemoteModule:
             return cache.keyval[key]
         tmp_dir = cache.tmp_dir()
         try:
-            self.plugin.get_files_callback(
-                self.plugin_fields, tmp_dir, self.name)
+            plugin_fetch(cache, self.type, tmp_dir, self.plugin_fields)
             resolver.apply_imports(self.imports, tmp_dir)
             tree = cache.import_tree(tmp_dir)
         finally:

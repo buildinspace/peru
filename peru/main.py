@@ -5,9 +5,8 @@ import sys
 
 from .cache import Cache
 from .local_module import LocalModule
-from .parser import Parser
+from .parser import parse_file
 from .resolver import Resolver
-from .runtime import Runtime
 
 
 def main():
@@ -17,9 +16,7 @@ def main():
         sys.exit(1)
     cache_root = os.getenv("PERU_CACHE") or ".peru-cache"
     cache = Cache(cache_root)
-    runtime = Runtime(cache)
-    parser = Parser(runtime.plugins)
-    scope, imports = parser.parse_file(peru_file)
+    scope, imports = parse_file(peru_file)
     resolver = Resolver(scope, cache)
     local_module = LocalModule(imports)
 
