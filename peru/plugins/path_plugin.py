@@ -6,6 +6,8 @@ import sys
 
 def main():
     sys.argv.pop(0)  # exe name
+    assert sys.argv.pop(0) == "--cache"
+    sys.argv.pop(0)  # cache_path
     assert sys.argv.pop(0) == "fetch"
     dest = sys.argv.pop(0)
 
@@ -14,7 +16,7 @@ def main():
     while sys.argv:
         name = sys.argv.pop(0)
         val = sys.argv.pop(0)
-        if name == "path":
+        if name == "--path":
             path = val
         else:
             raise RuntimeError("Unknown plugin field name: " + name)

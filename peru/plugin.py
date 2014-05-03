@@ -15,12 +15,10 @@ def plugin_fetch(cache, type, dest, plugin_fields):
 
     plugin_cache = os.path.join(cache.root, "plugins", type)
     os.makedirs(plugin_cache, exist_ok=True)
-    env = dict(os.environ)
-    env["PERU_PLUGIN_CACHE"] = plugin_cache
 
-    command = [path, "fetch", dest]
+    command = [path, "--cache", plugin_cache, "fetch", dest]
     for field_name in sorted(plugin_fields.keys()):
-        command.append(field_name)
+        command.append("--" + field_name)
         command.append(plugin_fields[field_name])
 
-    subprocess.check_call(command, env=env)
+    subprocess.check_call(command)
