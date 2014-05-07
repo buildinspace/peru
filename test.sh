@@ -2,6 +2,8 @@
 
 set -e
 
+python3 -m unittest discover --start peru
+
 repo_root=$(realpath $(dirname $BASH_SOURCE))
 
 # keep our temp files from cluttering /tmp
