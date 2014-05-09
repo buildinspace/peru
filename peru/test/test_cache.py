@@ -45,13 +45,13 @@ class CacheTest(unittest.TestCase):
         self.content_dir = create_dir_with_contents(self.content)
         self.content_tree = self.cache.import_tree(self.content_dir)
 
-    def test_export(self):
+    def test_export_tree(self):
         export_dir = tmp_dir()
         self.cache.export_tree(self.content_tree, export_dir)
         exported_content = read_contents_from_dir(export_dir)
         self.assertDictEqual(self.content, exported_content)
 
-    def test_status_modified(self):
+    def test_tree_status_modified(self):
         with open(os.path.join(self.content_dir, "a"), "a") as f:
             f.write("another line")
         modified, deleted = self.cache.tree_status(self.content_tree,
@@ -59,9 +59,25 @@ class CacheTest(unittest.TestCase):
         self.assertSetEqual(modified, {"a"})
         self.assertSetEqual(deleted, set())
 
-    def test_status_deleted(self):
+    def test_tree_status_deleted(self):
         os.remove(os.path.join(self.content_dir, "a"))
         modified, deleted = self.cache.tree_status(self.content_tree,
                                                    self.content_dir)
         self.assertSetEqual(modified, set())
         self.assertSetEqual(deleted, {"a"})
+
+    def test_merge_trees(self):
+        merged_tree = self.cache.merge_trees(self.content_tree,
+                                             self.content_tree,
+                                             "subdir")
+        expected_content = dict(self.content)
+        for path, content in self.content.items():
+            expected_content[os.path.join("subdir", path)] = content
+        export_dir = tmp_dir()
+        self.cache.export_tree(merged_tree, export_dir)
+        exported_content = read_contents_from_dir(export_dir)
+        self.assertDictEqual(exported_content, expected_content)
+
+        with self.assertRaises(Cache.GitError):
+            # subdir/ is already populated, so this merge should throw.
+            self.cache.merge_trees(merged_tree, self.content_tree, "subdir")
