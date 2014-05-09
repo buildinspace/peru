@@ -164,6 +164,10 @@ class Cache:
         self._git("update-ref", "--no-deref", "HEAD", dummy)
         return dummy
 
+    class DirtyWorkingCopyError(RuntimeError):
+        def __init__(self, msg):
+            RuntimeError.__init__(self, msg)
+
     def _throw_if_dirty(self, tree, path):
         modified, deleted = self.tree_status(tree, path)
         if modified or deleted:
@@ -172,7 +176,7 @@ class Cache:
                 message += "\n\nModified:\n  " + "\n  ".join(sorted(modified))
             if deleted:
                 message += "\n\nDeleted:\n  " + "\n  ".join(sorted(deleted))
-            raise RuntimeError(message)
+            raise self.DirtyWorkingCopyError(message)
 
     # TODO: This method needs to take a filesystem lock.  Probably all of them
     # do.
@@ -184,7 +188,10 @@ class Cache:
 
         next_commit = self._dummy_commit(tree)
         self._checkout_dummy_commit(previous_tree)
-        self._git("checkout", next_commit, work_tree=dest)
+        try:
+            self._git("checkout", next_commit, work_tree=dest)
+        except self.GitError as e:
+            raise self.DirtyWorkingCopyError(e.output)
 
     def _resolve_hash(self, rev):
         return self._git("rev-parse", rev)
