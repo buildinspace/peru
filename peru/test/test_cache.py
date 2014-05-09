@@ -45,10 +45,18 @@ class CacheTest(unittest.TestCase):
         self.content_dir = create_dir_with_contents(self.content)
         self.content_tree = self.cache.import_tree(self.content_dir)
 
-    def test_export_tree(self):
+    def test_basic_export(self):
         export_dir = tmp_dir()
         self.cache.export_tree(self.content_tree, export_dir)
         self.assertDictEqual(self.content, read_contents_from_dir(export_dir))
+
+    def test_multiple_imports(self):
+        new_content = {"fee/fi": "fo fum"}
+        new_tree = self.cache.import_tree(
+            create_dir_with_contents(new_content))
+        export_dir = tmp_dir()
+        self.cache.export_tree(new_tree, export_dir)
+        self.assertDictEqual(new_content, read_contents_from_dir(export_dir))
 
     def test_export_with_existing_files(self):
         # Create a dir with an existing file that doesn't conflict.
