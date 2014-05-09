@@ -1,6 +1,7 @@
 import re
 import yaml
 
+from .local_module import LocalModule
 from .remote_module import RemoteModule
 from .rule import Rule
 
@@ -60,17 +61,22 @@ def _build_rule(name, blob):
     return rule
 
 
+def _build_local_module(blob):
+    imports = blob.pop("imports", {})
+    if blob:
+        raise RuntimeError("Unknown toplevel fields: " +
+                           ", ".join(blob.keys()))
+    return LocalModule(imports)
+
+
 def _parse_toplevel(blob):
     scope = {}
     rules = _extract_rules(blob)
     _add_to_scope(scope, rules)
     modules = _extract_modules(blob)
     _add_to_scope(scope, modules)
-    imports = blob.pop("imports", {})
-    if blob:
-        raise RuntimeError("Unknown toplevel fields: " +
-                           ", ".join(blob.keys()))
-    return (scope, imports)
+    local_module = _build_local_module(blob)
+    return (scope, local_module)
 
 
 def _validate_name(name):

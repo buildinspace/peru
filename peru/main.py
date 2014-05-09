@@ -4,7 +4,6 @@ import os
 import sys
 
 from .cache import Cache
-from .local_module import LocalModule
 from .parser import parse_file
 from .resolver import Resolver
 
@@ -16,9 +15,8 @@ def main():
         sys.exit(1)
     cache_root = os.getenv("PERU_CACHE") or ".peru-cache"
     cache = Cache(cache_root)
-    scope, imports = parse_file(peru_file)
+    scope, local_module = parse_file(peru_file)
     resolver = Resolver(scope, cache)
-    local_module = LocalModule(imports)
 
     local_module.apply_imports(resolver)
     if len(sys.argv) > 1:
