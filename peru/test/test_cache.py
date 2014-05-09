@@ -81,3 +81,15 @@ class CacheTest(unittest.TestCase):
         with self.assertRaises(Cache.GitError):
             # subdir/ is already populated, so this merge should throw.
             self.cache.merge_trees(merged_tree, self.content_tree, "subdir")
+
+    def test_keyval(self):
+        key = "mykey"
+        self.assertFalse(key in self.cache.keyval)
+        self.cache.keyval[key] = "myval"
+        self.assertEqual(self.cache.keyval[key], "myval")
+        self.assertTrue(key in self.cache.keyval)
+        self.cache.keyval[key] = "anotherval"
+        self.assertEqual(self.cache.keyval[key], "anotherval")
+        another_cache = Cache(self.cache.root)
+        self.assertTrue(key in self.cache.keyval)
+        self.assertEqual(another_cache.keyval[key], "anotherval")
