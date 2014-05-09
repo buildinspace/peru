@@ -67,25 +67,34 @@ class CacheTest(unittest.TestCase):
 
     def test_previous_tree(self):
         # Create some new content.
-        different_content = {"a": "different", "newfile": "blarg"}
-        export_dir = create_dir_with_contents(different_content)
-        different_tree = self.cache.import_tree(export_dir)
+        export_dir = create_dir_with_contents(self.content)
+        new_content = {"a": "different", "b/c": "bar"}
+        new_dir = create_dir_with_contents(new_content)
+        new_tree = self.cache.import_tree(new_dir)
 
-        # Now use cache.export_tree to move back to the original self.contents
-        # in this directory, by specifying the current contents as the
-        # previous_tree argument.
-        self.cache.export_tree(self.content_tree, export_dir,
-                               previous_tree=different_tree)
-        self.assertDictEqual(self.content, read_contents_from_dir(export_dir))
+        # Now use cache.export_tree to move from the original content to the
+        # different content.
+        self.cache.export_tree(new_tree, export_dir,
+                               previous_tree=self.content_tree)
+        self.assertDictEqual(new_content, read_contents_from_dir(export_dir))
 
-        # Now do the same thing again in the other direction, but first dirty
-        # the working copy. This should cause an error.
-        with open(os.path.join(export_dir, "a"), "w") as f:
-            # Dirty the contents of the "a" file.
-            f.write("dirty")
+        # Now do the same thing again, but use a dirty working copy. This
+        # should cause an error.
+        dirty_content = self.content.copy()
+        dirty_content["a"] = "dirty"
+        dirty_dir = create_dir_with_contents(dirty_content)
         with self.assertRaises(Cache.DirtyWorkingCopyError):
-            # Try to go back to the original content_tree. This should throw.
-            self.cache.export_tree(different_tree, export_dir,
+            self.cache.export_tree(new_tree, dirty_dir,
+                                   previous_tree=self.content_tree)
+
+        # Make sure we get an error even if the dirty file is unchanged between
+        # the previous tree and the new one.
+        no_conflict_dirty_content = self.content.copy()
+        no_conflict_dirty_content["b/c"] = "dirty"
+        no_conflict_dirty_dir = create_dir_with_contents(
+            no_conflict_dirty_content)
+        with self.assertRaises(Cache.DirtyWorkingCopyError):
+            self.cache.export_tree(new_tree, no_conflict_dirty_dir,
                                    previous_tree=self.content_tree)
 
     def test_tree_status_modified(self):
