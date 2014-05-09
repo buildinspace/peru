@@ -193,9 +193,6 @@ class Cache:
         except self.GitError as e:
             raise self.DirtyWorkingCopyError(e.output)
 
-    def _resolve_hash(self, rev):
-        return self._git("rev-parse", rev)
-
     # TODO: Have tmp_file and tmp_dir return a nice context manager.
     def tmp_file(self):
         fd, path = tempfile.mkstemp(dir=self.tmp_path)
