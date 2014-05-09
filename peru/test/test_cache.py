@@ -38,15 +38,30 @@ def read_contents_from_dir(dir):
 class CacheTest(unittest.TestCase):
     def setUp(self):
         self.cache = Cache(tmp_dir())
-
-    def test_exports_equal_imports(self):
-        contents = {
+        self.content = {
             "a": "foo",
             "b/c": "bar",
         }
-        import_dir = create_dir_with_contents(contents)
-        tree = self.cache.import_tree(import_dir)
+        self.content_dir = create_dir_with_contents(self.content)
+        self.content_tree = self.cache.import_tree(self.content_dir)
+
+    def test_export(self):
         export_dir = tmp_dir()
-        self.cache.export_tree(tree, export_dir)
-        new_contents = read_contents_from_dir(export_dir)
-        self.assertDictEqual(contents, new_contents)
+        self.cache.export_tree(self.content_tree, export_dir)
+        exported_content = read_contents_from_dir(export_dir)
+        self.assertDictEqual(self.content, exported_content)
+
+    def test_status_modified(self):
+        with open(os.path.join(self.content_dir, "a"), "a") as f:
+            f.write("another line")
+        modified, deleted = self.cache.tree_status(self.content_tree,
+                                                   self.content_dir)
+        self.assertSetEqual(modified, {"a"})
+        self.assertSetEqual(deleted, set())
+
+    def test_status_deleted(self):
+        os.remove(os.path.join(self.content_dir, "a"))
+        modified, deleted = self.cache.tree_status(self.content_tree,
+                                                   self.content_dir)
+        self.assertSetEqual(modified, set())
+        self.assertSetEqual(deleted, {"a"})
