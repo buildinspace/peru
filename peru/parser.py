@@ -13,6 +13,8 @@ def parse_file(path):
 
 def parse_string(yaml_str):
     blob = yaml.safe_load(yaml_str)
+    if blob is None:
+        blob = {}
     return _parse_toplevel(blob)
 
 
