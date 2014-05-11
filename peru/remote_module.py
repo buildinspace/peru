@@ -29,7 +29,7 @@ class RemoteModule:
             return cache.keyval[key]
         tmp_dir = cache.tmp_dir()
         try:
-            plugin_fetch(cache, self.type, tmp_dir, self.plugin_fields)
+            plugin_fetch(cache.root, self.type, tmp_dir, self.plugin_fields)
             resolver.apply_imports(self.imports, tmp_dir)
             tree = cache.import_tree(tmp_dir)
         finally:
