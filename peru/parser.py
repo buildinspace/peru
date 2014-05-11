@@ -29,6 +29,7 @@ def _extract_rules(blob):
         parts = field.split()
         if len(parts) == 2 and parts[0] == "rule":
             inner_blob = blob.pop(field)  # remove the field from blob
+            inner_blob = {} if inner_blob is None else inner_blob
             name = parts[1]
             rules[name] = _build_rule(name, inner_blob)
     return rules
@@ -41,6 +42,7 @@ def _extract_modules(blob):
         if len(parts) == 3 and parts[1] == "module":
             type, _, name = parts
             inner_blob = blob.pop(field)  # remove the field from blob
+            inner_blob = {} if inner_blob is None else inner_blob
             rules = _extract_rules(inner_blob)
             module = _build_remote_module(name, type, inner_blob)
             module_scope = {name: module}

@@ -93,3 +93,14 @@ class ParserTest(unittest.TestCase):
             parse_string("git module abc def:")
         with self.assertRaises(ParserError):
             parse_string("git module:")
+
+    def test_duplicate_names_throw(self):
+        input = dedent("""
+            git module {}:
+            rule {}:
+            """)
+        # Should be fine with different names...
+        parse_string(input.format("foo", "bar"))
+        # But should fail with duplicates.
+        with self.assertRaises(ParserError):
+            parse_string(input.format("foo", "foo"))
