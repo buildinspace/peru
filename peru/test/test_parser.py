@@ -29,7 +29,7 @@ class ParserTest(unittest.TestCase):
 
     def test_parse_module(self):
         input = dedent("""\
-            git module foo:
+            sometype module foo:
                 url: http://www.example.com/
                 rev: abcdefg
                 imports:
@@ -41,6 +41,7 @@ class ParserTest(unittest.TestCase):
         module = scope["foo"]
         self.assertIsInstance(module, RemoteModule)
         self.assertEqual(module.name, "foo")
+        self.assertEqual(module.type, "sometype")
         self.assertDictEqual(module.imports,
                              {"wham": "bam/",
                               "thank": "you/maam"})
