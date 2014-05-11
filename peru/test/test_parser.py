@@ -1,7 +1,7 @@
 from textwrap import dedent
 import unittest
 
-from peru.parser import parse_string
+from peru.parser import parse_string, ParserError
 from peru.remote_module import RemoteModule
 from peru.rule import Rule
 
@@ -70,3 +70,26 @@ class ParserTest(unittest.TestCase):
         scope, local_module = parse_string(input)
         self.assertDictEqual(scope, {})
         self.assertDictEqual(local_module.imports, {"foo": "bar/"})
+
+    def test_bad_toplevel_field_throw(self):
+        with self.assertRaises(ParserError):
+            parse_string("foo: bar")
+
+    def test_bad_rule_field_throw(self):
+        with self.assertRaises(ParserError):
+            parse_string(dedent("""\
+                rule foo:
+                    bad_field: junk
+                """))
+
+    def test_bad_rule_name_throw(self):
+        with self.assertRaises(ParserError):
+            parse_string("rule foo bar:")
+        with self.assertRaises(ParserError):
+            parse_string("rule:")
+
+    def test_bad_module_name_throw(self):
+        with self.assertRaises(ParserError):
+            parse_string("git module abc def:")
+        with self.assertRaises(ParserError):
+            parse_string("git module:")

@@ -6,6 +6,11 @@ from .remote_module import RemoteModule
 from .rule import Rule
 
 
+class ParserError(RuntimeError):
+    def __init__(self, *args):
+        RuntimeError.__init__(self, *args)
+
+
 def parse_file(path):
     with open(path) as f:
         return parse_string(f.read())
@@ -59,15 +64,15 @@ def _build_rule(name, blob):
                 blob.pop("build", None),
                 blob.pop("export", None))
     if blob:
-        raise RuntimeError("Unknown rule fields: " + ", ".join(blob.keys()))
+        raise ParserError("Unknown rule fields: " + ", ".join(blob.keys()))
     return rule
 
 
 def _build_local_module(blob):
     imports = blob.pop("imports", {})
     if blob:
-        raise RuntimeError("Unknown toplevel fields: " +
-                           ", ".join(blob.keys()))
+        raise ParserError("Unknown toplevel fields: " +
+                          ", ".join(blob.keys()))
     return LocalModule(imports)
 
 
@@ -83,7 +88,7 @@ def _parse_toplevel(blob):
 
 def _validate_name(name):
     if re.search(r"[\s:.]", name):
-        raise RuntimeError("Invalid name: " + repr(name))
+        raise ParserError("Invalid name: " + repr(name))
     return name
 
 
@@ -91,5 +96,5 @@ def _add_to_scope(scope, new_items, prefix=""):
     prefixed_items = {prefix + key: val for key, val in new_items.items()}
     for key in prefixed_items:
         if key in scope:
-            raise RuntimeError(key + " is defined more than once.")
+            raise ParserError(key + " is defined more than once.")
     scope.update(prefixed_items)
