@@ -2,42 +2,39 @@ import os
 import unittest
 
 from peru.cache import Cache
-from peru.test.shared import create_dir_with_contents, \
-    read_contents_from_dir, tmp_dir
+import peru.test.shared as shared
 
 
 class CacheTest(unittest.TestCase):
     def setUp(self):
-        self.cache = Cache(tmp_dir())
+        self.cache = Cache(shared.create_dir())
         self.content = {
             "a": "foo",
             "b/c": "bar",
         }
-        self.content_dir = create_dir_with_contents(self.content)
+        self.content_dir = shared.create_dir(self.content)
         self.content_tree = self.cache.import_tree(self.content_dir)
 
     def test_basic_export(self):
-        export_dir = tmp_dir()
+        export_dir = shared.create_dir()
         self.cache.export_tree(self.content_tree, export_dir)
-        self.assertDictEqual(self.content, read_contents_from_dir(export_dir))
+        self.assertDictEqual(self.content, shared.read_dir(export_dir))
 
     def test_multiple_imports(self):
         new_content = {"fee/fi": "fo fum"}
-        new_tree = self.cache.import_tree(
-            create_dir_with_contents(new_content))
-        export_dir = tmp_dir()
+        new_tree = self.cache.import_tree(shared.create_dir(new_content))
+        export_dir = shared.create_dir()
         self.cache.export_tree(new_tree, export_dir)
-        self.assertDictEqual(new_content, read_contents_from_dir(export_dir))
+        self.assertDictEqual(new_content, shared.read_dir(export_dir))
 
     def test_export_with_existing_files(self):
         # Create a dir with an existing file that doesn't conflict.
         more_content = {"untracked": "stuff"}
-        export_dir = create_dir_with_contents(more_content)
+        export_dir = shared.create_dir(more_content)
         self.cache.export_tree(self.content_tree, export_dir)
         expected_content = self.content.copy()
         expected_content.update(more_content)
-        self.assertDictEqual(expected_content,
-                             read_contents_from_dir(export_dir))
+        self.assertDictEqual(expected_content, shared.read_dir(export_dir))
 
         # But if we try to export twice, the export_dir will now have
         # conflicting files, and export_tree() should throw.
@@ -46,22 +43,22 @@ class CacheTest(unittest.TestCase):
 
     def test_previous_tree(self):
         # Create some new content.
-        export_dir = create_dir_with_contents(self.content)
+        export_dir = shared.create_dir(self.content)
         new_content = {"a": "different", "b/c": "bar"}
-        new_dir = create_dir_with_contents(new_content)
+        new_dir = shared.create_dir(new_content)
         new_tree = self.cache.import_tree(new_dir)
 
         # Now use cache.export_tree to move from the original content to the
         # different content.
         self.cache.export_tree(new_tree, export_dir,
                                previous_tree=self.content_tree)
-        self.assertDictEqual(new_content, read_contents_from_dir(export_dir))
+        self.assertDictEqual(new_content, shared.read_dir(export_dir))
 
         # Now do the same thing again, but use a dirty working copy. This
         # should cause an error.
         dirty_content = self.content.copy()
         dirty_content["a"] = "dirty"
-        dirty_dir = create_dir_with_contents(dirty_content)
+        dirty_dir = shared.create_dir(dirty_content)
         with self.assertRaises(Cache.DirtyWorkingCopyError):
             self.cache.export_tree(new_tree, dirty_dir,
                                    previous_tree=self.content_tree)
@@ -70,8 +67,7 @@ class CacheTest(unittest.TestCase):
         # the previous tree and the new one.
         no_conflict_dirty_content = self.content.copy()
         no_conflict_dirty_content["b/c"] = "dirty"
-        no_conflict_dirty_dir = create_dir_with_contents(
-            no_conflict_dirty_content)
+        no_conflict_dirty_dir = shared.create_dir(no_conflict_dirty_content)
         with self.assertRaises(Cache.DirtyWorkingCopyError):
             self.cache.export_tree(new_tree, no_conflict_dirty_dir,
                                    previous_tree=self.content_tree)
@@ -98,9 +94,9 @@ class CacheTest(unittest.TestCase):
         expected_content = dict(self.content)
         for path, content in self.content.items():
             expected_content[os.path.join("subdir", path)] = content
-        export_dir = tmp_dir()
+        export_dir = shared.create_dir()
         self.cache.export_tree(merged_tree, export_dir)
-        exported_content = read_contents_from_dir(export_dir)
+        exported_content = shared.read_dir(export_dir)
         self.assertDictEqual(exported_content, expected_content)
 
         with self.assertRaises(Cache.GitError):

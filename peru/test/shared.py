@@ -2,14 +2,16 @@ import os
 import tempfile
 
 
-def tmp_dir():
+def _tmp_dir():
     tmp_root = "/tmp/perutest"
     os.makedirs(tmp_root, mode=0o777, exist_ok=True)
     return tempfile.mkdtemp(dir=tmp_root)
 
 
-def create_dir_with_contents(path_contents_map):
-    dir = tmp_dir()
+def create_dir(path_contents_map=None):
+    dir = _tmp_dir()
+    if path_contents_map is None:
+        return dir
     for path, contents in path_contents_map.items():
         full_path = os.path.join(dir, path)
         full_parent = os.path.dirname(full_path)
@@ -20,7 +22,7 @@ def create_dir_with_contents(path_contents_map):
     return dir
 
 
-def read_contents_from_dir(dir):
+def read_dir(dir):
     contents = {}
     for subdir, _, files in os.walk(dir):
         for file in files:
