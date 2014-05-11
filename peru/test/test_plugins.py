@@ -7,19 +7,27 @@ import peru.test.shared as shared
 
 class PluginsTest(unittest.TestCase):
 
-    def test_git(self):
-        content = {"some": "stuff", "to/check": "in"}
-        git_repo = GitRepo(content)
-        cache_root = shared.create_dir()
-        fetch_dir = shared.create_dir()
-        plugin_fields = {"url": git_repo.path}
-        plugin_fetch(cache_root, "git", fetch_dir, plugin_fields)
-        self.assertDictEqual(shared.read_dir(fetch_dir), content)
+    def setUp(self):
+        self.content = {"some": "stuff", "to/check": "in"}
+        self.content_dir = shared.create_dir(self.content)
+        self.fetch_dir = shared.create_dir()
+        self.cache_root = shared.create_dir()
+
+    def test_git_plugin(self):
+        GitRepo(self.content_dir)
+        plugin_fields = {"url": self.content_dir}
+        plugin_fetch(self.cache_root, "git", self.fetch_dir, plugin_fields)
+        self.assertDictEqual(shared.read_dir(self.fetch_dir), self.content)
+
+    def test_path_plugin(self):
+        plugin_fields = {"path": self.content_dir}
+        plugin_fetch(self.cache_root, "path", self.fetch_dir, plugin_fields)
+        self.assertDictEqual(shared.read_dir(self.fetch_dir), self.content)
 
 
 class GitRepo:
-    def __init__(self, content):
-        self.path = shared.create_dir(content)
+    def __init__(self, content_dir):
+        self.path = content_dir
         self.run("git init -q")
         self.run("git config user.name peru")
         self.run("git config user.email peru")
