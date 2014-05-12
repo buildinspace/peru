@@ -1,6 +1,5 @@
 import os
 import subprocess
-import sys
 
 
 def plugin_path(type):
@@ -9,7 +8,7 @@ def plugin_path(type):
     return path
 
 
-def plugin_fetch(cache_root, type, dest, plugin_fields, *, verbose=False):
+def plugin_fetch(cache_root, type, dest, plugin_fields):
     path = plugin_path(type)
     assert os.path.isfile(path), type + " plugin doesn't exist."
     assert os.access(path, os.X_OK), type + " plugin isn't executable."
@@ -23,6 +22,4 @@ def plugin_fetch(cache_root, type, dest, plugin_fields, *, verbose=False):
         command.append(plugin_fields[field_name])
 
     output = subprocess.check_output(command, stderr=subprocess.STDOUT)
-
-    if verbose:
-        sys.stdout.buffer.write(output)
+    return output.decode('utf8')
