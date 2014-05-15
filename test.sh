@@ -78,7 +78,7 @@ echo lib path $lib_repo
 echo exe path $exe_repo
 
 run_peru() {
-  "$repo_root/peru.sh"
+  "$repo_root/peru.sh" sync
 }
 
 # invoke peru to pull in the first commit
