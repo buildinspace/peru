@@ -11,6 +11,7 @@ class CacheTest(unittest.TestCase):
         self.content = {
             "a": "foo",
             "b/c": "bar",
+            "b/d": "baz",
         }
         self.content_dir = shared.create_dir(self.content)
         self.content_tree = self.cache.import_tree(self.content_dir)
@@ -42,9 +43,12 @@ class CacheTest(unittest.TestCase):
             self.cache.export_tree(self.content_tree, export_dir)
 
     def test_previous_tree(self):
-        # Create some new content.
         export_dir = shared.create_dir(self.content)
-        new_content = {"a": "different", "b/c": "bar"}
+
+        # Create some new content.
+        new_content = self.content.copy()
+        new_content["a"] += " different"
+        new_content["newfile"] = "newfile stuff"
         new_dir = shared.create_dir(new_content)
         new_tree = self.cache.import_tree(new_dir)
 
@@ -57,7 +61,7 @@ class CacheTest(unittest.TestCase):
         # Now do the same thing again, but use a dirty working copy. This
         # should cause an error.
         dirty_content = self.content.copy()
-        dirty_content["a"] = "dirty"
+        dirty_content["a"] += " dirty"
         dirty_dir = shared.create_dir(dirty_content)
         with self.assertRaises(Cache.DirtyWorkingCopyError):
             self.cache.export_tree(new_tree, dirty_dir,
@@ -66,7 +70,7 @@ class CacheTest(unittest.TestCase):
         # Make sure we get an error even if the dirty file is unchanged between
         # the previous tree and the new one.
         no_conflict_dirty_content = self.content.copy()
-        no_conflict_dirty_content["b/c"] = "dirty"
+        no_conflict_dirty_content["b/c"] += " dirty"
         no_conflict_dirty_dir = shared.create_dir(no_conflict_dirty_content)
         with self.assertRaises(Cache.DirtyWorkingCopyError):
             self.cache.export_tree(new_tree, no_conflict_dirty_dir,
