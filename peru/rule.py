@@ -34,6 +34,9 @@ class Rule:
             export_dir = tmp_dir
             if self.export:
                 export_dir = os.path.join(tmp_dir, self.export)
+            if not os.path.exists(export_dir):
+                raise RuntimeError(
+                    "export dir '{}' doesn't exist".format(self.export))
             tree = cache.import_tree(export_dir)
         finally:
             # TODO: Test that everything in the temp dir gets cleaned.

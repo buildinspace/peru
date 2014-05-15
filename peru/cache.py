@@ -95,11 +95,8 @@ class Cache:
         self._git("branch", "-f", name, commit)
 
     def import_tree(self, src):
-        # We're going to return a tree hash to the caller, but we want a real
-        # commit representing that tree to be stored in a real branch. That's
-        # both because we don't want this tree to get garbage-collected, and
-        # because it's nicer for debugging to be able to see the output of your
-        # rules.
+        if not os.path.exists(src):
+            raise RuntimeError("import tree called on nonexistent path " + src)
         self._git("read-tree", "--empty")  # clear the index for safety
         self._git("add", "--all", work_tree=src)
         tree = self._git("write-tree")
