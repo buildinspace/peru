@@ -191,7 +191,7 @@ class Cache:
         try:
             self._git("checkout", next_commit, work_tree=dest)
         except self.GitError as e:
-            raise self.DirtyWorkingCopyError(e.output)
+            raise self.DirtyWorkingCopyError(e.output) from e
 
     # TODO: Have tmp_file and tmp_dir return a nice context manager.
     def tmp_file(self):
