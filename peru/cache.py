@@ -123,6 +123,10 @@ class Cache:
                 raise RuntimeError("Unexpected status line: " + repr(line))
         return TreeStatus(modified, deleted)
 
+    class MergeConflictError(RuntimeError):
+        def __init__(self, msg):
+            RuntimeError.__init__(self, msg)
+
     def merge_trees(self, base_tree, merge_tree, merge_path):
         if base_tree:
             self._git("read-tree", base_tree)
@@ -147,7 +151,10 @@ class Cache:
         # stomp on the working copy. The -i flag tells it to pretend the
         # working copy doesn't exist. (Which is important, because we don't
         # have one right now!)
-        self._git("read-tree", "-i", "--prefix", prefix, merge_tree)
+        try:
+            self._git("read-tree", "-i", "--prefix", prefix, merge_tree)
+        except self.GitError as e:
+            raise self.MergeConflictError(e.output) from e
 
         unified_tree = self._git("write-tree")
         return unified_tree

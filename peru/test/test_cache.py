@@ -103,7 +103,7 @@ class CacheTest(unittest.TestCase):
         exported_content = shared.read_dir(export_dir)
         self.assertDictEqual(exported_content, expected_content)
 
-        with self.assertRaises(Cache.GitError):
+        with self.assertRaises(Cache.MergeConflictError):
             # subdir/ is already populated, so this merge should throw.
             self.cache.merge_trees(merged_tree, self.content_tree, "subdir")
 
