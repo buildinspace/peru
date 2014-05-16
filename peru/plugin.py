@@ -21,5 +21,5 @@ def plugin_fetch(cache_root, type, dest, plugin_fields):
         command.append("--" + field_name)
         command.append(plugin_fields[field_name])
 
-    output = subprocess.check_output(command, stderr=subprocess.STDOUT)
+    output = subprocess.check_output(command)
     return output.decode('utf8')
