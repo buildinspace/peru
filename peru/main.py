@@ -44,9 +44,9 @@ def build_argparser():
         help="build a local rule, implies sync",
     ).add_argument(
         "rules",
-        nargs="+",
+        nargs="*",
         metavar="rule",
-        help="name of the local rule to build",
+        help="name of a rule to build locally, after any default rule"
     )
 
     return argparser
@@ -87,5 +87,5 @@ def main():
     if args.command in ("sync", "build"):
         local_module.apply_imports(resolver)
     if args.command == "build":
-        for rule in args.rules:
-            local_module.do_build(resolver, rule)
+        rules = resolver.get_rules(args.rules)
+        local_module.do_build(rules)

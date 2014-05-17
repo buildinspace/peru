@@ -1,11 +1,10 @@
 import os
 
-from .rule import Rule
-
 
 class LocalModule:
-    def __init__(self, imports):
+    def __init__(self, imports, default_rule):
         self.imports = imports
+        self.default_rule = default_rule
         self.path = "."
 
     def apply_imports(self, resolver):
@@ -22,9 +21,8 @@ class LocalModule:
         with open(last_imports_tree_path, "w") as f:
             f.write(unified_imports_tree)
 
-    def do_build(self, resolver, target_str):
-        target = resolver.get_target(target_str)
-        if not isinstance(target, Rule) or "." in target_str:
-            raise RuntimeError('Target "{}" is not a local rule.'.format(
-                target_str))
-        target.do_build(self.path)
+    def do_build(self, rules):
+        if self.default_rule:
+            self.default_rule.do_build(self.path)
+        for rule in rules:
+            rule.do_build(self.path)

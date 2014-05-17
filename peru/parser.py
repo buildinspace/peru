@@ -23,38 +23,23 @@ def parse_string(yaml_str):
     return _parse_toplevel(blob)
 
 
-def _extract_rules(blob):
-    rules = {}
+def _parse_toplevel(blob):
+    scope = {}
+    _extract_rules(blob, scope)
+    _extract_modules(blob, scope)
+    local_module = _build_local_module(blob)
+    return (scope, local_module)
+
+
+def _extract_rules(blob, scope):
     for field in list(blob.keys()):
         parts = field.split()
         if len(parts) == 2 and parts[0] == "rule":
+            _, name = parts
             inner_blob = blob.pop(field)  # remove the field from blob
             inner_blob = {} if inner_blob is None else inner_blob
-            name = parts[1]
-            rules[name] = _build_rule(name, inner_blob)
-    return rules
-
-
-def _extract_modules(blob):
-    scope = {}
-    for field in list(blob.keys()):
-        parts = field.split()
-        if len(parts) == 3 and parts[1] == "module":
-            type, _, name = parts
-            inner_blob = blob.pop(field)  # remove the field from blob
-            inner_blob = {} if inner_blob is None else inner_blob
-            rules = _extract_rules(inner_blob)
-            module = _build_remote_module(name, type, inner_blob)
-            module_scope = {name: module}
-            _add_to_scope(module_scope, rules, prefix=name + ".")
-            _add_to_scope(scope, module_scope)
-    return scope
-
-
-def _build_remote_module(name, type, blob):
-    imports = blob.pop("imports", {})
-    module = RemoteModule(name, type, imports, plugin_fields=blob)
-    return module
+            rule = _build_rule(name, inner_blob)
+            _add_to_scope(scope, name, rule)
 
 
 def _build_rule(name, blob):
@@ -70,22 +55,39 @@ def _build_rule(name, blob):
     return rule
 
 
+def _extract_modules(blob, scope):
+    for field in list(blob.keys()):
+        parts = field.split()
+        if len(parts) == 3 and parts[1] == "module":
+            type, _, name = parts
+            inner_blob = blob.pop(field)  # remove the field from blob
+            inner_blob = {} if inner_blob is None else inner_blob
+            module = _build_remote_module(name, type, inner_blob)
+            _add_to_scope(scope, name, module)
+
+
+def _build_remote_module(name, type, blob):
+    imports = blob.pop("imports", {})
+    default_rule = _extract_default_rule(blob)
+    module = RemoteModule(name, type, imports, default_rule, blob)
+    return module
+
+
 def _build_local_module(blob):
     imports = blob.pop("imports", {})
+    default_rule = _extract_default_rule(blob)
     if blob:
         raise ParserError("Unknown toplevel fields: " +
                           ", ".join(blob.keys()))
-    return LocalModule(imports)
+    return LocalModule(imports, default_rule)
 
 
-def _parse_toplevel(blob):
-    scope = {}
-    rules = _extract_rules(blob)
-    _add_to_scope(scope, rules)
-    modules = _extract_modules(blob)
-    _add_to_scope(scope, modules)
-    local_module = _build_local_module(blob)
-    return (scope, local_module)
+def _extract_default_rule(blob):
+    if "rule" not in blob:
+        return None
+    rule_blob = blob.pop("rule")
+    rule = _build_rule("<default>", rule_blob)
+    return rule
 
 
 def _validate_name(name):
@@ -94,9 +96,7 @@ def _validate_name(name):
     return name
 
 
-def _add_to_scope(scope, new_items, prefix=""):
-    prefixed_items = {prefix + key: val for key, val in new_items.items()}
-    for key in prefixed_items:
-        if key in scope:
-            raise ParserError(key + " is defined more than once.")
-    scope.update(prefixed_items)
+def _add_to_scope(scope, name, obj):
+    if name in scope:
+        raise ParserError('"{}" is defined more than once'.format(name))
+    scope[name] = obj

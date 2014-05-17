@@ -12,6 +12,7 @@ class ParserTest(unittest.TestCase):
         scope, local_module = parse_string("")
         self.assertDictEqual(scope, {})
         self.assertDictEqual(local_module.imports, {})
+        self.assertEqual(local_module.default_rule, None)
 
     def test_parse_rule(self):
         input = dedent("""\
@@ -49,18 +50,16 @@ class ParserTest(unittest.TestCase):
                              {"url": "http://www.example.com/",
                               "rev": "abcdefg"})
 
-    def test_parse_nested_rule(self):
+    def test_parse_module_default_rule(self):
         input = dedent("""\
             git module bar:
-                rule baz:
+                rule:
             """)
         scope, local_module = parse_string(input)
         self.assertIn("bar", scope)
         module = scope["bar"]
         self.assertIsInstance(module, RemoteModule)
-        self.assertIn("bar.baz", scope)
-        rule = scope["bar.baz"]
-        self.assertIsInstance(rule, Rule)
+        self.assertIsInstance(module.default_rule, Rule)
 
     def test_parse_toplevel_imports(self):
         input = dedent("""\
@@ -85,8 +84,6 @@ class ParserTest(unittest.TestCase):
     def test_bad_rule_name_throw(self):
         with self.assertRaises(ParserError):
             parse_string("rule foo bar:")
-        with self.assertRaises(ParserError):
-            parse_string("rule:")
 
     def test_bad_module_name_throw(self):
         with self.assertRaises(ParserError):

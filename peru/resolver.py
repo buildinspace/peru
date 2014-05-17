@@ -37,25 +37,25 @@ class Resolver:
         return unified_imports_tree
 
     def get_tree(self, target_str):
-        target = self.get_target(target_str)
-        if isinstance(target, RemoteModule):
-            return target.get_tree(self.cache, self)
-        elif isinstance(target, Rule):
-            parent = self.get_parent(target_str)
-            input_tree = parent.get_tree(self.cache, self)
-            return target.get_tree(self.cache, self, input_tree)
-        else:
-            raise NotImplementedError("What is this? " + type(target))
+        module, rules = self.parse_target(target_str)
+        tree = module.get_tree(self.cache, self)
+        if module.default_rule:
+            tree = module.default_rule.get_tree(self.cache, self, tree)
+        for rule in rules:
+            tree = rule.get_tree(self.cache, self, tree)
+        return tree
 
-    def get_target(self, target_str):
-        if target_str not in self.scope:
-            raise RuntimeError("Unknown target: " + repr(target_str))
-        return self.scope[target_str]
+    def parse_target(self, target_str):
+        module_name, *rule_names = target_str.split(":")
+        module = self.scope[module_name]
+        assert isinstance(module, RemoteModule)
+        rules = [self.scope[name] for name in rule_names]
+        assert all(isinstance(rule, Rule) for rule in rules)
+        return module, rules
 
-    def get_parent(self, target_str):
-        parent_str = ".".join(target_str.split(".")[:-1])
-        if parent_str == "":
-            raise RuntimeError('Target "{}" has no parent.'.format(target_str))
-        return self.get_target(parent_str)
+    def get_rules(self, rule_names):
+        rules = [self.scope[name] for name in rule_names]
+        assert all(isinstance(rule, Rule) for rule in rules)
+        return rules
 
 TreePath = collections.namedtuple("TreePath", ["tree", "path", "target"])

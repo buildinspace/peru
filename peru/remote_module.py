@@ -5,10 +5,11 @@ from .plugin import plugin_fetch
 
 
 class RemoteModule:
-    def __init__(self, name, type, imports, plugin_fields):
+    def __init__(self, name, type, imports, default_rule, plugin_fields):
         self.name = name
         self.type = type
         self.imports = imports
+        self.default_rule = default_rule
         self.plugin_fields = plugin_fields
 
     def cache_key(self, resolver):
