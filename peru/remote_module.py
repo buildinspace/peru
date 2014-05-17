@@ -1,5 +1,3 @@
-import shutil
-
 from .cache import compute_key
 from .plugin import plugin_fetch
 
@@ -28,12 +26,9 @@ class RemoteModule:
         if key in cache.keyval:
             # tree is already in cache
             return cache.keyval[key]
-        tmp_dir = cache.tmp_dir()
-        try:
+        with cache.tmp_dir() as tmp_dir:
             plugin_fetch(cache.root, self.type, tmp_dir, self.plugin_fields)
             resolver.apply_imports(self.imports, tmp_dir)
             tree = cache.import_tree(tmp_dir)
-        finally:
-            shutil.rmtree(tmp_dir)
         cache.keyval[key] = tree
         return tree

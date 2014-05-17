@@ -209,9 +209,9 @@ class Cache:
         # in a shared location like /tmp. Our temp directory is under
         # .peru-cache/, so we don't need to be extra restrictive. Also weird
         # permissions confuse utilities like os.makedirs(exist_ok=True).
-        path = tempfile.mkdtemp(dir=self.tmp_path)
-        os.chmod(path, 0o755)
-        return path
+        dir = tempfile.TemporaryDirectory(dir=self.tmp_path)
+        os.chmod(dir.name, 0o755)
+        return dir
 
 
 class KeyVal:

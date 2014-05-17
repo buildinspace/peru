@@ -1,5 +1,4 @@
 import os
-import shutil
 import subprocess
 
 from .cache import compute_key
@@ -27,8 +26,7 @@ class Rule:
         if key in cache.keyval:
             return cache.keyval[key]
 
-        tmp_dir = cache.tmp_dir()
-        try:
+        with cache.tmp_dir() as tmp_dir:
             cache.export_tree(input_tree, tmp_dir)
             self.do_build(tmp_dir)
             export_dir = tmp_dir
@@ -38,9 +36,6 @@ class Rule:
                 raise RuntimeError(
                     "export dir '{}' doesn't exist".format(self.export))
             tree = cache.import_tree(export_dir)
-        finally:
-            # TODO: Test that everything in the temp dir gets cleaned.
-            shutil.rmtree(tmp_dir)
 
         cache.keyval[key] = tree
         return tree
