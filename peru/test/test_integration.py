@@ -22,14 +22,14 @@ class IntegrationTest(unittest.TestCase):
         with open(os.path.join(self.peru_dir, "peru.yaml"), "w") as f:
             f.write(self.peru_yaml)
 
-    def do_integration_test(self, args, expected, *, capture_stderr=False):
+    def do_integration_test(self, args, expected, *, silent=False):
         # Keep the cache dir from cluttering the expected outputs.
         env = os.environ.copy()
         env["PERU_CACHE"] = self.cache_dir
 
-        stderr = subprocess.STDOUT if capture_stderr else None
-        subprocess.check_output([peru_bin] + args, cwd=self.peru_dir, env=env,
-                                stderr=stderr)
+        output = subprocess.DEVNULL if silent else None
+        subprocess.check_call([peru_bin] + args, cwd=self.peru_dir, env=env,
+                              stdout=output, stderr=output)
 
         expected_with_yaml = expected.copy()
         expected_with_yaml["peru.yaml"] = self.peru_yaml
@@ -52,7 +52,7 @@ class IntegrationTest(unittest.TestCase):
             f.write("dirty")
         with self.assertRaises(subprocess.CalledProcessError):
             self.do_integration_test(["sync"], {"subdir/foo": "bar"},
-                                     capture_stderr=True)
+                                     silent=True)
 
     def test_module_rules(self):
         template = """\
