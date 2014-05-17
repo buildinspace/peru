@@ -8,3 +8,5 @@ for var in `env | grep PERU_ | cut -d = -f 1` ; do
 done
 
 python3 -m unittest discover --start peru
+
+flake8 $(find peru -name '*.py')
