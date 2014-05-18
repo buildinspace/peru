@@ -27,9 +27,11 @@ class IntegrationTest(unittest.TestCase):
         with open(os.path.join(self.peru_dir, "peru.yaml"), "w") as f:
             f.write(self.peru_yaml)
 
-    def do_integration_test(self, args, expected, *, silent=False):
+    def do_integration_test(self, args, expected, *, silent=False,
+                            env_vars=None):
         # Keep the cache dir from cluttering the expected outputs.
         env = os.environ.copy()
+        env.update(env_vars or {})
         env["PERU_CACHE"] = self.cache_dir
 
         output = subprocess.DEVNULL if silent else None
@@ -50,8 +52,13 @@ class IntegrationTest(unittest.TestCase):
                 foo: subdir
             """)
         self.do_integration_test(["sync"], {"subdir/foo": "bar"})
+        self.assertTrue(
+            os.path.exists(os.path.join(self.cache_dir, "plugins", "path")),
+            msg="Plugin cache should be written to the right place.")
+
         # Running it again should be a no-op.
         self.do_integration_test(["sync"], {"subdir/foo": "bar"})
+
         # Running it with a dirty working copy should be an error.
         with open(os.path.join(self.peru_dir, "subdir", "foo"), "w") as f:
             f.write("dirty")
@@ -115,3 +122,19 @@ class IntegrationTest(unittest.TestCase):
             "lo": "hihihi",
             "fi": "feefee",
         })
+
+    def test_alternate_plugins_cache(self):
+        self.write_peru_yaml("""\
+            path module foo:
+                path: {}
+
+            imports:
+                foo: subdir
+            """)
+        plugins_cache = shared.create_dir()
+        env_vars = {"PERU_PLUGINS_CACHE": plugins_cache}
+        self.do_integration_test(["sync"], {"subdir/foo": "bar"},
+                                 env_vars=env_vars)
+        self.assertTrue(os.path.exists(os.path.join(plugins_cache, "path")))
+        self.assertFalse(os.path.exists(
+            os.path.join(self.cache_dir, "plugins")))

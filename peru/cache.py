@@ -22,8 +22,13 @@ def compute_key(data):
 
 
 class Cache:
-    def __init__(self, root):
+    def __init__(self, root, plugins_root=None):
         self.root = root
+        self.plugins_root = (plugins_root if plugins_root is not None else
+                             os.path.join(root, "plugins"))
+        # Don't freak out if plugins_root has nonstandard permissions.
+        if not os.path.exists(self.plugins_root):
+            os.makedirs(self.plugins_root)
         self.tmp_path = os.path.join(root, "tmp")
         os.makedirs(self.tmp_path, exist_ok=True)
         self.keyval = KeyVal(self)

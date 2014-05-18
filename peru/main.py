@@ -80,7 +80,8 @@ def main():
         print(peru_file + " not found")
         sys.exit(1)
     cache_root = os.getenv("PERU_CACHE") or ".peru-cache"
-    cache = Cache(cache_root)
+    plugins_root = os.getenv("PERU_PLUGINS_CACHE")
+    cache = Cache(cache_root, plugins_root)
     scope, local_module = parse_file(peru_file)
     resolver = Resolver(scope, cache)
 
