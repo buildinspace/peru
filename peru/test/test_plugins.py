@@ -51,7 +51,7 @@ class PluginsTest(unittest.TestCase):
         self.assertEqual(output.count("git fetch"), 1)
 
     def test_path_plugin(self):
-        self.do_plugin_test("path", {"path": self.content_dir}, self.content)
+        self.do_plugin_test("cp", {"path": self.content_dir}, self.content)
 
     def test_empty_plugin(self):
         self.do_plugin_test("empty", {}, {})

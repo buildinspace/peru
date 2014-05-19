@@ -45,7 +45,7 @@ class IntegrationTest(unittest.TestCase):
 
     def test_basic_import(self):
         self.write_peru_yaml("""\
-            path module foo:
+            cp module foo:
                 path: {}
 
             imports:
@@ -53,7 +53,7 @@ class IntegrationTest(unittest.TestCase):
             """)
         self.do_integration_test(["sync"], {"subdir/foo": "bar"})
         self.assertTrue(
-            os.path.exists(os.path.join(self.cache_dir, "plugins", "path")),
+            os.path.exists(os.path.join(self.cache_dir, "plugins", "cp")),
             msg="Plugin cache should be written to the right place.")
 
         # Running it again should be a no-op.
@@ -68,7 +68,7 @@ class IntegrationTest(unittest.TestCase):
 
     def test_module_rules(self):
         template = """\
-            path module foo:
+            cp module foo:
                 path: {}
                 rule:
                     build: echo -n 2 >> foo; mkdir baz; mv foo baz
@@ -92,7 +92,7 @@ class IntegrationTest(unittest.TestCase):
 
     def test_local_build(self):
         self.write_peru_yaml("""\
-            path module foo:
+            cp module foo:
                 path: {}
 
             imports:
@@ -125,7 +125,7 @@ class IntegrationTest(unittest.TestCase):
 
     def test_alternate_plugins_cache(self):
         self.write_peru_yaml("""\
-            path module foo:
+            cp module foo:
                 path: {}
 
             imports:
@@ -135,6 +135,6 @@ class IntegrationTest(unittest.TestCase):
         env_vars = {"PERU_PLUGINS_CACHE": plugins_cache}
         self.do_integration_test(["sync"], {"subdir/foo": "bar"},
                                  env_vars=env_vars)
-        self.assertTrue(os.path.exists(os.path.join(plugins_cache, "path")))
+        self.assertTrue(os.path.exists(os.path.join(plugins_cache, "cp")))
         self.assertFalse(os.path.exists(
             os.path.join(self.cache_dir, "plugins")))
