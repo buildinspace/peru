@@ -53,6 +53,9 @@ class PluginsTest(unittest.TestCase):
     def test_path_plugin(self):
         self.do_plugin_test("path", {"path": self.content_dir}, self.content)
 
+    def test_empty_plugin(self):
+        self.do_plugin_test("empty", {}, {})
+
 
 class GitRepo:
     def __init__(self, content_dir):
