@@ -18,11 +18,6 @@ class GitJob:
         self.run()
 
     def git(self, git_dir, *args):
-        if set(args) & {"clone", "fetch", "checkout"}:
-            logline = "git " + " ".join(args)
-            if len(logline) > 80:
-                logline = logline[:77] + "..."
-            print(logline)
         # avoid forgetting this arg
         assert git_dir is None or path.isdir(git_dir)
         command = ["git"]
@@ -39,12 +34,16 @@ class GitJob:
                 .format(process.returncode, " ".join(command), output))
         return output
 
+    def log(self, command):
+        print("git {} {}".format(command, self.url))
+
     def git_clone_cached(self, url):
         escaped = urllib.parse.quote(url, safe="")
         repo_path = path.join(self.cache_path, escaped)
         if not path.exists(repo_path):
             os.makedirs(repo_path)
             try:
+                self.log("clone")
                 self.git(None, "clone", "--mirror", url, repo_path)
             except:
                 # Delete the whole thing if the clone failed, to avoid
@@ -66,6 +65,7 @@ class GitJob:
         return output.strip() == rev
 
     def checkout_tree(self, clone, rev, dest):
+        self.log("checkout")
         self.git(clone, "--work-tree=" + dest, "checkout", rev, "--", ".")
         self.handle_subrepos(clone, rev, dest)
 
@@ -88,6 +88,7 @@ class GitJob:
     def run(self):
         cached_dir = self.git_clone_cached(self.url)
         if not self.git_already_has_rev(cached_dir, self.rev):
+            self.log("fetch")
             self.git(cached_dir, "fetch", "--prune")
         self.checkout_tree(cached_dir, self.rev, self.dest)
 
