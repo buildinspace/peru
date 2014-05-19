@@ -15,7 +15,8 @@ class PluginsTest(unittest.TestCase):
 
     def do_plugin_test(self, type, plugin_fields, expected_content):
         fetch_dir = shared.create_dir()
-        output = plugin_fetch(self.cache_root, type, fetch_dir, plugin_fields)
+        output = plugin_fetch(self.cache_root, type, fetch_dir, plugin_fields,
+                              capture_output=True)
         self.assertDictEqual(shared.read_dir(fetch_dir), expected_content,
                              msg="Fetched content did not match expected.")
         return output

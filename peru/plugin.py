@@ -8,7 +8,8 @@ def _plugin_exe_path(type):
     return path
 
 
-def plugin_fetch(plugins_cache_root, type, dest, plugin_fields):
+def plugin_fetch(plugins_cache_root, type, dest, plugin_fields, *,
+                 capture_output=False):
     path = _plugin_exe_path(type)
     assert os.path.isfile(path), type + " plugin doesn't exist."
     assert os.access(path, os.X_OK), type + " plugin isn't executable."
@@ -20,5 +21,8 @@ def plugin_fetch(plugins_cache_root, type, dest, plugin_fields):
         command.append("--" + field_name)
         command.append(plugin_fields[field_name])
 
-    output = subprocess.check_output(command)
-    return output.decode('utf8')
+    if capture_output:
+        output = subprocess.check_output(command)
+        return output.decode('utf8')
+    else:
+        subprocess.check_call(command)
