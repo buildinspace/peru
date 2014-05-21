@@ -16,10 +16,16 @@ def plugin_fetch(plugins_cache_root, type, dest, plugin_fields, *,
 
     plugin_cache = os.path.join(plugins_cache_root, type)
     os.makedirs(plugin_cache, exist_ok=True)
-    command = [path, "--cache", plugin_cache, "fetch", dest]
+
+    assert "--" not in plugin_fields, "-- is not a valid field name"
+    command = [path]
     for field_name in sorted(plugin_fields.keys()):
-        command.append("--" + field_name)
+        command.append(field_name)
         command.append(plugin_fields[field_name])
+    command.append("--")
+    command.append("fetch")
+    command.append(dest)
+    command.append(plugin_cache)
 
     if capture_output:
         output = subprocess.check_output(command)

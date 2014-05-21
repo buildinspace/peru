@@ -95,25 +95,26 @@ class GitJob:
 
 def main():
     sys.argv.pop(0)  # exe name
-    assert sys.argv.pop(0) == "--cache"
-    cache_path = sys.argv.pop(0)
-    assert sys.argv.pop(0) == "fetch"
-    dest = sys.argv.pop(0)
 
     url = None
     rev = "master"
 
-    while sys.argv:
+    while sys.argv[0] != "--":
         name = sys.argv.pop(0)
         val = sys.argv.pop(0)
-        if name == "--url":
+        if name == "url":
             url = val
-        elif name == "--rev":
+        elif name == "rev":
             rev = val
         else:
             raise RuntimeError("Unknown plugin field name: " + name)
-
     assert url is not None
+
+    assert sys.argv.pop(0) == "--"
+    assert sys.argv.pop(0) == "fetch"
+    dest = sys.argv.pop(0)
+    cache_path = sys.argv.pop(0)
+    assert sys.argv == []
 
     GitJob(cache_path, dest, url, rev)
 
