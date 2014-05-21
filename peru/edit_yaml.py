@@ -1,6 +1,21 @@
 import yaml
 
 
+def get_field_bounds(parse_tree, toplevel_name, field_name):
+    for toplevel_event in parse_tree:
+        if toplevel_event.value == toplevel_name:
+            inner_dict = parse_tree[toplevel_event]
+            assert isinstance(inner_dict, dict)
+            for field_event in inner_dict:
+                if field_event.value == field_name:
+                    val_event = inner_dict[field_event]
+                    assert isinstance(val_event, yaml.ScalarEvent)
+                    return (field_event.start_mark.index,
+                            val_event.end_mark.index)
+    raise RuntimeError("Failed to find field '{}'/'{}'".format(
+        toplevel_name, field_name))
+
+
 def build_parse_tree(path):
     with open(path) as f:
         yaml_str = f.read()
