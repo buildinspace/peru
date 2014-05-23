@@ -1,28 +1,55 @@
 import yaml
 
 
-def replace_module_field_in_file(yaml_file_path, module_name, field_name,
-                                 new_val):
+def set_module_field_in_file(yaml_file_path, module_name, field_name, new_val):
     with open(yaml_file_path) as f:
         yaml_text = f.read()
-    new_yaml_text = replace_module_field(yaml_text, module_name, field_name,
-                                         new_val)
+    new_yaml_text = set_module_field(yaml_text, module_name,
+                                     field_name, new_val)
     with open(yaml_file_path, "w") as f:
         f.write(new_yaml_text)
 
 
-def replace_module_field(yaml_text, module_name, field_name, new_val):
-    events_list = list(yaml.parse(yaml_text))
-    yaml_dict = _parse_events_list(events_list)
-    start, end = _get_module_field_bounds(yaml_dict, module_name, field_name)
-    new_yaml_text = yaml_text[:start] + new_val + yaml_text[end:]
-    return new_yaml_text
+def set_module_field(yaml_text, module_name, field_name, new_val):
+    yaml_dict = _parse_yaml_text(yaml_text)
+    bounds = _get_module_field_bounds(yaml_dict, module_name, field_name)
+    if bounds:
+        # field exists, modify it
+        return yaml_text[:bounds[0]] + new_val + yaml_text[bounds[1]:]
+    else:
+        # field is new, hack it in
+        return _append_module_field(yaml_text, yaml_dict, module_name,
+                                    field_name, new_val)
+
+
+def _append_module_field(yaml_text, yaml_dict, module_name,
+                         field_name, new_val):
+    module_fields = yaml_dict[module_name]
+    # use the last field to determine position and indentation
+    assert len(module_fields) > 0, "There aren't any fields here!"
+    last_key = module_fields.keys[-1]
+    last_val = module_fields.vals[-1]
+    indentation = " " * last_key.start_mark.column
+    new_line_number = last_val.end_mark.line + 1
+    yaml_lines = yaml_text.split("\n")
+    new_line = "{}{}: {}".format(indentation, field_name, new_val)
+    new_yaml_lines = (yaml_lines[:new_line_number] +
+                      [new_line] +
+                      yaml_lines[new_line_number:])
+    return "\n".join(new_yaml_lines)
 
 
 def _get_module_field_bounds(yaml_dict, module_name, field_name):
     module_fields = yaml_dict[module_name]
+    if field_name not in module_fields:
+        return None
     field_val = module_fields[field_name]
     return (field_val.start_mark.index, field_val.end_mark.index)
+
+
+def _parse_yaml_text(yaml_text):
+    events_list = list(yaml.parse(yaml_text))
+    return _parse_events_list(events_list)
 
 
 def _parse_events_list(events_list):
