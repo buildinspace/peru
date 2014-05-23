@@ -2,7 +2,7 @@ import os
 import subprocess
 import unittest
 
-from peru.plugin import plugin_fetch
+from peru import plugin
 import peru.test.shared as shared
 
 
@@ -15,8 +15,8 @@ class PluginsTest(unittest.TestCase):
 
     def do_plugin_test(self, type, plugin_fields, expected_content):
         fetch_dir = shared.create_dir()
-        output = plugin_fetch(self.cache_root, type, fetch_dir, plugin_fields,
-                              capture_output=True)
+        output = plugin.plugin_fetch(self.cache_root, type, fetch_dir,
+                                     plugin_fields, capture_output=True)
         self.assertDictEqual(shared.read_dir(fetch_dir), expected_content,
                              msg="Fetched content did not match expected.")
         return output
@@ -40,7 +40,7 @@ class PluginsTest(unittest.TestCase):
 
     def test_git_plugin_multiple_fetches(self):
         content_repo = GitRepo(self.content_dir)
-        head = content_repo.run("git rev-parse HEAD").strip()
+        head = content_repo.run("git rev-parse HEAD")
         plugin_fields = {"url": self.content_dir, "rev": head}
         output = self.do_plugin_test("git", plugin_fields, self.content)
         self.assertEqual(output.count("git clone"), 1)
@@ -49,6 +49,26 @@ class PluginsTest(unittest.TestCase):
         output = self.do_plugin_test("git", plugin_fields, self.content)
         self.assertEqual(output.count("git clone"), 0)
         self.assertEqual(output.count("git fetch"), 1)
+
+    def test_git_plugin_reup(self):
+        repo = GitRepo(self.content_dir)
+        master_head = repo.run("git rev-parse HEAD")
+        repo.run("git checkout -b newbranch")
+        repo.run("git commit --allow-empty -m 'junk'")
+        newbranch_head = repo.run("git rev-parse HEAD")
+        plugin_fields = {"url": self.content_dir}
+        output = plugin.plugin_get_reup_fields(
+            self.cache_root, "git", plugin_fields)
+        expected_plugin_fields = plugin_fields.copy()
+        # By default, the git plugin should reup from master.
+        expected_plugin_fields["rev"] = master_head
+        self.assertDictEqual(expected_plugin_fields, output)
+        # Now specify the reup target explicitly.
+        plugin_fields["reup"] = "newbranch"
+        output = plugin.plugin_get_reup_fields(
+            self.cache_root, "git", plugin_fields)
+        expected_plugin_fields["rev"] = newbranch_head
+        self.assertDictEqual(expected_plugin_fields, output)
 
     def test_path_plugin(self):
         self.do_plugin_test("cp", {"path": self.content_dir}, self.content)
@@ -69,4 +89,4 @@ class GitRepo:
     def run(self, command):
         output = subprocess.check_output(command, shell=True, cwd=self.path,
                                          stderr=subprocess.STDOUT)
-        return output.decode('utf8')
+        return output.decode('utf8').strip()
