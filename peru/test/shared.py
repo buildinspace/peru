@@ -2,14 +2,24 @@ import os
 import tempfile
 
 
-def _tmp_dir():
-    tmp_root = "/tmp/perutest"
-    os.makedirs(tmp_root, mode=0o777, exist_ok=True)
-    return tempfile.mkdtemp(dir=tmp_root)
+def tmp_dir():
+    return tempfile.mkdtemp(dir=_tmp_root())
+
+
+def tmp_file():
+    fd, name = tempfile.mkstemp(dir=_tmp_root())
+    os.close(fd)
+    return name
+
+
+def _tmp_root():
+    root = "/tmp/perutest"
+    os.makedirs(root, mode=0o777, exist_ok=True)
+    return root
 
 
 def create_dir(path_contents_map=None):
-    dir = _tmp_dir()
+    dir = tmp_dir()
     if path_contents_map is None:
         return dir
     for path, contents in path_contents_map.items():

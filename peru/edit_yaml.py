@@ -1,28 +1,35 @@
 import yaml
 
 
-def replace_module_field(yaml_file, module_name, field_name, new_val):
-    with open(yaml_file) as f:
+def replace_module_field_in_file(yaml_file_path, module_name, field_name,
+                                 new_val):
+    with open(yaml_file_path) as f:
         yaml_text = f.read()
-    events_list = list(yaml.parse(yaml_text))
-    yaml_dict = parse_events_list(events_list)
-    start, end = get_module_field_bounds(yaml_dict, module_name, field_name)
-    new_yaml_text = yaml_text[:start] + new_val + yaml_text[end:]
-    with open(yaml_file, "w") as f:
+    new_yaml_text = replace_module_field(yaml_text, module_name, field_name,
+                                         new_val)
+    with open(yaml_file_path, "w") as f:
         f.write(new_yaml_text)
 
 
-def get_module_field_bounds(yaml_dict, module_name, field_name):
+def replace_module_field(yaml_text, module_name, field_name, new_val):
+    events_list = list(yaml.parse(yaml_text))
+    yaml_dict = _parse_events_list(events_list)
+    start, end = _get_module_field_bounds(yaml_dict, module_name, field_name)
+    new_yaml_text = yaml_text[:start] + new_val + yaml_text[end:]
+    return new_yaml_text
+
+
+def _get_module_field_bounds(yaml_dict, module_name, field_name):
     module_fields = yaml_dict[module_name]
     field_val = module_fields[field_name]
     return (field_val.start_mark.index, field_val.end_mark.index)
 
 
-def parse_events_list(events_list):
+def _parse_events_list(events_list):
     event = events_list.pop(0)
     if (isinstance(event, yaml.StreamStartEvent) or
             isinstance(event, yaml.DocumentStartEvent)):
-        ret = parse_events_list(events_list)
+        ret = _parse_events_list(events_list)
         events_list.pop(-1)
         return ret
     elif (isinstance(event, yaml.ScalarEvent) or
@@ -33,7 +40,7 @@ def parse_events_list(events_list):
     elif isinstance(event, yaml.SequenceStartEvent):
         contents = []
         while True:
-            item = parse_events_list(events_list)
+            item = _parse_events_list(events_list)
             if isinstance(item, yaml.SequenceEndEvent):
                 end_event = item
                 return YamlList(event, end_event, contents)
@@ -42,12 +49,12 @@ def parse_events_list(events_list):
         keys = []
         vals = []
         while True:
-            key = parse_events_list(events_list)
+            key = _parse_events_list(events_list)
             if isinstance(key, yaml.MappingEndEvent):
                 end_event = key
                 return YamlDict(event, end_event, keys, vals)
             keys.append(key)
-            val = parse_events_list(events_list)
+            val = _parse_events_list(events_list)
             vals.append(val)
     else:
         raise RuntimeError("Unknown parse event type", event)
