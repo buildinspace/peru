@@ -135,6 +135,7 @@ def main():
         cache_path = sys.argv.pop(0)
         assert sys.argv == []
         clone = git_clone_if_needed(url, cache_path)
+        git("fetch", "--prune", git_dir=clone)
         output = git("rev-parse", reup_target, git_dir=clone)
         new_rev = output.strip()
         print("url:", url)
