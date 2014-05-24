@@ -52,23 +52,30 @@ class PluginsTest(unittest.TestCase):
 
     def test_git_plugin_reup(self):
         repo = GitRepo(self.content_dir)
-        master_head = repo.run("git rev-parse HEAD")
-        repo.run("git checkout -b newbranch")
-        repo.run("git commit --allow-empty -m 'junk'")
-        newbranch_head = repo.run("git rev-parse HEAD")
+        master_head = repo.run("git rev-parse master")
         plugin_fields = {"url": self.content_dir}
-        output = plugin.plugin_get_reup_fields(
-            self.cache_root, "git", plugin_fields)
-        expected_plugin_fields = plugin_fields.copy()
         # By default, the git plugin should reup from master.
-        expected_plugin_fields["rev"] = master_head
-        self.assertDictEqual(expected_plugin_fields, output)
-        # Now specify the reup target explicitly.
-        plugin_fields["reup"] = "newbranch"
+        expected_output = plugin_fields.copy()
+        expected_output["rev"] = master_head
         output = plugin.plugin_get_reup_fields(
             self.cache_root, "git", plugin_fields)
-        expected_plugin_fields["rev"] = newbranch_head
-        self.assertDictEqual(expected_plugin_fields, output)
+        self.assertDictEqual(expected_output, output)
+        # Add some new commits and make sure master gets fetched properly.
+        repo.run("git commit --allow-empty -m 'junk'")
+        repo.run("git checkout -b newbranch")
+        repo.run("git commit --allow-empty -m 'more junk'")
+        new_master_head = repo.run("git rev-parse master")
+        expected_output["rev"] = new_master_head
+        output = plugin.plugin_get_reup_fields(
+            self.cache_root, "git", plugin_fields)
+        self.assertDictEqual(expected_output, output)
+        # Now specify the reup target explicitly.
+        newbranch_head = repo.run("git rev-parse newbranch")
+        plugin_fields["reup"] = "newbranch"
+        expected_output["rev"] = newbranch_head
+        output = plugin.plugin_get_reup_fields(
+            self.cache_root, "git", plugin_fields)
+        self.assertDictEqual(expected_output, output)
 
     def test_path_plugin(self):
         self.do_plugin_test("cp", {"path": self.content_dir}, self.content)
