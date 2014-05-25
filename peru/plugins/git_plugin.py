@@ -110,6 +110,7 @@ def main():
     url = None
     rev = "master"
     reup_target = "master"
+    reup_specified = False
 
     while sys.argv[0] != "--":
         name = sys.argv.pop(0)
@@ -120,6 +121,7 @@ def main():
             rev = val
         elif name == "reup":
             reup_target = val
+            reup_specified = True
         else:
             raise RuntimeError("Unknown plugin field name: " + name)
     assert url is not None
@@ -139,6 +141,8 @@ def main():
         output = git("rev-parse", reup_target, git_dir=clone)
         new_rev = output.strip()
         print("url:", url)
+        if reup_specified:
+            print("reup:", reup_target)
         print("rev:", new_rev)
     else:
         raise RuntimeError("Unknown command: " + command)

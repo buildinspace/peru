@@ -72,6 +72,7 @@ class PluginsTest(unittest.TestCase):
         # Now specify the reup target explicitly.
         newbranch_head = repo.run("git rev-parse newbranch")
         plugin_fields["reup"] = "newbranch"
+        expected_output["reup"] = "newbranch"
         expected_output["rev"] = newbranch_head
         output = plugin.plugin_get_reup_fields(
             self.cache_root, "git", plugin_fields)
