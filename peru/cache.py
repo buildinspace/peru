@@ -189,16 +189,20 @@ class Cache:
 
     # TODO: This method needs to take a filesystem lock.  Probably all of them
     # do.
-    def export_tree(self, tree, dest, previous_tree=None):
+    def export_tree(self, tree, dest, previous_tree=None, *, force=False):
         if not os.path.exists(dest):
             os.makedirs(dest)
 
-        self._throw_if_dirty(previous_tree, dest)
+        if not force:
+            self._throw_if_dirty(previous_tree, dest)
 
         next_commit = self._dummy_commit(tree)
         self._checkout_dummy_commit(previous_tree)
         try:
-            self._git("checkout", next_commit, work_tree=dest)
+            if force:
+                self._git("checkout", next_commit, "--force", work_tree=dest)
+            else:
+                self._git("checkout", next_commit, work_tree=dest)
         except self.GitError as e:
             raise self.DirtyWorkingCopyError(e.output) from e
 

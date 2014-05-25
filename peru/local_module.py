@@ -7,7 +7,7 @@ class LocalModule:
         self.default_rule = default_rule
         self.path = "."
 
-    def apply_imports(self, resolver):
+    def apply_imports(self, resolver, *, force=False):
         last_imports_tree_path = os.path.join(
             resolver.cache.root, "lastimports")
         last_imports_tree = None
@@ -16,7 +16,7 @@ class LocalModule:
                 last_imports_tree = f.read()
 
         unified_imports_tree = resolver.apply_imports(
-            self.imports, self.path, last_imports_tree)
+            self.imports, self.path, last_imports_tree, force=force)
 
         with open(last_imports_tree_path, "w") as f:
             f.write(unified_imports_tree)

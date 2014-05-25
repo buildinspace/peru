@@ -24,30 +24,22 @@ def build_argparser():
         argparser.subcommands[name] = subparser
         return subparser
 
-    add_subcommand(
-        "help",
-        "try `peru help <command>`",
-    ).add_argument(
-        "help_target",
-        metavar="<command>",
-        default=None,
-        nargs="?",
-    )
+    helpcmd = add_subcommand("help", "try `peru help <command>`")
+    helpcmd.add_argument("help_target", metavar="<command>", default=None,
+                         nargs="?")
 
-    add_subcommand(
-        "sync",
-        help="fetch, build, and install local imports",
-    )
+    synccmd = add_subcommand(
+        "sync", help="fetch, build, and install local imports")
+    force_help = "overwrite any changes in the working copy"
+    synccmd.add_argument("-f", "--force", action="store_true", help=force_help)
 
-    add_subcommand(
-        "build",
-        help="build a local rule, implies sync",
-    ).add_argument(
-        "rules",
-        nargs="*",
-        metavar="rule",
-        help="name of a rule to build locally, after any default rule"
-    )
+    buildcmd = add_subcommand("build", help="build a local rule, implies sync")
+    buildcmd.add_argument(
+        "rules", nargs="*", metavar="rule",
+        help="name of a rule to build locally, after any default rule")
+    buildcmd.add_argument(
+        "-f", "--force", action="store_true",
+        help="ignore changes in the working copy")
 
     return argparser
 
@@ -86,7 +78,7 @@ def main():
     resolver = Resolver(scope, cache)
 
     if args.command in ("sync", "build"):
-        local_module.apply_imports(resolver)
+        local_module.apply_imports(resolver, force=args.force)
     if args.command == "build":
         rules = resolver.get_rules(args.rules)
         local_module.do_build(rules)

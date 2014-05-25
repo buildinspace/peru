@@ -31,9 +31,11 @@ class Resolver:
                 unified_tree, import_tree, import_path)
         return unified_tree
 
-    def apply_imports(self, imports, path, last_imports_tree=None):
+    def apply_imports(self, imports, path, last_imports_tree=None, *,
+                      force=False):
         unified_imports_tree = self.merge_import_trees(imports)
-        self.cache.export_tree(unified_imports_tree, path, last_imports_tree)
+        self.cache.export_tree(unified_imports_tree, path, last_imports_tree,
+                               force=force)
         return unified_imports_tree
 
     def get_tree(self, target_str):

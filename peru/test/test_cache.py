@@ -21,6 +21,18 @@ class CacheTest(unittest.TestCase):
         self.cache.export_tree(self.content_tree, export_dir)
         self.assertDictEqual(self.content, shared.read_dir(export_dir))
 
+    def test_export_force(self):
+        # Create a working tree with a conflicting file.
+        dirty_content = {"a": "junk"}
+        export_dir = shared.create_dir(dirty_content)
+        # Export should fail by default.
+        with self.assertRaises(Cache.DirtyWorkingCopyError):
+            self.cache.export_tree(self.content_tree, export_dir)
+        self.assertDictEqual(dirty_content, shared.read_dir(export_dir))
+        # But it should suceed with the force flag.
+        self.cache.export_tree(self.content_tree, export_dir, force=True)
+        self.assertDictEqual(self.content, shared.read_dir(export_dir))
+
     def test_multiple_imports(self):
         new_content = {"fee/fi": "fo fum"}
         new_tree = self.cache.import_tree(shared.create_dir(new_content))
