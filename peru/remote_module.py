@@ -1,5 +1,6 @@
 from .cache import compute_key
-from .plugin import plugin_fetch
+from .edit_yaml import set_module_field_in_file
+from .plugin import plugin_fetch, plugin_get_reup_fields
 
 
 class RemoteModule:
@@ -36,5 +37,13 @@ class RemoteModule:
         cache.keyval[key] = tree
         return tree
 
-    def reup(self, peru_file_name):
-        print("reupping", self.name, '("{}")'.format(self.yaml_name))
+    def reup(self, plugins_root, peru_file_name):
+        print("reup", self.name)
+        reup_fields = plugin_get_reup_fields(plugins_root, self.type,
+                                             self.plugin_fields)
+        for field, val in reup_fields.items():
+            if (field not in self.plugin_fields or
+                    val != self.plugin_fields[field]):
+                print("  {}: {}".format(field, val))
+                set_module_field_in_file(peru_file_name, self.yaml_name, field,
+                                         val)

@@ -120,7 +120,7 @@ class main:
         else:
             modules = self.resolver.get_modules(self.args.modules)
         for module in modules:
-            module.reup(self.peru_file)
+            module.reup(self.cache.plugins_root, self.peru_file)
 
     def help(self):
         if self.args.command is None or self.args.help_target is None:
