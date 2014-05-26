@@ -52,7 +52,7 @@ class GitRepo:
         self.run("git config user.name peru")
         self.run("git config user.email peru")
         self.run("git add -A")
-        self.run("git commit -m 'first commit'")
+        self.run("git commit --allow-empty -m 'first commit'")
 
     def run(self, command):
         output = subprocess.check_output(command, shell=True, cwd=self.path,

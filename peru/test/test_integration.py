@@ -1,11 +1,25 @@
 import os
 import subprocess
-import textwrap
+from textwrap import dedent
 import unittest
 
 import peru.test.shared as shared
+from peru.test.shared import GitRepo
 
 peru_bin = os.path.join(os.path.dirname(__file__), "..", "..", "peru.sh")
+
+
+def run_peru_command(args, peru_dir, cache_dir, *, silent=False,
+                     env_vars=None):
+    # Specifying cache_dir keeps the cache from cluttering the expected
+    # outputs.
+    env = os.environ.copy()
+    env.update(env_vars or {})
+    env["PERU_CACHE"] = cache_dir
+
+    output = subprocess.DEVNULL if silent else None
+    subprocess.check_call([peru_bin] + args, cwd=peru_dir, env=env,
+                          stdout=output, stderr=output)
 
 
 class IntegrationTest(unittest.TestCase):
@@ -23,21 +37,12 @@ class IntegrationTest(unittest.TestCase):
         self.assertListEqual([], tmpfiles, msg="tmp dir is not clean")
 
     def write_peru_yaml(self, template):
-        self.peru_yaml = textwrap.dedent(template.format(self.module_dir))
+        self.peru_yaml = dedent(template.format(self.module_dir))
         with open(os.path.join(self.peru_dir, "peru.yaml"), "w") as f:
             f.write(self.peru_yaml)
 
-    def do_integration_test(self, args, expected, *, silent=False,
-                            env_vars=None):
-        # Keep the cache dir from cluttering the expected outputs.
-        env = os.environ.copy()
-        env.update(env_vars or {})
-        env["PERU_CACHE"] = self.cache_dir
-
-        output = subprocess.DEVNULL if silent else None
-        subprocess.check_call([peru_bin] + args, cwd=self.peru_dir, env=env,
-                              stdout=output, stderr=output)
-
+    def do_integration_test(self, args, expected, **kwargs):
+        run_peru_command(args, self.peru_dir, self.cache_dir, **kwargs)
         expected_with_yaml = expected.copy()
         expected_with_yaml["peru.yaml"] = self.peru_yaml
         self.assertDictEqual(expected_with_yaml,
@@ -138,3 +143,58 @@ class IntegrationTest(unittest.TestCase):
         self.assertTrue(os.path.exists(os.path.join(plugins_cache, "cp")))
         self.assertFalse(os.path.exists(
             os.path.join(self.cache_dir, "plugins")))
+
+
+class ReupIntegrationTest(unittest.TestCase):
+    def setUp(self):
+        template = dedent("""\
+            git module foo:
+                url: {}
+                rev: master
+
+            git module bar:
+                url: {}
+                reup: otherbranch
+            """)
+        self.foo_dir = shared.create_dir()
+        self.foo_repo = GitRepo(self.foo_dir)
+        self.foo_master = self.foo_repo.run("git rev-parse master")
+        self.bar_dir = shared.create_dir()
+        self.bar_repo = GitRepo(self.bar_dir)
+        self.bar_repo.run("git checkout -b otherbranch")
+        self.bar_repo.run("git commit --allow-empty -m junk")
+        self.bar_otherbranch = self.bar_repo.run("git rev-parse otherbranch")
+        self.start_yaml = template.format(self.foo_dir, self.bar_dir)
+        self.peru_dir = shared.create_dir({"peru.yaml": self.start_yaml})
+        self.cache_dir = shared.create_dir()
+
+    def do_integration_test(self, args, expected_yaml, **kwargs):
+        run_peru_command(args, self.peru_dir, self.cache_dir, **kwargs)
+        self.assertDictEqual({"peru.yaml": expected_yaml},
+                             shared.read_dir(self.peru_dir))
+
+    def test_single_reup(self):
+        expected = dedent("""\
+            git module foo:
+                url: {}
+                rev: {}
+
+            git module bar:
+                url: {}
+                reup: otherbranch
+            """).format(self.foo_dir, self.foo_master, self.bar_dir)
+        self.do_integration_test(["reup", "foo"], expected, silent=True)
+
+    def test_reup_all(self):
+        expected = dedent("""\
+            git module foo:
+                url: {}
+                rev: {}
+
+            git module bar:
+                url: {}
+                reup: otherbranch
+                rev: {}
+            """).format(self.foo_dir, self.foo_master, self.bar_dir,
+                        self.bar_otherbranch)
+        self.do_integration_test(["reup", "--all"], expected, silent=True)
