@@ -54,31 +54,49 @@ class SubcommandHelpFormatter(argparse.HelpFormatter):
         return parts
 
 
-def main():
-    argparser = build_argparser()
-    args = argparser.parse_args()
-    if args.command in ("help", None):
-        if args.command == "help" and args.help_target is not None:
-            if args.help_target not in argparser.subcommands:
-                print('"{}" is not a peru command'.format(args.help_target))
-            else:
-                argparser.subcommands[args.help_target].print_help()
+def fail_no_command(command):
+    print('"{}" is not a peru command'.format(command))
+    sys.exit(1)
+
+
+class main:
+    def __init__(self):
+        self.argparser = build_argparser()
+        self.args = self.argparser.parse_args()
+        if self.args.command is None or self.args.command == "help":
+            self.help()
+            return
+        self.setup()
+        self.run()
+
+    def run(self):
+        if self.args.command == "sync":
+            self.local_module.apply_imports(self.resolver,
+                                            force=self.args.force)
+        elif self.args.command == "build":
+            self.local_module.apply_imports(self.resolver,
+                                            force=self.args.force)
+            rules = self.resolver.get_rules(self.args.rules)
+            self.local_module.do_build(rules)
         else:
-            argparser.print_help()
-        return
+            fail_no_command(self.args.command)
 
-    peru_file = os.getenv("PERU_FILE") or "peru.yaml"
-    if not os.path.isfile(peru_file):
-        print(peru_file + " not found")
-        sys.exit(1)
-    cache_root = os.getenv("PERU_CACHE") or ".peru-cache"
-    plugins_root = os.getenv("PERU_PLUGINS_CACHE")
-    cache = Cache(cache_root, plugins_root)
-    scope, local_module = parse_file(peru_file)
-    resolver = Resolver(scope, cache)
+    def setup(self):
+        peru_file = os.getenv("PERU_FILE") or "peru.yaml"
+        if not os.path.isfile(peru_file):
+            print(peru_file + " not found")
+            sys.exit(1)
+        cache_root = os.getenv("PERU_CACHE") or ".peru-cache"
+        plugins_root = os.getenv("PERU_PLUGINS_CACHE") or None
+        self.cache = Cache(cache_root, plugins_root)
+        self.scope, self.local_module = parse_file(peru_file)
+        self.resolver = Resolver(self.scope, self.cache)
 
-    if args.command in ("sync", "build"):
-        local_module.apply_imports(resolver, force=args.force)
-    if args.command == "build":
-        rules = resolver.get_rules(args.rules)
-        local_module.do_build(rules)
+    def help(self):
+        if self.args.command is None or self.args.help_target is None:
+            self.argparser.print_help()
+            return
+        if self.args.help_target not in self.argparser.subcommands:
+            fail_no_command(self.args.help_target)
+            return
+        self.argparser.subcommands[self.args.help_target].print_help()
