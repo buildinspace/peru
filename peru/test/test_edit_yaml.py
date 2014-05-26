@@ -28,6 +28,25 @@ class EditYamlTest(unittest.TestCase):
         new_yaml = edit_yaml.set_module_field(start_yaml, "a", "c", "9")
         self.assertEqual(start_yaml + "   c: 9\n", new_yaml)
 
+    def testInsertWithLastFieldAsDict(self):
+        start_yaml = dedent("""\
+            a:
+              b:
+                foo: bar
+                baz: bing
+            x: y
+            """)
+        end_yaml = dedent("""\
+            a:
+              b:
+                foo: bar
+                baz: bing
+              c: stuff
+            x: y
+            """)
+        edited_yaml = edit_yaml.set_module_field(start_yaml, "a", "c", "stuff")
+        self.assertEqual(end_yaml, edited_yaml)
+
     def testWithFile(self):
         tmp_name = shared.tmp_file()
         start_yaml = yaml_template.format("foo")
