@@ -60,4 +60,12 @@ class Resolver:
         assert all(isinstance(rule, Rule) for rule in rules)
         return rules
 
+    def get_all_modules(self):
+        return {m for m in self.scope.values() if isinstance(m, RemoteModule)}
+
+    def get_modules(self, names):
+        modules = {self.scope[name] for name in names}
+        assert all(isinstance(module, RemoteModule) for module in modules)
+        return modules
+
 TreePath = collections.namedtuple("TreePath", ["tree", "path", "target"])

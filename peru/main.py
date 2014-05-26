@@ -41,6 +41,14 @@ def build_argparser():
         "-f", "--force", action="store_true",
         help="ignore changes in the working copy")
 
+    reupcmd = add_subcommand(
+        "reup", help="update peru.yaml with new data from remotes")
+    reupcmd.add_argument(
+        "modules", nargs="*", metavar="module",
+        help="name of module to update")
+    reupcmd.add_argument("-a", "--all", action="store_true",
+                         help="update all modules")
+
     return argparser
 
 
@@ -65,32 +73,54 @@ class main:
         self.args = self.argparser.parse_args()
         if self.args.command is None or self.args.command == "help":
             self.help()
-            return
-        self.setup()
+            sys.exit(1)
         self.run()
 
-    def run(self):
-        if self.args.command == "sync":
-            self.local_module.apply_imports(self.resolver,
-                                            force=self.args.force)
-        elif self.args.command == "build":
-            self.local_module.apply_imports(self.resolver,
-                                            force=self.args.force)
-            rules = self.resolver.get_rules(self.args.rules)
-            self.local_module.do_build(rules)
-        else:
-            fail_no_command(self.args.command)
-
     def setup(self):
-        peru_file = os.getenv("PERU_FILE") or "peru.yaml"
-        if not os.path.isfile(peru_file):
-            print(peru_file + " not found")
+        self.peru_file = os.getenv("PERU_FILE") or "peru.yaml"
+        if not os.path.isfile(self.peru_file):
+            print(self.peru_file + " not found")
             sys.exit(1)
         cache_root = os.getenv("PERU_CACHE") or ".peru-cache"
         plugins_root = os.getenv("PERU_PLUGINS_CACHE") or None
         self.cache = Cache(cache_root, plugins_root)
-        self.scope, self.local_module = parse_file(peru_file)
+        self.scope, self.local_module = parse_file(self.peru_file)
         self.resolver = Resolver(self.scope, self.cache)
+
+    def run(self):
+        if self.args.command == "sync":
+            self.do_sync()
+        elif self.args.command == "build":
+            self.do_build()
+        elif self.args.command == "reup":
+            self.do_reup()
+        else:
+            fail_no_command(self.args.command)
+
+    def do_sync(self):
+        self.setup()
+        self.local_module.apply_imports(self.resolver, force=self.args.force)
+
+    def do_build(self):
+        self.setup()
+        self.do_sync()
+        rules = self.resolver.get_rules(self.args.rules)
+        self.local_module.do_build(rules)
+
+    def do_reup(self):
+        if not self.args.all and not self.args.modules:
+            self.argparser.subcommands["reup"].print_help()
+            sys.exit(1)
+        if self.args.all and self.args.modules:
+            print("--all cannot be given with explicit modules")
+            sys.exit(1)
+        self.setup()
+        if self.args.all:
+            modules = self.resolver.get_all_modules()
+        else:
+            modules = self.resolver.get_modules(self.args.modules)
+        for module in modules:
+            module.reup(self.peru_file)
 
     def help(self):
         if self.args.command is None or self.args.help_target is None:
