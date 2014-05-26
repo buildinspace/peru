@@ -1,4 +1,5 @@
 import os
+import subprocess
 import tempfile
 
 
@@ -42,3 +43,18 @@ def read_dir(dir):
             relpath = os.path.relpath(path, dir)
             contents[relpath] = content
     return contents
+
+
+class GitRepo:
+    def __init__(self, content_dir):
+        self.path = content_dir
+        self.run("git init")
+        self.run("git config user.name peru")
+        self.run("git config user.email peru")
+        self.run("git add -A")
+        self.run("git commit -m 'first commit'")
+
+    def run(self, command):
+        output = subprocess.check_output(command, shell=True, cwd=self.path,
+                                         stderr=subprocess.STDOUT)
+        return output.decode('utf8').strip()
