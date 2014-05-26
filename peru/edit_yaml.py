@@ -30,8 +30,20 @@ def _append_module_field(yaml_text, yaml_dict, module_name,
     last_key = module_fields.keys[-1]
     last_val = module_fields.vals[-1]
     indentation = " " * last_key.start_mark.column
-    new_line_number = last_val.end_mark.line + 1
     yaml_lines = yaml_text.split("\n")
+
+    # We want to append the new field at the end of the module. Unfortunately,
+    # the end_mark of a multi-line field is actually the first line of the next
+    # toplevel dict. Check for this.
+    if last_val.end_mark.column > 0:
+        new_line_number = last_val.end_mark.line + 1
+    else:
+        new_line_number = last_val.end_mark.line
+        # If the module ended with a line of whitespace, insert before that.
+        prev_line = yaml_lines[new_line_number - 1]
+        if prev_line == "" or prev_line.isspace():
+            new_line_number -= 1
+
     new_line = "{}{}: {}".format(indentation, field_name, new_val)
     new_yaml_lines = (yaml_lines[:new_line_number] +
                       [new_line] +
