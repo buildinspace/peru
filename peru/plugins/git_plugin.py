@@ -71,8 +71,10 @@ class FetchJob:
             output = git("rev-parse", rev, git_dir=repo)
         except:
             return False
-        # Only return true for revs that are absolute hashes.
-        # TODO: Should we assume that tags are reliable?
+        # Only return true for revs that are absolute hashes. We could consider
+        # treating tags the same way, but 1) tags actually can change and 2)
+        # it's not clear at a glance whether something is a branch or a hash.
+        # Keep it simple.
         return output.strip() == rev
 
     def checkout_tree(self, clone, rev, dest):

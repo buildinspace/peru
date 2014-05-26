@@ -206,8 +206,7 @@ class Cache:
         except self.GitError as e:
             raise self.DirtyWorkingCopyError(e.output) from e
 
-    # TODO: Have tmp_file and tmp_dir return a nice context manager.
-    def tmp_file(self):
+    def _tmp_file(self):
         fd, path = tempfile.mkstemp(dir=self.tmp_path)
         os.close(fd)
         os.chmod(path, 0o644)  # See comment in tmp_dir().
@@ -235,7 +234,7 @@ class KeyVal:
 
     def __setitem__(self, key, val):
         # Write to a tmp file first, to avoid partial reads.
-        tmp_path = self.cache.tmp_file()
+        tmp_path = self.cache._tmp_file()
         with open(tmp_path, "w") as f:
             f.write(val)
         shutil.move(tmp_path, self.key_path(key))
