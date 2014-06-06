@@ -2,10 +2,9 @@
 
 # This script runs peru straight out of the repository, for testing.
 
+set -e
+
 repo_root=$(dirname $(realpath $BASH_SOURCE))
-
-yaml_path="$repo_root/third-party/PyYAML-3.10/lib3"
-
-export PYTHONPATH="${PYTHONPATH+$PYTHONPATH:}$repo_root:$yaml_path"
+source "$repo_root/scripts/env.sh"
 
 "$repo_root/bin/peru" "$@"
