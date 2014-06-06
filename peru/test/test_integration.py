@@ -76,7 +76,7 @@ class IntegrationTest(unittest.TestCase):
             cp module foo:
                 path: {}
                 rule:
-                    build: echo -n 2 >> foo; mkdir baz; mv foo baz
+                    build: printf 2 >> foo; mkdir baz; mv foo baz
                     export: baz
 
             rule copy1:
@@ -104,10 +104,10 @@ class IntegrationTest(unittest.TestCase):
                 foo: subdir
 
             rule:
-                build: echo -n hi >> lo
+                build: printf hi >> lo
 
             rule local_build:
-                build: echo -n fee >> fi
+                build: printf fee >> fi
             """)
 
         # Calling build with no arguments should run just the default rule.
