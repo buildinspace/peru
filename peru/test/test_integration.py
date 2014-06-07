@@ -9,16 +9,16 @@ from peru.test.shared import GitRepo
 peru_bin = os.path.join(os.path.dirname(__file__), "..", "..", "peru.sh")
 
 
-def run_peru_command(args, peru_dir, cache_dir, *, silent=False,
+def run_peru_command(args, test_dir, peru_dir, *, silent=False,
                      env_vars=None):
-    # Specifying cache_dir keeps the cache from cluttering the expected
+    # Specifying PERU_DIR keeps peru files from cluttering the expected
     # outputs.
     env = os.environ.copy()
     env.update(env_vars or {})
-    env["PERU_CACHE"] = cache_dir
+    env["PERU_DIR"] = peru_dir
 
     output = subprocess.DEVNULL if silent else None
-    subprocess.check_call([peru_bin] + args, cwd=peru_dir, env=env,
+    subprocess.check_call([peru_bin] + args, cwd=test_dir, env=env,
                           stdout=output, stderr=output)
 
 
@@ -28,25 +28,25 @@ class IntegrationTest(unittest.TestCase):
         self.module_dir = shared.create_dir({
             "foo": "bar",
         })
-        self.cache_dir = shared.create_dir()
         self.peru_dir = shared.create_dir()
+        self.test_dir = shared.create_dir()
 
     def tearDown(self):
         # Make sure that everything in the cache tmp dir has been cleaned up.
-        tmpfiles = os.listdir(os.path.join(self.cache_dir, "tmp"))
+        tmpfiles = os.listdir(os.path.join(self.peru_dir, "cache", "tmp"))
         self.assertListEqual([], tmpfiles, msg="tmp dir is not clean")
 
     def write_peru_yaml(self, template):
         self.peru_yaml = dedent(template.format(self.module_dir))
-        with open(os.path.join(self.peru_dir, "peru.yaml"), "w") as f:
+        with open(os.path.join(self.test_dir, "peru.yaml"), "w") as f:
             f.write(self.peru_yaml)
 
     def do_integration_test(self, args, expected, **kwargs):
-        run_peru_command(args, self.peru_dir, self.cache_dir, **kwargs)
+        run_peru_command(args, self.test_dir, self.peru_dir, **kwargs)
         expected_with_yaml = expected.copy()
         expected_with_yaml["peru.yaml"] = self.peru_yaml
         self.assertDictEqual(expected_with_yaml,
-                             shared.read_dir(self.peru_dir))
+                             shared.read_dir(self.test_dir))
 
     def test_basic_import(self):
         self.write_peru_yaml("""\
@@ -58,14 +58,15 @@ class IntegrationTest(unittest.TestCase):
             """)
         self.do_integration_test(["sync"], {"subdir/foo": "bar"})
         self.assertTrue(
-            os.path.exists(os.path.join(self.cache_dir, "plugins", "cp")),
+            os.path.exists(os.path.join(
+                self.peru_dir, "cache", "plugins", "cp")),
             msg="Plugin cache should be written to the right place.")
 
         # Running it again should be a no-op.
         self.do_integration_test(["sync"], {"subdir/foo": "bar"})
 
         # Running it with a dirty working copy should be an error.
-        with open(os.path.join(self.peru_dir, "subdir", "foo"), "w") as f:
+        with open(os.path.join(self.test_dir, "subdir", "foo"), "w") as f:
             f.write("dirty")
         with self.assertRaises(subprocess.CalledProcessError):
             self.do_integration_test(["sync"], {"subdir/foo": "bar"},
@@ -140,7 +141,7 @@ class IntegrationTest(unittest.TestCase):
                                  env_vars=env_vars)
         self.assertTrue(os.path.exists(os.path.join(plugins_cache, "cp")))
         self.assertFalse(os.path.exists(
-            os.path.join(self.cache_dir, "plugins")))
+            os.path.join(self.peru_dir, "plugins")))
 
 
 class ReupIntegrationTest(unittest.TestCase):
@@ -163,13 +164,13 @@ class ReupIntegrationTest(unittest.TestCase):
         self.bar_repo.run("git commit --allow-empty -m junk")
         self.bar_otherbranch = self.bar_repo.run("git rev-parse otherbranch")
         self.start_yaml = template.format(self.foo_dir, self.bar_dir)
-        self.peru_dir = shared.create_dir({"peru.yaml": self.start_yaml})
-        self.cache_dir = shared.create_dir()
+        self.test_dir = shared.create_dir({"peru.yaml": self.start_yaml})
+        self.peru_dir = shared.create_dir()
 
     def do_integration_test(self, args, expected_yaml, **kwargs):
-        run_peru_command(args, self.peru_dir, self.cache_dir, **kwargs)
+        run_peru_command(args, self.test_dir, self.peru_dir, **kwargs)
         self.assertDictEqual({"peru.yaml": expected_yaml},
-                             shared.read_dir(self.peru_dir))
+                             shared.read_dir(self.test_dir))
 
     def test_single_reup(self):
         expected = dedent("""\

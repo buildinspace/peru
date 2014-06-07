@@ -7,9 +7,8 @@ class LocalModule:
         self.default_rule = default_rule
         self.path = "."
 
-    def apply_imports(self, resolver, *, force=False):
-        last_imports_tree_path = os.path.join(
-            resolver.cache.root, "lastimports")
+    def apply_imports(self, peru_dir, resolver, *, force=False):
+        last_imports_tree_path = os.path.join(peru_dir, "lastimports")
         last_imports_tree = None
         if os.path.exists(last_imports_tree_path):
             with open(last_imports_tree_path) as f:

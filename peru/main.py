@@ -81,7 +81,11 @@ class main:
         if not os.path.isfile(self.peru_file):
             print(self.peru_file + " not found")
             sys.exit(1)
-        cache_root = os.getenv("PERU_CACHE") or ".peru-cache"
+
+        self.peru_dir = os.getenv("PERU_DIR") or ".peru"
+        os.makedirs(self.peru_dir, exist_ok=True)
+        cache_root = (os.getenv("PERU_CACHE") or
+                      os.path.join(self.peru_dir, "cache"))
         plugins_root = os.getenv("PERU_PLUGINS_CACHE") or None
         self.cache = Cache(cache_root, plugins_root)
         self.scope, self.local_module = parse_file(self.peru_file)
@@ -99,7 +103,8 @@ class main:
 
     def do_sync(self):
         self.setup()
-        self.local_module.apply_imports(self.resolver, force=self.args.force)
+        self.local_module.apply_imports(
+            self.peru_dir, self.resolver, force=self.args.force)
 
     def do_build(self):
         self.setup()
