@@ -53,13 +53,16 @@ class ParserTest(unittest.TestCase):
     def test_parse_module_default_rule(self):
         input = dedent("""\
             git module bar:
-                rule:
+                build: foo
+                export: bar
             """)
         scope, local_module = parse_string(input)
         self.assertIn("bar", scope)
         module = scope["bar"]
         self.assertIsInstance(module, RemoteModule)
         self.assertIsInstance(module.default_rule, Rule)
+        self.assertEqual(module.default_rule.build_command, "foo")
+        self.assertEqual(module.default_rule.export, "bar")
 
     def test_parse_toplevel_imports(self):
         input = dedent("""\

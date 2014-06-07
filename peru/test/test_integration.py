@@ -75,9 +75,8 @@ class IntegrationTest(unittest.TestCase):
         template = """\
             cp module foo:
                 path: {}
-                rule:
-                    build: printf 2 >> foo; mkdir baz; mv foo baz
-                    export: baz
+                build: printf 2 >> foo; mkdir baz; mv foo baz
+                export: baz
 
             rule copy1:
                 build: cp foo copy1
@@ -97,14 +96,13 @@ class IntegrationTest(unittest.TestCase):
 
     def test_local_build(self):
         self.write_peru_yaml("""\
-            cp module foo:
-                path: {}
-
             imports:
                 foo: subdir
 
-            rule:
-                build: printf hi >> lo
+            build: printf hi >> lo
+
+            cp module foo:
+                path: {}
 
             rule local_build:
                 build: printf fee >> fi

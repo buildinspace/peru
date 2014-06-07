@@ -25,37 +25,41 @@ def parse_string(yaml_str):
 
 def _parse_toplevel(blob):
     scope = {}
-    _extract_rules(blob, scope)
-    _extract_modules(blob, scope)
+    _extract_named_rules(blob, scope)
+    _extract_remote_modules(blob, scope)
     local_module = _build_local_module(blob)
     return (scope, local_module)
 
 
-def _extract_rules(blob, scope):
+def _extract_named_rules(blob, scope):
     for field in list(blob.keys()):
         parts = field.split()
         if len(parts) == 2 and parts[0] == "rule":
             _, name = parts
             inner_blob = blob.pop(field)  # remove the field from blob
             inner_blob = {} if inner_blob is None else inner_blob
-            rule = _build_rule(name, inner_blob)
+            rule = _extract_rule(name, inner_blob)
+            if inner_blob:
+                raise ParserError("Unknown rule fields: " +
+                                  ", ".join(blob.keys()))
             _add_to_scope(scope, name, rule)
 
 
-def _build_rule(name, blob):
+def _extract_rule(name, blob):
     _validate_name(name)
-    if blob is None:
-        # Rules can be totally empty, which makes them a no-op.
-        blob = {}
-    rule = Rule(name,
-                blob.pop("build", None),
-                blob.pop("export", None))
-    if blob:
-        raise ParserError("Unknown rule fields: " + ", ".join(blob.keys()))
+    build_command = blob.pop("build", None)
+    export = blob.pop("export", None)
+    if build_command is None and export is None:
+        return None
+    rule = Rule(name, build_command, export)
     return rule
 
 
-def _extract_modules(blob, scope):
+def _extract_default_rule(blob):
+    return _extract_rule("<default>", blob)
+
+
+def _extract_remote_modules(blob, scope):
     for field in list(blob.keys()):
         parts = field.split()
         if len(parts) == 3 and parts[1] == "module":
@@ -68,6 +72,7 @@ def _extract_modules(blob, scope):
 
 
 def _build_remote_module(name, type, blob, yaml_name):
+    _validate_name(name)
     imports = blob.pop("imports", {})
     default_rule = _extract_default_rule(blob)
     plugin_fields = blob
@@ -85,14 +90,6 @@ def _build_local_module(blob):
         raise ParserError("Unknown toplevel fields: " +
                           ", ".join(blob.keys()))
     return LocalModule(imports, default_rule)
-
-
-def _extract_default_rule(blob):
-    if "rule" not in blob:
-        return None
-    rule_blob = blob.pop("rule")
-    rule = _build_rule("<default>", rule_blob)
-    return rule
 
 
 def _validate_name(name):
