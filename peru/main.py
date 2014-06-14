@@ -133,10 +133,18 @@ class _main:
         self.argparser.subcommands[self.args.help_target].print_help()
 
 
+def print_red(*args, **kwargs):
+    if sys.stdout.isatty():
+        sys.stdout.write("\x1b[31m")
+    print(*args, **kwargs)
+    if sys.stdout.isatty():
+        sys.stdout.write("\x1b[39m")
+
+
 def main():
     try:
         _main().run()
     except PrintableError as e:
         if e.msg:
-            print(e.msg)
+            print_red(e.msg)
         sys.exit(1)
