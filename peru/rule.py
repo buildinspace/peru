@@ -2,6 +2,7 @@ import os
 import subprocess
 
 from .cache import compute_key
+from .error import PrintableError
 
 
 class Rule:
@@ -18,8 +19,12 @@ class Rule:
         })
 
     def do_build(self, path):
-        if self.build_command:
+        if not self.build_command:
+            return
+        try:
             subprocess.check_call(self.build_command, shell=True, cwd=path)
+        except subprocess.CalledProcessError as e:
+            raise PrintableError("Error in build command: " + str(e))
 
     def get_tree(self, cache, resolver, input_tree):
         key = self.cache_key(resolver, input_tree)
