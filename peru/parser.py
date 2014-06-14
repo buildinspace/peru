@@ -1,14 +1,14 @@
 import re
 import yaml
 
+from .error import PrintableError
 from .local_module import LocalModule
 from .remote_module import RemoteModule
 from .rule import Rule
 
 
-class ParserError(RuntimeError):
-    def __init__(self, *args):
-        RuntimeError.__init__(self, *args)
+class ParserError(PrintableError):
+    pass
 
 
 def parse_file(path):
@@ -17,7 +17,10 @@ def parse_file(path):
 
 
 def parse_string(yaml_str):
-    blob = yaml.safe_load(yaml_str)
+    try:
+        blob = yaml.safe_load(yaml_str)
+    except yaml.scanner.ScannerError as e:
+        raise PrintableError("YAML parser error:\n\n" + str(e)) from e
     if blob is None:
         blob = {}
     return _parse_toplevel(blob)
@@ -41,7 +44,7 @@ def _extract_named_rules(blob, scope):
             rule = _extract_rule(name, inner_blob)
             if inner_blob:
                 raise ParserError("Unknown rule fields: " +
-                                  ", ".join(blob.keys()))
+                                  ", ".join(inner_blob.keys()))
             _add_to_scope(scope, name, rule)
 
 
