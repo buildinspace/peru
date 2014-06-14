@@ -1,5 +1,6 @@
 import collections
 
+from .error import PrintableError
 from .remote_module import RemoteModule
 from .rule import Rule
 
@@ -49,23 +50,33 @@ class Resolver:
 
     def parse_target(self, target_str):
         module_name, *rule_names = target_str.split(":")
-        module = self.scope[module_name]
-        assert isinstance(module, RemoteModule)
-        rules = [self.scope[name] for name in rule_names]
-        assert all(isinstance(rule, Rule) for rule in rules)
+        module = self.get_modules([module_name])[0]
+        rules = self.get_rules(rule_names)
         return module, rules
 
     def get_rules(self, rule_names):
-        rules = [self.scope[name] for name in rule_names]
-        assert all(isinstance(rule, Rule) for rule in rules)
+        rules = []
+        for name in rule_names:
+            if name not in self.scope:
+                raise PrintableError("rule '{}' does not exist".format(name))
+            rule = self.scope[name]
+            if not isinstance(rule, Rule):
+                raise PrintableError("'{}' is not a rule".format(name))
+            rules.append(rule)
         return rules
 
     def get_all_modules(self):
         return {m for m in self.scope.values() if isinstance(m, RemoteModule)}
 
     def get_modules(self, names):
-        modules = {self.scope[name] for name in names}
-        assert all(isinstance(module, RemoteModule) for module in modules)
+        modules = []
+        for name in names:
+            if name not in self.scope:
+                raise PrintableError("module '{}' does not exist".format(name))
+            module = self.scope[name]
+            if not isinstance(module, RemoteModule):
+                raise PrintableError("'{}' is not a module".format(name))
+            modules.append(module)
         return modules
 
 TreePath = collections.namedtuple("TreePath", ["tree", "path", "target"])
