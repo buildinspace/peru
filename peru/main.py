@@ -5,6 +5,7 @@ import os
 import sys
 
 from .cache import Cache
+from .error import PrintableError
 from .parser import parse_file
 from .resolver import Resolver
 
@@ -63,24 +64,30 @@ class SubcommandHelpFormatter(argparse.HelpFormatter):
 
 
 def fail_no_command(command):
-    print('"{}" is not a peru command'.format(command))
-    sys.exit(1)
+    raise PrintableError('"{}" is not a peru command'.format(command))
 
 
-class main:
-    def __init__(self):
+class _main:
+    def run(self):
         self.argparser = build_argparser()
         self.args = self.argparser.parse_args()
         if self.args.command is None or self.args.command == "help":
             self.help()
-            sys.exit(1)
-        self.run()
+            raise PrintableError()
+
+        if self.args.command == "sync":
+            self.do_sync()
+        elif self.args.command == "build":
+            self.do_build()
+        elif self.args.command == "reup":
+            self.do_reup()
+        else:
+            fail_no_command(self.args.command)
 
     def setup(self):
         self.peru_file = os.getenv("PERU_FILE") or "peru.yaml"
         if not os.path.isfile(self.peru_file):
-            print(self.peru_file + " not found")
-            sys.exit(1)
+            raise PrintableError(self.peru_file + " not found")
 
         self.peru_dir = os.getenv("PERU_DIR") or ".peru"
         os.makedirs(self.peru_dir, exist_ok=True)
@@ -90,16 +97,6 @@ class main:
         self.cache = Cache(cache_root, plugins_root)
         self.scope, self.local_module = parse_file(self.peru_file)
         self.resolver = Resolver(self.scope, self.cache)
-
-    def run(self):
-        if self.args.command == "sync":
-            self.do_sync()
-        elif self.args.command == "build":
-            self.do_build()
-        elif self.args.command == "reup":
-            self.do_reup()
-        else:
-            fail_no_command(self.args.command)
 
     def do_sync(self):
         self.setup()
@@ -115,10 +112,9 @@ class main:
     def do_reup(self):
         if not self.args.all and not self.args.modules:
             self.argparser.subcommands["reup"].print_help()
-            sys.exit(1)
+            raise PrintableError()
         if self.args.all and self.args.modules:
-            print("--all cannot be given with explicit modules")
-            sys.exit(1)
+            raise PrintableError("--all cannot be given with explicit modules")
         self.setup()
         if self.args.all:
             modules = self.resolver.get_all_modules()
@@ -135,3 +131,12 @@ class main:
             fail_no_command(self.args.help_target)
             return
         self.argparser.subcommands[self.args.help_target].print_help()
+
+
+def main():
+    try:
+        _main().run()
+    except PrintableError as e:
+        if e.msg:
+            print(e.msg)
+        sys.exit(1)
