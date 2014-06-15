@@ -25,9 +25,9 @@ class Resolver:
             treepaths.append(treepath)
         return tuple(treepaths)
 
-    def merge_import_trees(self, imports):
+    def merge_import_trees(self, imports, base_tree=None):
         treepaths = self.resolve_imports_to_treepaths(imports)
-        unified_tree = None
+        unified_tree = base_tree
         for import_tree, import_path, target in treepaths:
             try:
                 unified_tree = self.cache.merge_trees(
