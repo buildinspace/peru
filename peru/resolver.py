@@ -1,5 +1,6 @@
 import collections
 
+from .cache import Cache
 from .error import PrintableError
 from .remote_module import RemoteModule
 from .rule import Rule
@@ -28,8 +29,14 @@ class Resolver:
         treepaths = self.resolve_imports_to_treepaths(imports)
         unified_tree = None
         for import_tree, import_path, target in treepaths:
-            unified_tree = self.cache.merge_trees(
-                unified_tree, import_tree, import_path)
+            try:
+                unified_tree = self.cache.merge_trees(
+                    unified_tree, import_tree, import_path)
+            except Cache.MergeConflictError as e:
+                raise PrintableError(
+                    "merge conflict in import '{}' at '{}':\n{}".format(
+                        target, import_path, e.args[0]))
+
         return unified_tree
 
     def apply_imports(self, imports, path, last_imports_tree=None, *,
