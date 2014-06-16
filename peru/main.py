@@ -53,6 +53,17 @@ def build_argparser():
     reupcmd.add_argument("-q", "--quiet", action="store_true",
                          help="no output on success")
 
+    overridecmd = add_subcommand(
+        "override", help="override remote modules with local working copies")
+    overridecmd.add_argument(
+        "module", nargs="?", help="name of module to override")
+    overridecmd.add_argument(
+        "path", nargs="?", help="path to the local working copy")
+    overridecmd.add_argument(
+        "-d", "--delete", action="store_true", help="remove an override")
+    overridecmd.add_argument(
+        "-l", "--list", action="store_true", help="list all overrides")
+
     return argparser
 
 
@@ -85,6 +96,8 @@ class Main:
             self.do_build()
         elif self.args.command == "reup":
             self.do_reup()
+        elif self.args.command == "override":
+            self.do_override()
         else:
             fail_no_command(self.args.command)
 
@@ -100,8 +113,9 @@ class Main:
         plugins_root = self.env.get("PERU_PLUGINS_CACHE", None)
         self.cache = Cache(cache_root, plugins_root)
         self.scope, self.local_module = parse_file(self.peru_file)
-        overrides = override.get_overrides(self.peru_dir)
-        self.resolver = Resolver(self.scope, self.cache, overrides=overrides)
+        self.overrides = override.get_overrides(self.peru_dir)
+        self.resolver = Resolver(self.scope, self.cache,
+                                 overrides=self.overrides)
 
     def do_sync(self):
         self.setup()
@@ -128,6 +142,30 @@ class Main:
         for module in modules:
             module.reup(self.cache.plugins_root, self.peru_file,
                         quiet=self.args.quiet)
+
+    def do_override(self):
+        self.setup()
+        if self.args.list and self.args.delete:
+            raise PrintableError("cannot use both --delete and --list")
+        if self.args.list:
+            if self.args.module:
+                raise PrintableError("--list takes no arguments")
+            for module in sorted(self.overrides.keys()):
+                print("{}: {}".format(module, self.overrides[module]))
+        elif self.args.delete:
+            if not self.args.module:
+                raise PrintableError("--delete requires an argument")
+            if self.args.path:
+                raise PrintableError("--delete only takes one argument")
+            override.delete_override(self.peru_dir, self.args.module)
+        elif not self.args.module:
+            self.argparser.subcommands["override"].print_help()
+            raise PrintableError()
+        elif not self.args.path:
+            raise PrintableError("must specify a path")
+        else:
+            override.set_override(self.peru_dir, self.args.module,
+                                  self.args.path)
 
     def help(self):
         if self.args.command is None or self.args.help_target is None:
