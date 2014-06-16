@@ -2,6 +2,8 @@ import os
 import subprocess
 import tempfile
 
+from peru.compat import makedirs
+
 
 def tmp_dir():
     return tempfile.mkdtemp(dir=_tmp_root())
@@ -15,7 +17,8 @@ def tmp_file():
 
 def _tmp_root():
     root = "/tmp/perutest"
-    os.makedirs(root, mode=0o777, exist_ok=True)
+    makedirs(root)
+    os.chmod(root, 0o777)
     return root
 
 

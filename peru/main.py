@@ -6,6 +6,7 @@ import sys
 
 from . import override
 from .cache import Cache
+from .compat import makedirs
 from .error import PrintableError
 from .parser import parse_file
 from .resolver import Resolver
@@ -107,7 +108,7 @@ class Main:
             raise PrintableError(self.peru_file + " not found")
 
         self.peru_dir = self.env.get("PERU_DIR", ".peru")
-        os.makedirs(self.peru_dir, exist_ok=True)
+        makedirs(self.peru_dir)
         cache_root = self.env.get("PERU_CACHE",
                                   os.path.join(self.peru_dir, "cache"))
         plugins_root = self.env.get("PERU_PLUGINS_CACHE", None)

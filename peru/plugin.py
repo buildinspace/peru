@@ -3,6 +3,8 @@ import subprocess
 
 import yaml
 
+from .compat import makedirs
+
 
 def plugin_fetch(plugins_cache_root, type, dest, plugin_fields, *,
                  capture_output=False):
@@ -39,7 +41,7 @@ def _plugin_command(type, plugin_fields, *args):
 
 def _plugin_cache_path(plugins_cache_root, type):
     plugin_cache = os.path.join(plugins_cache_root, type)
-    os.makedirs(plugin_cache, exist_ok=True)
+    makedirs(plugin_cache)
     return plugin_cache
 
 

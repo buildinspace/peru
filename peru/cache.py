@@ -6,6 +6,8 @@ import shutil
 import subprocess
 import tempfile
 
+from .compat import makedirs
+
 
 def compute_key(data):
     # To hash this dictionary of fields, serialize it as a JSON string, and
@@ -30,7 +32,7 @@ class Cache:
         if not os.path.exists(self.plugins_root):
             os.makedirs(self.plugins_root)
         self.tmp_path = os.path.join(root, "tmp")
-        os.makedirs(self.tmp_path, exist_ok=True)
+        makedirs(self.tmp_path)
         self.keyval = KeyVal(self)
         self.trees_path = os.path.join(root, "trees")
         self._init_trees()
@@ -209,16 +211,10 @@ class Cache:
     def _tmp_file(self):
         fd, path = tempfile.mkstemp(dir=self.tmp_path)
         os.close(fd)
-        os.chmod(path, 0o644)  # See comment in tmp_dir().
         return path
 
     def tmp_dir(self):
-        # Restrictive permissions are a security measure for temp files created
-        # in a shared location like /tmp. Our temp directory is under
-        # .peru-cache/, so we don't need to be extra restrictive. Also weird
-        # permissions confuse utilities like os.makedirs(exist_ok=True).
         dir = tempfile.TemporaryDirectory(dir=self.tmp_path)
-        os.chmod(dir.name, 0o755)
         return dir
 
 
@@ -226,7 +222,7 @@ class KeyVal:
     def __init__(self, cache):
         self.cache = cache
         self.keyval_root = os.path.join(cache.root, "keyval")
-        os.makedirs(self.keyval_root, exist_ok=True)
+        makedirs(self.keyval_root)
 
     def __getitem__(self, key):
         with open(self.key_path(key)) as f:
