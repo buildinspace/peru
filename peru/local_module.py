@@ -21,7 +21,11 @@ class LocalModule:
             f.write(unified_imports_tree)
 
     def do_build(self, rules):
+        """Runs all the build rules, taking their export paths into account.
+        Returns the final export path."""
+        path = self.path
         if self.default_rule:
-            self.default_rule.do_build(self.path)
+            path = self.default_rule.do_build(path)
         for rule in rules:
-            rule.do_build(self.path)
+            path = rule.do_build(path)
+        return path

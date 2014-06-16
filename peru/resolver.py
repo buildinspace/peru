@@ -1,4 +1,5 @@
 import collections
+import os
 import textwrap
 
 from .cache import Cache
@@ -8,9 +9,10 @@ from .rule import Rule
 
 
 class Resolver:
-    def __init__(self, scope, cache):
+    def __init__(self, scope, cache, overrides):
         self.scope = scope
         self.cache = cache
+        self.overrides = overrides
 
     def resolve_imports_to_treepaths(self, imports):
         # We always want to resolve (and eventually apply) imports in the same
@@ -53,7 +55,9 @@ class Resolver:
         return unified_imports_tree
 
     def get_tree(self, target_str):
-        module, rules = self.parse_target(target_str)
+        module, rules = self._parse_target(target_str)
+        if module.name in self.overrides:
+            return self._get_override_tree(module, rules)
         tree = module.get_tree(self.cache, self)
         if module.default_rule:
             tree = module.default_rule.get_tree(self.cache, self, tree)
@@ -61,7 +65,21 @@ class Resolver:
             tree = rule.get_tree(self.cache, self, tree)
         return tree
 
-    def parse_target(self, target_str):
+    def _get_override_tree(self, module, rules):
+        override_path = self.overrides[module.name]
+        if not os.path.exists(override_path):
+            raise PrintableError(
+                "override path for module '{}' does not exist: {}".format(
+                    module.name, override_path))
+        if not os.path.isdir(override_path):
+            raise PrintableError(
+                "override path for module '{}' is not a directory: {}".format(
+                    module.name, override_path))
+        override_module = module.get_local_override(override_path)
+        export_path = override_module.do_build(rules)
+        return self.cache.import_tree(export_path)
+
+    def _parse_target(self, target_str):
         module_name, *rule_names = target_str.split(":")
         module = self.get_modules([module_name])[0]
         rules = self.get_rules(rule_names)

@@ -4,6 +4,7 @@ import argparse
 import os
 import sys
 
+from . import override
 from .cache import Cache
 from .error import PrintableError
 from .parser import parse_file
@@ -99,7 +100,8 @@ class Main:
         plugins_root = self.env.get("PERU_PLUGINS_CACHE", None)
         self.cache = Cache(cache_root, plugins_root)
         self.scope, self.local_module = parse_file(self.peru_file)
-        self.resolver = Resolver(self.scope, self.cache)
+        overrides = override.get_overrides(self.peru_dir)
+        self.resolver = Resolver(self.scope, self.cache, overrides=overrides)
 
     def do_sync(self):
         self.setup()

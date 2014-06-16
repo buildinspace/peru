@@ -1,5 +1,6 @@
 from .cache import compute_key
 from .edit_yaml import set_module_field_in_file
+from .local_module import LocalModule
 from .plugin import plugin_fetch, plugin_get_reup_fields
 
 
@@ -49,3 +50,6 @@ class RemoteModule:
                     print("  {}: {}".format(field, val))
                 set_module_field_in_file(peru_file_name, self.yaml_name, field,
                                          val)
+
+    def get_local_override(self, path):
+        return LocalModule(self.imports, self.default_rule, path)
