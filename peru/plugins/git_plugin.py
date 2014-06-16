@@ -22,7 +22,7 @@ def git(*args, git_dir=None):
         command.append("--git-dir=" + git_dir)
     command.extend(args)
     process = subprocess.Popen(
-        command, stdin=subprocess.DEVNULL, stdout=subprocess.PIPE,
+        command, stdin=subprocess.PIPE, stdout=subprocess.PIPE,
         stderr=subprocess.STDOUT, universal_newlines=True)
     output, _ = process.communicate()
     if process.returncode != 0:
