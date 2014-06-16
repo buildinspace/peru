@@ -94,7 +94,7 @@ def _build_local_module(blob):
     if blob:
         raise ParserError("Unknown toplevel fields: " +
                           ", ".join(blob.keys()))
-    return LocalModule(imports, default_rule)
+    return LocalModule(imports, default_rule, path=".")
 
 
 def _validate_name(name):

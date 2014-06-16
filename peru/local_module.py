@@ -2,10 +2,10 @@ import os
 
 
 class LocalModule:
-    def __init__(self, imports, default_rule):
+    def __init__(self, imports, default_rule, path):
         self.imports = imports
         self.default_rule = default_rule
-        self.path = "."
+        self.path = path
 
     def apply_imports(self, peru_dir, resolver, *, force=False):
         last_imports_tree_path = os.path.join(peru_dir, "lastimports")
