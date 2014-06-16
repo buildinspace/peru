@@ -1,8 +1,8 @@
 import collections
 import os
-import textwrap
 
 from .cache import Cache
+from .compat import indent
 from .error import PrintableError
 from .remote_module import RemoteModule
 from .rule import Rule
@@ -38,7 +38,7 @@ class Resolver:
             except Cache.MergeConflictError as e:
                 raise PrintableError(
                     "merge conflict in import '{}' at '{}':\n\n{}".format(
-                        target, import_path, textwrap.indent(e.args[0], "  ")))
+                        target, import_path, indent(e.args[0], "  ")))
 
         return unified_tree
 
@@ -51,7 +51,7 @@ class Resolver:
         except Cache.DirtyWorkingCopyError as e:
             raise PrintableError(
                 "imports conflict with the working copy:\n\n" +
-                textwrap.indent(e.args[0], "  "))
+                indent(e.args[0], "  "))
         return unified_imports_tree
 
     def get_tree(self, target_str):
