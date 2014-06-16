@@ -75,6 +75,22 @@ class IntegrationTest(unittest.TestCase):
         with self.assertRaises(PrintableError):
             self.do_integration_test(["sync"], {"subdir/foo": "bar"})
 
+    def test_conflicting_imports(self):
+        self.write_peru_yaml("""\
+            cp module foo:
+                path: {0}
+
+            # same as foo
+            cp module bar:
+                path: {0}
+
+            imports:
+                foo: subdir
+                bar: subdir
+            """)
+        with self.assertRaises(PrintableError):
+            self.do_integration_test(["sync"], {"subdir/foo": "bar"})
+
     def test_module_rules(self):
         template = """\
             cp module foo:
