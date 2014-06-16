@@ -19,12 +19,25 @@ class Rule:
         })
 
     def do_build(self, path):
-        if not self.build_command:
-            return
-        try:
-            subprocess.check_call(self.build_command, shell=True, cwd=path)
-        except subprocess.CalledProcessError as e:
-            raise PrintableError("Error in build command: " + str(e))
+        """Executes the rule and returns the exported directory."""
+        if self.build_command:
+            try:
+                subprocess.check_call(self.build_command, shell=True, cwd=path)
+            except subprocess.CalledProcessError as e:
+                raise PrintableError("Error in build command: " + str(e))
+        if self.export:
+            export_path = os.path.join(path, self.export)
+            if not os.path.exists(export_path):
+                raise PrintableError(
+                    "export path for rule '{}' does not exist: {}".format(
+                        self.name, export_path))
+            if not os.path.isdir(export_path):
+                raise PrintableError(
+                    "export path for rule '{}' is not a directory: {}"
+                    .format(self.name, export_path))
+            return export_path
+        else:
+            return path
 
     def get_tree(self, cache, resolver, input_tree):
         key = self.cache_key(resolver, input_tree)
@@ -33,13 +46,7 @@ class Rule:
 
         with cache.tmp_dir() as tmp_dir:
             cache.export_tree(input_tree, tmp_dir)
-            self.do_build(tmp_dir)
-            export_dir = tmp_dir
-            if self.export:
-                export_dir = os.path.join(tmp_dir, self.export)
-            if not os.path.exists(export_dir):
-                raise RuntimeError(
-                    "export dir '{}' doesn't exist".format(self.export))
+            export_dir = self.do_build(tmp_dir)
             tree = cache.import_tree(export_dir)
 
         cache.keyval[key] = tree
