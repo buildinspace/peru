@@ -5,6 +5,7 @@ import unittest
 from peru.main import Main
 from peru.error import PrintableError
 import peru.test.shared as shared
+import peru.override
 
 peru_bin = os.path.join(os.path.dirname(__file__), "..", "..", "peru.sh")
 
@@ -161,6 +162,39 @@ class IntegrationTest(unittest.TestCase):
         self.assertTrue(os.path.exists(os.path.join(plugins_cache, "cp")))
         self.assertFalse(os.path.exists(
             os.path.join(self.peru_dir, "plugins")))
+
+    def test_override(self):
+        self.write_peru_yaml("""\
+            cp module foo:
+                path: {}
+                build: mkdir subdir && mv foo subdir/builtfoo
+                export: subdir
+
+            # Test that this rule gets run in the right place (e.g. in the
+            # export dir) even when the foo module is overridden.
+            rule bang:
+                build: printf '!' >> builtfoo
+
+            imports:
+                foo:bang: ./
+            """)
+        override_dir = shared.create_dir({"foo": "override"})
+        # Set the override.
+        run_peru_command(["override", "foo", override_dir], self.test_dir,
+                         self.peru_dir)
+        # Confirm that the override is configured.
+        overrides = peru.override.get_overrides(self.peru_dir)
+        self.assertDictEqual({"foo": override_dir}, overrides)
+        # Run the sync and confirm that the override worked.
+        self.do_integration_test(["sync"], {"builtfoo": "override!"})
+        # Delete the override.
+        run_peru_command(["override", "--delete", "foo"], self.test_dir,
+                         self.peru_dir)
+        # Confirm that the override was deleted.
+        overrides = peru.override.get_overrides(self.peru_dir)
+        self.assertDictEqual({}, overrides)
+        # Rerun the sync and confirm the original content is back.
+        self.do_integration_test(["sync"], {"builtfoo": "bar!"})
 
 
 class ReupIntegrationTest(unittest.TestCase):
