@@ -1,4 +1,5 @@
 import collections
+import textwrap
 
 from .cache import Cache
 from .error import PrintableError
@@ -34,16 +35,21 @@ class Resolver:
                     unified_tree, import_tree, import_path)
             except Cache.MergeConflictError as e:
                 raise PrintableError(
-                    "merge conflict in import '{}' at '{}':\n{}".format(
-                        target, import_path, e.args[0]))
+                    "merge conflict in import '{}' at '{}':\n\n{}".format(
+                        target, import_path, textwrap.indent(e.args[0], "  ")))
 
         return unified_tree
 
     def apply_imports(self, imports, path, last_imports_tree=None, *,
                       force=False):
         unified_imports_tree = self.merge_import_trees(imports)
-        self.cache.export_tree(unified_imports_tree, path, last_imports_tree,
-                               force=force)
+        try:
+            self.cache.export_tree(unified_imports_tree, path,
+                                   last_imports_tree, force=force)
+        except Cache.DirtyWorkingCopyError as e:
+            raise PrintableError(
+                "imports conflict with the working copy:\n\n" +
+                textwrap.indent(e.args[0], "  "))
         return unified_imports_tree
 
     def get_tree(self, target_str):
