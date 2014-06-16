@@ -1,25 +1,29 @@
 import os
-import subprocess
 from textwrap import dedent
 import unittest
 
+from peru.main import Main
+from peru.error import PrintableError
 import peru.test.shared as shared
-from peru.test.shared import GitRepo
 
 peru_bin = os.path.join(os.path.dirname(__file__), "..", "..", "peru.sh")
 
 
-def run_peru_command(args, test_dir, peru_dir, *, silent=False,
-                     env_vars=None):
+def run_peru_command(args, test_dir, peru_dir, *, env_vars=None):
     # Specifying PERU_DIR keeps peru files from cluttering the expected
     # outputs.
-    env = os.environ.copy()
-    env.update(env_vars or {})
+    env = env_vars.copy() if env_vars else {}
     env["PERU_DIR"] = peru_dir
-
-    output = subprocess.DEVNULL if silent else None
-    subprocess.check_call([peru_bin] + args, cwd=test_dir, env=env,
-                          stdout=output, stderr=output)
+    old_cwd = os.getcwd()
+    os.chdir(test_dir)
+    try:
+        # Rather than invoking peru as a subprocess, just call directly into
+        # the Main class. This lets us check that the right types of exceptions
+        # make it up to the top, so we don't need to check specific outputs
+        # strings.
+        Main().run(args, env)
+    finally:
+        os.chdir(old_cwd)
 
 
 class IntegrationTest(unittest.TestCase):
@@ -68,9 +72,8 @@ class IntegrationTest(unittest.TestCase):
         # Running it with a dirty working copy should be an error.
         with open(os.path.join(self.test_dir, "subdir", "foo"), "w") as f:
             f.write("dirty")
-        with self.assertRaises(subprocess.CalledProcessError):
-            self.do_integration_test(["sync"], {"subdir/foo": "bar"},
-                                     silent=True)
+        with self.assertRaises(PrintableError):
+            self.do_integration_test(["sync"], {"subdir/foo": "bar"})
 
     def test_module_rules(self):
         template = """\
@@ -156,10 +159,10 @@ class ReupIntegrationTest(unittest.TestCase):
                 reup: otherbranch
             """)
         self.foo_dir = shared.create_dir()
-        self.foo_repo = GitRepo(self.foo_dir)
+        self.foo_repo = shared.GitRepo(self.foo_dir)
         self.foo_master = self.foo_repo.run("git rev-parse master")
         self.bar_dir = shared.create_dir()
-        self.bar_repo = GitRepo(self.bar_dir)
+        self.bar_repo = shared.GitRepo(self.bar_dir)
         self.bar_repo.run("git checkout -b otherbranch")
         self.bar_repo.run("git commit --allow-empty -m junk")
         self.bar_otherbranch = self.bar_repo.run("git rev-parse otherbranch")
@@ -182,7 +185,7 @@ class ReupIntegrationTest(unittest.TestCase):
                 url: {}
                 reup: otherbranch
             """).format(self.foo_dir, self.foo_master, self.bar_dir)
-        self.do_integration_test(["reup", "foo"], expected, silent=True)
+        self.do_integration_test(["reup", "foo", "--quiet"], expected)
 
     def test_reup_all(self):
         expected = dedent("""\
@@ -196,4 +199,4 @@ class ReupIntegrationTest(unittest.TestCase):
                 rev: {}
             """).format(self.foo_dir, self.foo_master, self.bar_dir,
                         self.bar_otherbranch)
-        self.do_integration_test(["reup", "--all"], expected, silent=True)
+        self.do_integration_test(["reup", "--all", "--quiet"], expected)

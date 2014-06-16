@@ -69,10 +69,11 @@ def fail_no_command(command):
     raise PrintableError('"{}" is not a peru command'.format(command))
 
 
-class _main:
-    def run(self):
+class Main:
+    def run(self, argv, env):
+        self.env = env
         self.argparser = build_argparser()
-        self.args = self.argparser.parse_args()
+        self.args = self.argparser.parse_args(argv)
         if self.args.command is None or self.args.command == "help":
             self.help()
             raise PrintableError()
@@ -87,15 +88,15 @@ class _main:
             fail_no_command(self.args.command)
 
     def setup(self):
-        self.peru_file = os.getenv("PERU_FILE") or "peru.yaml"
+        self.peru_file = self.env.get("PERU_FILE", "peru.yaml")
         if not os.path.isfile(self.peru_file):
             raise PrintableError(self.peru_file + " not found")
 
-        self.peru_dir = os.getenv("PERU_DIR") or ".peru"
+        self.peru_dir = self.env.get("PERU_DIR", ".peru")
         os.makedirs(self.peru_dir, exist_ok=True)
-        cache_root = (os.getenv("PERU_CACHE") or
-                      os.path.join(self.peru_dir, "cache"))
-        plugins_root = os.getenv("PERU_PLUGINS_CACHE") or None
+        cache_root = self.env.get("PERU_CACHE",
+                                  os.path.join(self.peru_dir, "cache"))
+        plugins_root = self.env.get("PERU_PLUGINS_CACHE", None)
         self.cache = Cache(cache_root, plugins_root)
         self.scope, self.local_module = parse_file(self.peru_file)
         self.resolver = Resolver(self.scope, self.cache)
@@ -144,9 +145,13 @@ def print_red(*args, **kwargs):
         sys.stdout.write("\x1b[39m")
 
 
-def main():
+def main(argv=None, env=None):
+    if argv is None:
+        argv = sys.argv[1:]
+    if env is None:
+        env = os.environ.copy()
     try:
-        _main().run()
+        Main().run(argv, env)
     except PrintableError as e:
         if e.msg:
             print_red(e.msg)
