@@ -47,8 +47,10 @@ def build_argparser():
     reupcmd.add_argument(
         "modules", nargs="*", metavar="module",
         help="name of module to update")
-    reupcmd.add_argument("-a", "--all", action="store_true",
-                         help="update all modules")
+    reupcmd.add_argument(
+        "-a", "--all", action="store_true", help="update all modules")
+    reupcmd.add_argument("-q", "--quiet", action="store_true",
+                         help="no output on success")
 
     return argparser
 
@@ -121,7 +123,8 @@ class _main:
         else:
             modules = self.resolver.get_modules(self.args.modules)
         for module in modules:
-            module.reup(self.cache.plugins_root, self.peru_file)
+            module.reup(self.cache.plugins_root, self.peru_file,
+                        quiet=self.args.quiet)
 
     def help(self):
         if self.args.command is None or self.args.help_target is None:
