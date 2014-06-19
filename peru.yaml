@@ -1,0 +1,7 @@
+imports:
+    pyyaml: third-party
+
+git module pyyaml:
+    url: https://github.com/yaml/pyyaml.git
+    rev: "3.10"
+    export: lib3 # Pluck the yaml module.

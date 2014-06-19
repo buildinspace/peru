@@ -1,2 +1,14 @@
+# Python runtime.
 __pycache__
 *.pyc
+
+# Deps (fetched by bootstrap or build).
+third-party/
+
+# peru.
+.peru/
+
+# setuptools.
+build/
+dist/
+peru.egg-info/

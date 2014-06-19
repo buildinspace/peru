@@ -1,8 +1,10 @@
-# Running peru directly from the repo requires getting the local copy of PyYaml
-# into the PYTHONPATH. This script sets that up.
+#! /usr/bin/env bash
 
-repo_root="$(realpath "$(dirname "$BASH_SOURCE")/..")"
+# Puts the repo and third-party paths in PYTHONPATH for running peru from the repo.
 
-yaml_path="$repo_root/third-party/PyYAML-3.10/lib3"
+repo_root="$(dirname $(realpath $BASH_SOURCE))/.."
+third_party_path="$repo_root/third-party"
 
-export PYTHONPATH="${PYTHONPATH+$PYTHONPATH:}$repo_root:$yaml_path"
+"$repo_root/scripts/bootstrap.sh"
+
+export PYTHONPATH="${PYTHONPATH+$PYTHONPATH:}$repo_root:$third_party_path"
