@@ -1,0 +1,9 @@
+imports:
+    pyyaml: third-party
+
+# Use --force to have peru overwrite the checked in copy.
+# See third-party/.
+git module pyyaml:
+    url: https://github.com/yaml/pyyaml.git
+    rev: "3.10"
+    export: lib3
