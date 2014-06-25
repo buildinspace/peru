@@ -1,4 +1,6 @@
+import io
 import os
+import sys
 from textwrap import dedent
 import unittest
 
@@ -10,13 +12,18 @@ import peru.override
 peru_bin = os.path.join(os.path.dirname(__file__), "..", "..", "peru.sh")
 
 
-def run_peru_command(args, test_dir, peru_dir, *, env_vars=None):
+def run_peru_command(args, test_dir, peru_dir, *, env_vars=None,
+                     capture_stdout=False):
     # Specifying PERU_DIR keeps peru files from cluttering the expected
     # outputs.
     env = env_vars.copy() if env_vars else {}
     env["PERU_DIR"] = peru_dir
     old_cwd = os.getcwd()
+    old_stdout = sys.stdout
     os.chdir(test_dir)
+    if capture_stdout:
+        capture_stream = io.StringIO()
+        sys.stdout = capture_stream
     try:
         # Rather than invoking peru as a subprocess, just call directly into
         # the Main class. This lets us check that the right types of exceptions
@@ -25,6 +32,9 @@ def run_peru_command(args, test_dir, peru_dir, *, env_vars=None):
         Main().run(args, env)
     finally:
         os.chdir(old_cwd)
+        sys.stdout = old_stdout
+    if capture_stdout:
+        return capture_stream.getvalue()
 
 
 class IntegrationTest(unittest.TestCase):
@@ -183,8 +193,9 @@ class IntegrationTest(unittest.TestCase):
         run_peru_command(["override", "foo", override_dir], self.test_dir,
                          self.peru_dir)
         # Confirm that the override is configured.
-        overrides = peru.override.get_overrides(self.peru_dir)
-        self.assertDictEqual({"foo": override_dir}, overrides)
+        output = run_peru_command(["override", "--list"], self.test_dir,
+                                  self.peru_dir, capture_stdout=True)
+        self.assertEqual(output, "foo: {}\n".format(override_dir))
         # Run the sync and confirm that the override worked.
         self.do_integration_test(["sync"], {"builtfoo": "override!"})
         # Delete the override.
