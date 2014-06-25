@@ -48,8 +48,10 @@ class IntegrationTest(unittest.TestCase):
 
     def tearDown(self):
         # Make sure that everything in the cache tmp dir has been cleaned up.
-        tmpfiles = os.listdir(os.path.join(self.peru_dir, "cache", "tmp"))
-        self.assertListEqual([], tmpfiles, msg="tmp dir is not clean")
+        cache_tmp_dir_path = os.path.join(self.peru_dir, "cache", "tmp")
+        if os.path.exists(cache_tmp_dir_path):
+            tmpfiles = os.listdir(cache_tmp_dir_path)
+            self.assertListEqual([], tmpfiles, msg="tmp dir is not clean")
 
     def write_peru_yaml(self, template):
         self.peru_yaml = dedent(template.format(self.module_dir))
