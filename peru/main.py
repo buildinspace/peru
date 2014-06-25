@@ -12,7 +12,7 @@ from .error import PrintableError
 from .parser import parse_file
 from .resolver import Resolver
 
-usage = """\
+__doc__ = """\
 Usage:
   peru sync [-fqv]
   peru build [-fqv] [RULES...]
@@ -34,7 +34,9 @@ Options:
   -l --list     print all active overrides
   -q --quiet    don't print anything
   -v --verbose  print all the things
-""".strip()
+"""
+
+VERSION = "peru 0.1"
 
 
 def fail_no_command(command):
@@ -44,7 +46,7 @@ def fail_no_command(command):
 class Main:
     def run(self, argv, env):
         self.env = env
-        self.args = docopt.docopt(usage, argv, version="peru 0.1")
+        self.args = docopt.docopt(__doc__, argv, help=False)
 
         commands = ["sync", "build", "reup", "override"]
 
@@ -54,7 +56,11 @@ class Main:
                 getattr(self, "do_"+command)()
                 break
         else:
-            print(usage)
+            if self.args["--version"]:
+                print(VERSION)
+            else:
+                # Print the help.
+                print(__doc__, end="")
 
     def setup(self):
         self.peru_file = self.env.get("PERU_FILE", "peru.yaml")

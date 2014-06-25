@@ -209,6 +209,20 @@ class IntegrationTest(unittest.TestCase):
         # Rerun the sync and confirm the original content is back.
         self.do_integration_test(["sync"], {"builtfoo": "bar!"})
 
+    def test_help(self):
+        help_output = run_peru_command(["--help"], self.test_dir,
+                                       self.peru_dir, capture_stdout=True)
+        self.assertEqual(peru.main.__doc__, help_output)
+        # "peru" with no arguments should also print help
+        no_arg_output = run_peru_command([], self.test_dir, self.peru_dir,
+                                         capture_stdout=True)
+        self.assertEqual(peru.main.__doc__, no_arg_output)
+
+    def test_version(self):
+        version_output = run_peru_command(["--version"], self.test_dir,
+                                          self.peru_dir, capture_stdout=True)
+        self.assertEqual(peru.main.VERSION, version_output.strip())
+
 
 class ReupIntegrationTest(unittest.TestCase):
     def setUp(self):
