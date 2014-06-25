@@ -46,16 +46,13 @@ class Main:
         self.env = env
         self.args = docopt.docopt(usage, argv, version="peru 0.1")
 
-        self.setup()
+        commands = ["sync", "build", "reup", "override"]
 
-        if self.args["sync"]:
-            self.do_sync()
-        elif self.args["build"]:
-            self.do_build()
-        elif self.args["reup"]:
-            self.do_reup()
-        elif self.args["override"]:
-            self.do_override()
+        for command in commands:
+            if self.args[command]:
+                self.setup()
+                getattr(self, "do_"+command)()
+                break
         else:
             print(usage)
 
