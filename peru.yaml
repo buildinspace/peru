@@ -5,5 +5,5 @@ imports:
 # See third-party/.
 git module pyyaml:
     url: https://github.com/yaml/pyyaml.git
-    rev: "3.10"
+    rev: 3656145acc156314a005cf2ad18924e7f37de341  # 3.10
     export: lib3
