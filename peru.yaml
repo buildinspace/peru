@@ -1,5 +1,6 @@
 imports:
     pyyaml: third-party
+    docopt: third-party
 
 # Use --force to have peru overwrite the checked in copy.
 # See third-party/.
@@ -7,3 +8,9 @@ git module pyyaml:
     url: https://github.com/yaml/pyyaml.git
     rev: 3656145acc156314a005cf2ad18924e7f37de341  # 3.10
     export: lib3
+
+git module docopt:
+    url: https://github.com/docopt/docopt.git
+    rev: 940b1eb28175c0e4855a1e3b529cdf97309aa634  # 0.6.1
+    build: mkdir out && cp docopt.py out/
+    export: out
