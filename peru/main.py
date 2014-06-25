@@ -17,7 +17,7 @@ Usage:
   peru sync [-fqv]
   peru build [-fqv] [RULES...]
   peru reup [-qv] (--all | MODULES...)
-  peru override (MODULE PATH | --list | --delete MODULE)
+  peru override [add MODULE PATH | delete MODULE]
   peru [--help | --version]
 
 Commands:
@@ -25,22 +25,42 @@ Commands:
   build     run build rules in the working copy
   reup      get updated module fields from remotes
   override  replace a remote module with a local copy
+            (with no arguments, list active overrides)
 
 Options:
   -a --all      reup all modules
   -d --delete   unset an override
   -f --force    sync even when the working copy is dirty
   -h --help     show help
-  -l --list     print all active overrides
   -q --quiet    don't print anything
   -v --verbose  print all the things
 """
 
-VERSION = "peru 0.1"
+__version__ = "peru 0.1"
 
 
-def fail_no_command(command):
-    raise PrintableError('"{}" is not a peru command'.format(command))
+commands_map = {}
+
+
+def command(*subcommand_list):
+    def decorator(f):
+        commands_map[tuple(subcommand_list)] = f
+        return f
+    return decorator
+
+
+def find_matching_command(args):
+    """If "peru override add" matches, "peru override" will also match. Solve
+    this by always choosing the longest match."""
+    matches = [(cmds, f) for cmds, f in commands_map.items() if
+               all(args[cmd] for cmd in cmds)]
+    if not matches:
+        return None
+    longest_cmds, longest_f = matches[0]
+    for cmds, f in matches[1:]:
+        if len(cmds) > len(longest_cmds):
+            longest_cmds, longest_f = cmds, f
+    return longest_f
 
 
 class Main:
@@ -48,16 +68,13 @@ class Main:
         self.env = env
         self.args = docopt.docopt(__doc__, argv, help=False)
 
-        commands = ["sync", "build", "reup", "override"]
-
-        for command in commands:
-            if self.args[command]:
-                self.setup()
-                getattr(self, "do_"+command)()
-                break
+        matching_command = find_matching_command(self.args)
+        if matching_command:
+            self.setup()
+            matching_command(self)
         else:
             if self.args["--version"]:
-                print(VERSION)
+                print(__version__)
             else:
                 # Print the help.
                 print(__doc__, end="")
@@ -78,15 +95,18 @@ class Main:
         self.resolver = Resolver(self.scope, self.cache,
                                  overrides=self.overrides)
 
+    @command("sync")
     def do_sync(self):
         self.local_module.apply_imports(
             self.peru_dir, self.resolver, force=self.args["--force"])
 
+    @command("build")
     def do_build(self):
         self.do_sync()
         rules = self.resolver.get_rules(self.args["RULES"])
         self.local_module.do_build(rules)
 
+    @command("reup")
     def do_reup(self):
         if self.args["--all"]:
             modules = self.resolver.get_all_modules()
@@ -96,15 +116,19 @@ class Main:
             module.reup(self.cache.plugins_root, self.peru_file,
                         quiet=self.args["--quiet"])
 
+    @command("override")
     def do_override(self):
-        if self.args["--list"]:
-            for module in sorted(self.overrides.keys()):
-                print("{}: {}".format(module, self.overrides[module]))
-        elif self.args["--delete"]:
-            override.delete_override(self.peru_dir, self.args["MODULE"])
-        else:
-            override.set_override(self.peru_dir, self.args["MODULE"],
-                                  self.args["PATH"])
+        for module in sorted(self.overrides.keys()):
+            print("{}: {}".format(module, self.overrides[module]))
+
+    @command("override", "add")
+    def do_override_add(self):
+        override.set_override(self.peru_dir, self.args["MODULE"],
+                              self.args["PATH"])
+
+    @command("override", "delete")
+    def do_override_delete(self):
+        override.delete_override(self.peru_dir, self.args["MODULE"])
 
 
 def print_red(*args, **kwargs):

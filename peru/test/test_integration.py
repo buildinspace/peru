@@ -192,16 +192,16 @@ class IntegrationTest(unittest.TestCase):
             """)
         override_dir = shared.create_dir({"foo": "override"})
         # Set the override.
-        run_peru_command(["override", "foo", override_dir], self.test_dir,
-                         self.peru_dir)
+        run_peru_command(["override", "add", "foo", override_dir],
+                         self.test_dir, self.peru_dir)
         # Confirm that the override is configured.
-        output = run_peru_command(["override", "--list"], self.test_dir,
-                                  self.peru_dir, capture_stdout=True)
+        output = run_peru_command(["override"], self.test_dir, self.peru_dir,
+                                  capture_stdout=True)
         self.assertEqual(output, "foo: {}\n".format(override_dir))
         # Run the sync and confirm that the override worked.
         self.do_integration_test(["sync"], {"builtfoo": "override!"})
         # Delete the override.
-        run_peru_command(["override", "--delete", "foo"], self.test_dir,
+        run_peru_command(["override", "delete", "foo"], self.test_dir,
                          self.peru_dir)
         # Confirm that the override was deleted.
         overrides = peru.override.get_overrides(self.peru_dir)
@@ -221,7 +221,7 @@ class IntegrationTest(unittest.TestCase):
     def test_version(self):
         version_output = run_peru_command(["--version"], self.test_dir,
                                           self.peru_dir, capture_stdout=True)
-        self.assertEqual(peru.main.VERSION, version_output.strip())
+        self.assertEqual(peru.main.__version__, version_output.strip())
 
 
 class ReupIntegrationTest(unittest.TestCase):
