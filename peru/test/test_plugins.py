@@ -55,8 +55,7 @@ class PluginsTest(unittest.TestCase):
         master_head = repo.run("git rev-parse master")
         plugin_fields = {"url": self.content_dir}
         # By default, the git plugin should reup from master.
-        expected_output = plugin_fields.copy()
-        expected_output["rev"] = master_head
+        expected_output = {"rev": master_head}
         output = plugin_get_reup_fields(
             self.cache_root, "git", plugin_fields)
         self.assertDictEqual(expected_output, output)
@@ -72,7 +71,6 @@ class PluginsTest(unittest.TestCase):
         # Now specify the reup target explicitly.
         newbranch_head = repo.run("git rev-parse newbranch")
         plugin_fields["reup"] = "newbranch"
-        expected_output["reup"] = "newbranch"
         expected_output["rev"] = newbranch_head
         output = plugin_get_reup_fields(
             self.cache_root, "git", plugin_fields)

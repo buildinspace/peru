@@ -5,8 +5,9 @@ import os
 from os import path
 import shutil
 import subprocess
-import sys
 import urllib.parse
+
+from peru.plugin_shared import plugin_main
 
 
 def repo_cache_path(url, cache_root):
@@ -106,48 +107,28 @@ class FetchJob:
         self.checkout_tree(cached_dir, self.rev, self.dest)
 
 
-def main():
-    sys.argv.pop(0)  # exe name
+def parse_fields(fields):
+    return (fields["url"],
+            fields.get("rev", "master"),
+            fields.get("reup", "master"))
 
-    url = None
-    rev = "master"
-    reup_target = "master"
-    reup_specified = False
 
-    while sys.argv[0] != "--":
-        name = sys.argv.pop(0)
-        val = sys.argv.pop(0)
-        if name == "url":
-            url = val
-        elif name == "rev":
-            rev = val
-        elif name == "reup":
-            reup_target = val
-            reup_specified = True
-        else:
-            raise RuntimeError("Unknown plugin field name: " + name)
-    assert url is not None
+def do_fetch(fields, dest, cache_path):
+    url, rev, reup_target = parse_fields(fields)
+    FetchJob(cache_path, dest, url, rev)
 
-    assert sys.argv.pop(0) == "--"
-    command = sys.argv.pop(0)
-    if command == "fetch":
-        dest = sys.argv.pop(0)
-        cache_path = sys.argv.pop(0)
-        assert sys.argv == []
-        FetchJob(cache_path, dest, url, rev)
-    elif command == "reup":
-        cache_path = sys.argv.pop(0)
-        assert sys.argv == []
-        clone = git_clone_if_needed(url, cache_path)
-        git("fetch", "--prune", git_dir=clone)
-        output = git("rev-parse", reup_target, git_dir=clone)
-        new_rev = output.strip()
-        print("url:", url)
-        if reup_specified:
-            print("reup:", reup_target)
-        print("rev:", new_rev)
-    else:
-        raise RuntimeError("Unknown command: " + command)
+
+def do_reup(fields, cache_path):
+    url, rev, reup_target = parse_fields(fields)
+    clone = git_clone_if_needed(url, cache_path)
+    git("fetch", "--prune", git_dir=clone)
+    output = git("rev-parse", reup_target, git_dir=clone)
+    new_rev = output.strip()
+    print("rev:", new_rev)
+
+
+required_fields = {"url"}
+optional_fields = {"rev", "reup"}
 
 if __name__ == "__main__":
-    main()
+    plugin_main(required_fields, optional_fields, do_fetch, do_reup)
