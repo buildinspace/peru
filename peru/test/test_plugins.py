@@ -1,7 +1,7 @@
 import os
 import unittest
 
-from peru import plugin
+from peru.plugin_client import plugin_fetch, plugin_get_reup_fields
 import peru.test.shared as shared
 from peru.test.shared import GitRepo
 
@@ -15,8 +15,8 @@ class PluginsTest(unittest.TestCase):
 
     def do_plugin_test(self, type, plugin_fields, expected_content):
         fetch_dir = shared.create_dir()
-        output = plugin.plugin_fetch(self.cache_root, type, fetch_dir,
-                                     plugin_fields, capture_output=True)
+        output = plugin_fetch(self.cache_root, type, fetch_dir,
+                              plugin_fields, capture_output=True)
         self.assertDictEqual(shared.read_dir(fetch_dir), expected_content,
                              msg="Fetched content did not match expected.")
         return output
@@ -57,7 +57,7 @@ class PluginsTest(unittest.TestCase):
         # By default, the git plugin should reup from master.
         expected_output = plugin_fields.copy()
         expected_output["rev"] = master_head
-        output = plugin.plugin_get_reup_fields(
+        output = plugin_get_reup_fields(
             self.cache_root, "git", plugin_fields)
         self.assertDictEqual(expected_output, output)
         # Add some new commits and make sure master gets fetched properly.
@@ -66,7 +66,7 @@ class PluginsTest(unittest.TestCase):
         repo.run("git commit --allow-empty -m 'more junk'")
         new_master_head = repo.run("git rev-parse master")
         expected_output["rev"] = new_master_head
-        output = plugin.plugin_get_reup_fields(
+        output = plugin_get_reup_fields(
             self.cache_root, "git", plugin_fields)
         self.assertDictEqual(expected_output, output)
         # Now specify the reup target explicitly.
@@ -74,7 +74,7 @@ class PluginsTest(unittest.TestCase):
         plugin_fields["reup"] = "newbranch"
         expected_output["reup"] = "newbranch"
         expected_output["rev"] = newbranch_head
-        output = plugin.plugin_get_reup_fields(
+        output = plugin_get_reup_fields(
             self.cache_root, "git", plugin_fields)
         self.assertDictEqual(expected_output, output)
 
