@@ -34,12 +34,13 @@ def repo_cache_path(url, cache_root):
     return path.join(cache_root, escaped)
 
 
-def hg_clone_if_needed(url, cache_path):
+def hg_clone_if_needed(url, cache_path, verbose=False):
     repo_path = repo_cache_path(url, cache_path)
     if not path.exists(repo_path):
         os.makedirs(repo_path)
         try:
-            print("hg clone", url)
+            if verbose:
+                print("hg clone", url)
             hg("clone", "--noupdate", url, repo_path)
         except:
             # Delete the whole thing if the clone failed, to avoid
@@ -75,12 +76,20 @@ def hg_already_has_rev(repo, rev):
 
 def do_fetch(fields, dest, cache_path):
     url, rev, reup = parse_fields(fields)
-    clone = hg_clone_if_needed(url, cache_path)
+    clone = hg_clone_if_needed(url, cache_path, verbose=True)
     if not hg_already_has_rev(clone, rev):
         print("hg pull", url)
         hg("pull", hg_dir=clone)
     # TODO: Handle subrepos?
     hg("archive", "--type", "files", "--rev", rev, dest, hg_dir=clone)
+
+
+def do_reup(fields, cache_path):
+    url, rev, reup = parse_fields(fields)
+    clone = hg_clone_if_needed(url, cache_path)
+    hg("pull", hg_dir=clone)
+    output = hg("identify", "--debug", "--rev", reup, hg_dir=clone)
+    print("rev:", output.split()[0])
 
 
 def parse_fields(fields):
@@ -92,4 +101,4 @@ required_fields = {"url"}
 optional_fields = {"rev", "reup"}
 
 if __name__ == "__main__":
-    plugin_main(required_fields, optional_fields, do_fetch, None)
+    plugin_main(required_fields, optional_fields, do_fetch, do_reup)
