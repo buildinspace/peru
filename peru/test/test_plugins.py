@@ -3,7 +3,7 @@ import unittest
 
 from peru.plugin_client import plugin_fetch, plugin_get_reup_fields
 import peru.test.shared as shared
-from peru.test.shared import GitRepo
+from peru.test.shared import GitRepo, HgRepo
 
 
 class PluginsTest(unittest.TestCase):
@@ -25,6 +25,10 @@ class PluginsTest(unittest.TestCase):
         GitRepo(self.content_dir)
         self.do_plugin_test("git", {"url": self.content_dir}, self.content)
 
+    def test_hg_plugin(self):
+        HgRepo(self.content_dir)
+        self.do_plugin_test("hg", {"url": self.content_dir}, self.content)
+
     def test_git_plugin_with_submodule(self):
         content_repo = GitRepo(self.content_dir)
         submodule_dir = shared.create_dir({"another": "file"})
@@ -45,10 +49,43 @@ class PluginsTest(unittest.TestCase):
         output = self.do_plugin_test("git", plugin_fields, self.content)
         self.assertEqual(output.count("git clone"), 1)
         self.assertEqual(output.count("git fetch"), 0)
+        # Add a new file to the directory and commit it.
+        with open(os.path.join(self.content_dir, "another"), "w") as f:
+            f.write("file")
+        content_repo.run("git add -A")
+        content_repo.run("git commit -m 'committing another file'")
+        # Refetch the original rev. Git should not do a git-fetch.
+        output = self.do_plugin_test("git", plugin_fields, self.content)
+        self.assertEqual(output.count("git clone"), 0)
+        self.assertEqual(output.count("git fetch"), 0)
+        # Not delete the rev field. Git should default to master and fetch.
         del plugin_fields["rev"]
+        self.content["another"] = "file"
         output = self.do_plugin_test("git", plugin_fields, self.content)
         self.assertEqual(output.count("git clone"), 0)
         self.assertEqual(output.count("git fetch"), 1)
+
+    def test_hg_plugin_multiple_fetches(self):
+        content_repo = HgRepo(self.content_dir)
+        head = content_repo.run("hg identify --debug -r .").split()[0]
+        plugin_fields = {"url": self.content_dir, "rev": head}
+        output = self.do_plugin_test("hg", plugin_fields, self.content)
+        self.assertEqual(output.count("hg clone"), 1)
+        self.assertEqual(output.count("hg pull"), 0)
+        # Add a new file to the directory and commit it.
+        with open(os.path.join(self.content_dir, "another"), "w") as f:
+            f.write("file")
+        content_repo.run("hg commit -A -m 'committing another file'")
+        # Refetch the original rev. Hg should not do a pull.
+        output = self.do_plugin_test("hg", plugin_fields, self.content)
+        self.assertEqual(output.count("hg clone"), 0)
+        self.assertEqual(output.count("hg pull"), 0)
+        # Not delete the rev field. Git should default to master and fetch.
+        del plugin_fields["rev"]
+        self.content["another"] = "file"
+        output = self.do_plugin_test("hg", plugin_fields, self.content)
+        self.assertEqual(output.count("hg clone"), 0)
+        self.assertEqual(output.count("hg pull"), 1)
 
     def test_git_plugin_reup(self):
         repo = GitRepo(self.content_dir)
@@ -74,6 +111,36 @@ class PluginsTest(unittest.TestCase):
         expected_output["rev"] = newbranch_head
         output = plugin_get_reup_fields(
             self.cache_root, "git", plugin_fields)
+        self.assertDictEqual(expected_output, output)
+
+    def test_hg_plugin_reup(self):
+        repo = HgRepo(self.content_dir)
+        default_tip = repo.run("hg identify --debug -r default").split()[0]
+        plugin_fields = {"url": self.content_dir}
+        # By default, the hg plugin should reup from default.
+        expected_output = {"rev": default_tip}
+        output = plugin_get_reup_fields(
+            self.cache_root, "hg", plugin_fields)
+        self.assertDictEqual(expected_output, output)
+        # Add some new commits and make sure master gets fetched properly.
+        with open(os.path.join(self.content_dir, "randomfile"), "w") as f:
+            f.write("hg doesn't like empty commits")
+        repo.run("hg commit -A -m 'junk'")
+        with open(os.path.join(self.content_dir, "moarrandom"), "w") as f:
+            f.write("hg still doesn't like empty commits")
+        repo.run("hg branch newbranch")
+        repo.run("hg commit -A -m 'more junk'")
+        new_default_tip = repo.run("hg identify --debug -r default").split()[0]
+        expected_output["rev"] = new_default_tip
+        output = plugin_get_reup_fields(
+            self.cache_root, "hg", plugin_fields)
+        self.assertDictEqual(expected_output, output)
+        # Now specify the reup target explicitly.
+        newbranch_tip = repo.run("hg identify --debug -r tip").split()[0]
+        plugin_fields["reup"] = "newbranch"
+        expected_output["rev"] = newbranch_tip
+        output = plugin_get_reup_fields(
+            self.cache_root, "hg", plugin_fields)
         self.assertDictEqual(expected_output, output)
 
     def test_path_plugin(self):

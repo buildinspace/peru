@@ -1,6 +1,7 @@
 import os
 import subprocess
 import tempfile
+import textwrap
 
 from peru.compat import makedirs
 
@@ -58,5 +59,23 @@ class GitRepo:
         self.run("git commit --allow-empty -m 'first commit'")
 
     def run(self, command):
+        output = subprocess.check_output(command, shell=True, cwd=self.path)
+        return output.decode('utf8').strip()
+
+
+class HgRepo:
+    def __init__(self, content_dir):
+        self.path = content_dir
+        self.run("hg init")
+        hgrc_path = os.path.join(content_dir, ".hg", "hgrc")
+        with open(hgrc_path, "a") as f:
+            f.write(textwrap.dedent("""\
+                [ui]
+                username = peru <peru>
+                """))
+        self.run("hg commit -A -m 'first commit'")
+
+    def run(self, command):
+        # TODO: Deduplicate with GitRepo.
         output = subprocess.check_output(command, shell=True, cwd=self.path)
         return output.decode('utf8').strip()
