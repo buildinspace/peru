@@ -1,4 +1,5 @@
 import os
+import subprocess
 import unittest
 
 from peru.plugin_client import plugin_fetch, plugin_get_reup_fields
@@ -13,10 +14,12 @@ class PluginsTest(unittest.TestCase):
         self.content_dir = shared.create_dir(self.content)
         self.cache_root = shared.create_dir()
 
-    def do_plugin_test(self, type, plugin_fields, expected_content):
+    def do_plugin_test(self, type, plugin_fields, expected_content, *,
+                       hide_stderr=False):
         fetch_dir = shared.create_dir()
         output = plugin_fetch(self.cache_root, type, fetch_dir,
-                              plugin_fields, capture_output=True)
+                              plugin_fields, capture_output=True,
+                              stderr_to_stdout=hide_stderr)
         self.assertDictEqual(shared.read_dir(fetch_dir), expected_content,
                              msg="Fetched content did not match expected.")
         return output
@@ -143,8 +146,31 @@ class PluginsTest(unittest.TestCase):
             self.cache_root, "hg", plugin_fields)
         self.assertDictEqual(expected_output, output)
 
-    def test_path_plugin(self):
+    def test_cp_plugin(self):
         self.do_plugin_test("cp", {"path": self.content_dir}, self.content)
+
+    def test_cp_plugin_bad_fields(self):
+        # "path" field is required.
+        with self.assertRaises(subprocess.CalledProcessError):
+            self.do_plugin_test("cp", {}, self.content, hide_stderr=True)
+        # Also test unrecognized field.
+        bad_fields = {"path": self.content_dir, "junk": "junk"}
+        with self.assertRaises(subprocess.CalledProcessError):
+            self.do_plugin_test("cp", bad_fields, self.content,
+                                hide_stderr=True)
+
+    def test_rsync_plugin(self):
+        self.do_plugin_test("rsync", {"path": self.content_dir}, self.content)
+
+    def test_rsync_plugin_bad_fields(self):
+        # "path" field is required.
+        with self.assertRaises(subprocess.CalledProcessError):
+            self.do_plugin_test("rsync", {}, self.content, hide_stderr=True)
+        # Also test unrecognized field.
+        bad_fields = {"path": self.content_dir, "junk": "junk"}
+        with self.assertRaises(subprocess.CalledProcessError):
+            self.do_plugin_test("rsync", bad_fields, self.content,
+                                hide_stderr=True)
 
     def test_empty_plugin(self):
         self.do_plugin_test("empty", {}, {})

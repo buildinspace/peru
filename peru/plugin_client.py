@@ -15,15 +15,16 @@ PLUGINS_DIR = os.path.abspath(
 
 
 def plugin_fetch(plugins_cache_root, type, dest, plugin_fields, *,
-                 capture_output=False):
+                 capture_output=False, stderr_to_stdout=False):
     cache_path = _plugin_cache_path(plugins_cache_root, type)
     command = _plugin_command(type, plugin_fields, "fetch", dest, cache_path)
 
+    kwargs = {"stderr": subprocess.STDOUT} if stderr_to_stdout else {}
     if capture_output:
-        output = subprocess.check_output(command)
+        output = subprocess.check_output(command, **kwargs)
         return output.decode('utf8')
     else:
-        subprocess.check_call(command)
+        subprocess.check_call(command, **kwargs)
 
 
 def plugin_get_reup_fields(plugins_cache_root, type, plugin_fields):
@@ -54,5 +55,13 @@ def _plugin_cache_path(plugins_cache_root, type):
 
 
 def _plugin_exe_path(type):
-    path = os.path.join(PLUGINS_DIR, type + "_plugin.py")
+    """Plugins can end in any extension. (.py, .sh, etc.) So we have to look
+    for plugin executables that *start* with the name of the plugin. If we find
+    more than one, error out."""
+    plugins = os.listdir(PLUGINS_DIR)
+    plugin_start = type + "_plugin."
+    matches = [name for name in plugins if name.startswith(plugin_start)]
+    assert len(matches) > 0, "plugin " + type + " doesn't exist"
+    assert len(matches) == 1, "more than one candidate for plugin " + type
+    path = os.path.join(PLUGINS_DIR, matches[0])
     return path
