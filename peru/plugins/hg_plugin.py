@@ -61,9 +61,24 @@ def hg_configure(repo_path):
             """))
 
 
+def hg_already_has_rev(repo, rev):
+    try:
+        output = hg("identify", "--debug", "--rev", rev, hg_dir=repo)
+    except:
+        return False
+    # Only return true for revs that are absolute hashes. We could consider
+    # treating tags the same way, but 1) tags actually can change and 2)
+    # it's not clear at a glance whether something is a branch or a hash.
+    # Keep it simple.
+    return output.split()[0] == rev
+
+
 def do_fetch(fields, dest, cache_path):
     url, rev, reup = parse_fields(fields)
     clone = hg_clone_if_needed(url, cache_path)
+    if not hg_already_has_rev(clone, rev):
+        print("hg pull", url)
+        hg("pull", hg_dir=clone)
     # TODO: Handle subrepos?
     hg("archive", "--type", "files", "--rev", rev, dest, hg_dir=clone)
 
