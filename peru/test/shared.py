@@ -58,6 +58,5 @@ class GitRepo:
         self.run("git commit --allow-empty -m 'first commit'")
 
     def run(self, command):
-        output = subprocess.check_output(command, shell=True, cwd=self.path,
-                                         stderr=subprocess.STDOUT)
+        output = subprocess.check_output(command, shell=True, cwd=self.path)
         return output.decode('utf8').strip()

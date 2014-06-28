@@ -29,7 +29,7 @@ class PluginsTest(unittest.TestCase):
         content_repo = GitRepo(self.content_dir)
         submodule_dir = shared.create_dir({"another": "file"})
         GitRepo(submodule_dir)
-        content_repo.run("git submodule add '{}' subdir/".format(
+        content_repo.run("git submodule add -q '{}' subdir/".format(
             submodule_dir))
         content_repo.run("git commit -m 'submodule commit'")
         expected_content = self.content.copy()
@@ -62,7 +62,7 @@ class PluginsTest(unittest.TestCase):
         self.assertDictEqual(expected_output, output)
         # Add some new commits and make sure master gets fetched properly.
         repo.run("git commit --allow-empty -m 'junk'")
-        repo.run("git checkout -b newbranch")
+        repo.run("git checkout -q -b newbranch")
         repo.run("git commit --allow-empty -m 'more junk'")
         new_master_head = repo.run("git rev-parse master")
         expected_output["rev"] = new_master_head
