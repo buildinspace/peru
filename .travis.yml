@@ -8,4 +8,6 @@ before_install:
 install:
   - sudo apt-get install -qq realpath
   - pip install flake8
-script: ./test.sh
+script:
+  - ./test.sh
+  - ./scripts/validate_third_party.sh
