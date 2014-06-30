@@ -1,7 +1,7 @@
 from .cache import compute_key
 from .edit_yaml import set_module_field_in_file
 from .local_module import LocalModule
-from .plugin_client import plugin_fetch, plugin_get_reup_fields
+from .host import plugin_fetch, plugin_get_reup_fields
 
 
 class RemoteModule:
@@ -25,6 +25,7 @@ class RemoteModule:
         })
         return digest
 
+    # fetch
     def get_tree(self, cache, resolver):
         key = self.cache_key(resolver)
         if key in cache.keyval:
@@ -38,6 +39,7 @@ class RemoteModule:
         cache.keyval[key] = tree
         return tree
 
+    # reup
     def reup(self, plugins_root, peru_file_name, *, quiet=False):
         if not quiet:
             print("reup", self.name)

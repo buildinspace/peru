@@ -29,14 +29,6 @@ fi
 
 shift  # the "--"
 
-# Command line arguments after the "--" are commands and command args.
-command="$1"
-shift
-if [[ "$command" != "fetch" ]] ; then
-  echo command $command is not supported >&2
-  exit 1
-fi
-
 dest="$1"
 shift
 cache_path="$1"  # unused

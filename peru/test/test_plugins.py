@@ -2,7 +2,7 @@ import os
 import subprocess
 import unittest
 
-from peru.plugin_client import plugin_fetch, plugin_get_reup_fields
+from peru.host import plugin_fetch, plugin_get_reup_fields
 import peru.test.shared as shared
 from peru.test.shared import GitRepo, HgRepo
 
