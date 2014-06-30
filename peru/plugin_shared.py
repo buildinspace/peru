@@ -24,7 +24,16 @@ def plugin_main(required_fields, optional_fields, fetch_fn, reup_fn):
 def parse_plugin_args(required_fields, optional_fields):
     args = sys.argv[1:]
     all_fields = required_fields | optional_fields
-    splitter = args.index("--")
+    # Find the "--" splitter between plugin fields and the command args.
+    splitter = 0
+    while splitter < len(args):
+        if args[splitter] == "--":
+            break
+        # Field names will never be "--", but values can be. Increment by 2 so
+        # that we skip the field values.
+        splitter += 2
+    else:
+        raise BadFieldsError('Never found "--" splitter.')
     # Plugin fields are everything before the --
     field_args = args[:splitter]
     # The command and its args are everything after the --
