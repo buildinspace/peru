@@ -15,9 +15,9 @@ from .resolver import Resolver
 __doc__ = """\
 Usage:
   peru sync [-fqv]
-  peru build [-fqv] [RULES...]
-  peru reup [-qv] (--all | MODULES...)
-  peru override [add MODULE PATH | delete MODULE]
+  peru build [-fqv] [<rules>...]
+  peru reup [-qv] (--all | <modules>...)
+  peru override [add <module> <path> | delete <module>]
   peru [--help | --version]
 
 Commands:
@@ -103,7 +103,7 @@ class Main:
     @command("build")
     def do_build(self):
         self.do_sync()
-        rules = self.resolver.get_rules(self.args["RULES"])
+        rules = self.resolver.get_rules(self.args["<rules>"])
         self.local_module.do_build(rules)
 
     @command("reup")
@@ -111,7 +111,7 @@ class Main:
         if self.args["--all"]:
             modules = self.resolver.get_all_modules()
         else:
-            modules = self.resolver.get_modules(self.args["MODULES"])
+            modules = self.resolver.get_modules(self.args["<modules>"])
         for module in modules:
             module.reup(self.cache.plugins_root, self.peru_file,
                         quiet=self.args["--quiet"])
@@ -123,12 +123,12 @@ class Main:
 
     @command("override", "add")
     def do_override_add(self):
-        override.set_override(self.peru_dir, self.args["MODULE"],
-                              self.args["PATH"])
+        override.set_override(self.peru_dir, self.args["<module>"],
+                              self.args["<path>"])
 
     @command("override", "delete")
     def do_override_delete(self):
-        override.delete_override(self.peru_dir, self.args["MODULE"])
+        override.delete_override(self.peru_dir, self.args["<module>"])
 
 
 def print_red(*args, **kwargs):
