@@ -3,8 +3,8 @@ import subprocess
 import unittest
 
 from peru.plugin import plugin_fetch, plugin_get_reup_fields
-import peru.test.shared as shared
-from peru.test.shared import GitRepo, HgRepo
+import shared
+from shared import GitRepo, HgRepo
 
 
 class PluginsTest(unittest.TestCase):

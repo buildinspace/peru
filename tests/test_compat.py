@@ -2,7 +2,7 @@ import os
 import unittest
 
 import peru.compat as compat
-import peru.test.shared as shared
+import shared
 
 
 class CompatTest(unittest.TestCase):

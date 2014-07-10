@@ -2,7 +2,7 @@ from textwrap import dedent
 import unittest
 
 from peru import edit_yaml
-from peru.test import shared
+import shared
 
 
 yaml_template = dedent("""\

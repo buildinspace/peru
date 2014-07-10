@@ -6,8 +6,8 @@ import unittest
 
 from peru.main import Main
 from peru.error import PrintableError
-import peru.test.shared as shared
 import peru.override
+import shared
 
 peru_bin = os.path.join(os.path.dirname(__file__), "..", "..", "peru.sh")
 

@@ -2,7 +2,7 @@ import os
 import unittest
 
 from peru.cache import Cache
-import peru.test.shared as shared
+import shared
 
 
 class CacheTest(unittest.TestCase):
