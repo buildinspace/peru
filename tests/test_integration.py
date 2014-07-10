@@ -4,9 +4,11 @@ import sys
 from textwrap import dedent
 import unittest
 
-from peru.main import Main
-from peru.error import PrintableError
+import peru.cache
+import peru.main
+import peru.error
 import peru.override
+
 import shared
 
 peru_bin = os.path.join(os.path.dirname(__file__), "..", "..", "peru.sh")
@@ -29,7 +31,7 @@ def run_peru_command(args, test_dir, peru_dir, *, env_vars=None,
         # the Main class. This lets us check that the right types of exceptions
         # make it up to the top, so we don't need to check specific outputs
         # strings.
-        Main().run(args, env)
+        peru.main.Main().run(args, env)
     finally:
         os.chdir(old_cwd)
         sys.stdout = old_stdout
@@ -85,7 +87,7 @@ class IntegrationTest(unittest.TestCase):
         # Running it with a dirty working copy should be an error.
         with open(os.path.join(self.test_dir, "subdir", "foo"), "w") as f:
             f.write("dirty")
-        with self.assertRaises(PrintableError):
+        with self.assertRaises(peru.error.PrintableError):
             self.do_integration_test(["sync"], {"subdir/foo": "bar"})
 
     def test_conflicting_imports(self):
@@ -101,7 +103,7 @@ class IntegrationTest(unittest.TestCase):
                 foo: subdir
                 bar: subdir
             """)
-        with self.assertRaises(PrintableError):
+        with self.assertRaises(peru.error.PrintableError):
             self.do_integration_test(["sync"], {"subdir/foo": "bar"})
 
     def test_module_rules(self):
@@ -208,6 +210,20 @@ class IntegrationTest(unittest.TestCase):
         self.assertDictEqual({}, overrides)
         # Rerun the sync and confirm the original content is back.
         self.do_integration_test(["sync"], {"builtfoo": "bar!"})
+
+    def test_export(self):
+        self.write_peru_yaml("""\
+            cp module foo:
+                path: {}
+            """)
+        # Do a simple export and check the results.
+        self.do_integration_test(["export", "foo", "."], {"foo": "bar"})
+        # Running the same export again should fail, because of conflicts.
+        with self.assertRaises(peru.cache.Cache.DirtyWorkingCopyError):
+            self.do_integration_test(["export", "foo", "."], {"foo": "bar"})
+        # Passing the --force flag should pave over conflicts.
+        self.do_integration_test(["export", "--force", "foo", "."],
+                                 {"foo": "bar"})
 
     def test_help(self):
         help_output = run_peru_command(["--help"], self.test_dir,

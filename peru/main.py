@@ -2,6 +2,7 @@
 
 import os
 import sys
+import tempfile
 
 import docopt
 
@@ -18,6 +19,7 @@ Usage:
   peru build [-fqv] [<rules>...]
   peru reup [-qv] (--all | <modules>...)
   peru override [add <module> <path> | delete <module>]
+  peru export [-fqv] <target> [<dest>]
   peru [--help | --version]
 
 Commands:
@@ -26,6 +28,8 @@ Commands:
   reup      get updated module fields from remotes
   override  replace a remote module with a local copy
             (with no arguments, list active overrides)
+  export    copy the outputs of a build target to a
+            temp directory or supplied path
 
 Options:
   -a --all      reup all modules
@@ -129,6 +133,17 @@ class Main:
     @command("override", "delete")
     def do_override_delete(self):
         override.delete_override(self.peru_dir, self.args["<module>"])
+
+    @command("export")
+    def do_export(self):
+        if not self.args["<dest>"]:
+            dest = tempfile.mkdtemp(prefix="peru_export_")
+        else:
+            dest = self.args["<dest>"]
+        tree = self.resolver.get_tree(self.args["<target>"])
+        self.cache.export_tree(tree, dest, force=self.args["--force"])
+        if not self.args["<dest>"]:
+            print(dest)
 
 
 def print_red(*args, **kwargs):
