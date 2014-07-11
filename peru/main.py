@@ -7,11 +7,9 @@ import tempfile
 import docopt
 
 from . import override
-from .cache import Cache
-from .compat import makedirs
 from .error import PrintableError
-from .parser import parse_file
-from .resolver import Resolver
+from .runtime import Runtime
+from . import resolver
 
 __doc__ = """\
 Usage:
@@ -69,12 +67,11 @@ def find_matching_command(args):
 
 class Main:
     def run(self, argv, env):
-        self.env = env
         self.args = docopt.docopt(__doc__, argv, help=False)
 
         matching_command = find_matching_command(self.args)
         if matching_command:
-            self.setup()
+            self.runtime = Runtime(self.args, env)
             matching_command(self)
         else:
             if self.args["--version"]:
@@ -83,56 +80,39 @@ class Main:
                 # Print the help.
                 print(__doc__, end="")
 
-    def setup(self):
-        self.peru_file = self.env.get("PERU_FILE", "peru.yaml")
-        if not os.path.isfile(self.peru_file):
-            raise PrintableError(self.peru_file + " not found")
-
-        self.peru_dir = self.env.get("PERU_DIR", ".peru")
-        makedirs(self.peru_dir)
-        cache_root = self.env.get("PERU_CACHE",
-                                  os.path.join(self.peru_dir, "cache"))
-        plugins_root = self.env.get("PERU_PLUGINS_CACHE", None)
-        self.cache = Cache(cache_root, plugins_root)
-        self.scope, self.local_module = parse_file(self.peru_file)
-        self.overrides = override.get_overrides(self.peru_dir)
-        self.resolver = Resolver(self.scope, self.cache,
-                                 overrides=self.overrides)
-
     @command("sync")
     def do_sync(self):
-        self.local_module.apply_imports(
-            self.peru_dir, self.resolver, force=self.args["--force"])
+        self.runtime.local_module.apply_imports(self.runtime)
 
     @command("build")
     def do_build(self):
         self.do_sync()
-        rules = self.resolver.get_rules(self.args["<rules>"])
-        self.local_module.do_build(rules)
+        rules = resolver.get_rules(self.runtime, self.args["<rules>"])
+        self.runtime.local_module.do_build(rules)
 
     @command("reup")
     def do_reup(self):
         if self.args["--all"]:
-            modules = self.resolver.get_all_modules()
+            modules = resolver.get_all_modules(self.runtime)
         else:
-            modules = self.resolver.get_modules(self.args["<modules>"])
+            modules = resolver.get_modules(
+                self.runtime, self.args["<modules>"])
         for module in modules:
-            module.reup(self.cache.plugins_root, self.peru_file,
-                        quiet=self.args["--quiet"])
+            module.reup(self.runtime)
 
     @command("override")
     def do_override(self):
-        for module in sorted(self.overrides.keys()):
-            print("{}: {}".format(module, self.overrides[module]))
+        for module in sorted(self.runtime.overrides.keys()):
+            print("{}: {}".format(module, self.runtime.overrides[module]))
 
     @command("override", "add")
     def do_override_add(self):
-        override.set_override(self.peru_dir, self.args["<module>"],
+        override.set_override(self.runtime.peru_dir, self.args["<module>"],
                               self.args["<path>"])
 
     @command("override", "delete")
     def do_override_delete(self):
-        override.delete_override(self.peru_dir, self.args["<module>"])
+        override.delete_override(self.runtime.peru_dir, self.args["<module>"])
 
     @command("export")
     def do_export(self):
@@ -140,8 +120,8 @@ class Main:
             dest = tempfile.mkdtemp(prefix="peru_export_")
         else:
             dest = self.args["<dest>"]
-        tree = self.resolver.get_tree(self.args["<target>"])
-        self.cache.export_tree(tree, dest, force=self.args["--force"])
+        tree = resolver.get_tree(self.runtime, self.args["<target>"])
+        self.runtime.cache.export_tree(tree, dest, force=self.runtime.force)
         if not self.args["<dest>"]:
             print(dest)
 

@@ -49,11 +49,16 @@ class IntegrationTest(unittest.TestCase):
         self.test_dir = shared.create_dir()
 
     def tearDown(self):
-        # Make sure that everything in the cache tmp dir has been cleaned up.
-        cache_tmp_dir_path = os.path.join(self.peru_dir, "cache", "tmp")
-        if os.path.exists(cache_tmp_dir_path):
-            tmpfiles = os.listdir(cache_tmp_dir_path)
-            self.assertListEqual([], tmpfiles, msg="tmp dir is not clean")
+        # Make sure that everything in the tmp dirs has been cleaned up.
+        tmp_root = os.path.join(self.peru_dir, "tmp")
+        if os.path.exists(tmp_root):
+            tmpfiles = os.listdir(tmp_root)
+            self.assertListEqual([], tmpfiles, msg="main tmp dir is not clean")
+        cache_tmp_root = os.path.join(self.peru_dir, "cache", "tmp")
+        if os.path.exists(cache_tmp_root):
+            tmpfiles = os.listdir(cache_tmp_root)
+            self.assertListEqual([], tmpfiles,
+                                 msg="cache tmp dir is not clean")
 
     def write_peru_yaml(self, template):
         self.peru_yaml = dedent(template.format(self.module_dir))
@@ -159,7 +164,7 @@ class IntegrationTest(unittest.TestCase):
             "fi": "feefee",
         })
 
-    def test_alternate_plugins_cache(self):
+    def test_alternate_cache(self):
         self.write_peru_yaml("""\
             cp module foo:
                 path: {}
@@ -167,13 +172,15 @@ class IntegrationTest(unittest.TestCase):
             imports:
                 foo: subdir
             """)
-        plugins_cache = shared.create_dir()
-        env_vars = {"PERU_PLUGINS_CACHE": plugins_cache}
+        cache_dir = shared.create_dir()
+        env_vars = {"PERU_CACHE": cache_dir}
         self.do_integration_test(["sync"], {"subdir/foo": "bar"},
                                  env_vars=env_vars)
-        self.assertTrue(os.path.exists(os.path.join(plugins_cache, "cp")))
+        self.assertTrue(os.path.exists(os.path.join(cache_dir, "plugins")))
+        self.assertTrue(os.path.exists(os.path.join(cache_dir, "trees")))
+        self.assertTrue(os.path.exists(os.path.join(cache_dir, "keyval")))
         self.assertFalse(os.path.exists(
-            os.path.join(self.peru_dir, "plugins")))
+            os.path.join(self.peru_dir, "cache")))
 
     def test_override(self):
         self.write_peru_yaml("""\

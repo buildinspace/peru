@@ -204,10 +204,6 @@ class Cache:
         os.close(fd)
         return path
 
-    def tmp_dir(self):
-        dir = tempfile.TemporaryDirectory(dir=self.tmp_path)
-        return dir
-
 
 class KeyVal:
     def __init__(self, cache):

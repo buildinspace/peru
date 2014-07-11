@@ -11,7 +11,7 @@ class Rule:
         self.build_command = build_command
         self.export = export
 
-    def cache_key(self, resolver, input_tree):
+    def _cache_key(self, input_tree):
         return compute_key({
             "input_tree": input_tree,
             "build": self.build_command,
@@ -39,15 +39,15 @@ class Rule:
         else:
             return path
 
-    def get_tree(self, cache, resolver, input_tree):
-        key = self.cache_key(resolver, input_tree)
-        if key in cache.keyval:
-            return cache.keyval[key]
+    def get_tree(self, runtime, input_tree):
+        key = self._cache_key(input_tree)
+        if key in runtime.cache.keyval:
+            return runtime.cache.keyval[key]
 
-        with cache.tmp_dir() as tmp_dir:
-            cache.export_tree(input_tree, tmp_dir)
+        with runtime.tmp_dir() as tmp_dir:
+            runtime.cache.export_tree(input_tree, tmp_dir)
             export_dir = self.do_build(tmp_dir)
-            tree = cache.import_tree(export_dir)
+            tree = runtime.cache.import_tree(export_dir)
 
-        cache.keyval[key] = tree
+        runtime.cache.keyval[key] = tree
         return tree
