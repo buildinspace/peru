@@ -4,6 +4,7 @@ import sys
 from textwrap import dedent
 import unittest
 
+import peru.compat
 import peru.cache
 import peru.main
 import peru.error
@@ -19,7 +20,8 @@ def run_peru_command(args, test_dir, peru_dir, *, env_vars=None,
     # Specifying PERU_DIR keeps peru files from cluttering the expected
     # outputs.
     env = env_vars.copy() if env_vars else {}
-    env["PERU_DIR"] = peru_dir
+    if peru_dir:
+        env["PERU_DIR"] = peru_dir
     old_cwd = os.getcwd()
     old_stdout = sys.stdout
     os.chdir(test_dir)
@@ -92,6 +94,22 @@ class IntegrationTest(unittest.TestCase):
         shared.write_files(self.test_dir, {'subdir/foo': 'dirty'})
         with self.assertRaises(peru.error.PrintableError):
             self.do_integration_test(["sync"], {"subdir/foo": "bar"})
+
+    def test_import_from_project_subdir(self):
+        self.write_peru_yaml("""\
+            cp module foo:
+                path: {}
+
+            imports:
+                foo: subdir
+            """)
+        subdir = os.path.join(self.test_dir, 'a', 'b')
+        peru.compat.makedirs(subdir)
+        run_peru_command(['sync'], subdir, peru_dir=None)
+        self.assertTrue(os.path.isdir(os.path.join(self.test_dir, '.peru')),
+                        msg=".peru dir didn't end up in the right place")
+        actual_content = shared.read_dir(os.path.join(self.test_dir, 'subdir'))
+        self.assertDictEqual({'foo': 'bar'}, actual_content)
 
     def test_conflicting_imports(self):
         self.write_peru_yaml("""\

@@ -3,22 +3,24 @@ import tempfile
 
 from . import cache
 from . import compat
-from . import error
+from .error import PrintableError
 from . import override
 from . import parser
 
 
 class Runtime:
     def __init__(self, args, env):
-        self.peru_file = env.get('PERU_FILE', 'peru.yaml')
-        if not os.path.isfile(self.peru_file):
-            raise error.PrintableError(self.peru_file + ' not found')
+        peru_file_name = env.get('PERU_FILE_NAME', 'peru.yaml')
+        self.peru_file = find_peru_file(os.getcwd(), peru_file_name)
 
-        self.peru_dir = env.get('PERU_DIR', '.peru')
+        self.work_dir = os.path.dirname(self.peru_file)
+
+        self.peru_dir = env.get(
+            'PERU_DIR', os.path.join(self.work_dir, '.peru'))
         compat.makedirs(self.peru_dir)
 
         self.scope, self.local_module = parser.parse_file(
-            self.peru_file, {"peru_dir": self.peru_dir})
+            self.peru_file, peru_dir=self.peru_dir)
 
         cache_dir = env.get('PERU_CACHE', os.path.join(self.peru_dir, 'cache'))
         self.cache = cache.Cache(cache_dir)
@@ -30,7 +32,7 @@ class Runtime:
 
         self.force = args['--force']
         if args['--quiet'] and args['--verbose']:
-            raise error.PrintableError(
+            raise PrintableError(
                 "Peru can't be quiet and loud at the same time.\n"
                 "Have you tried using <blink>?")
         self.quiet = args['--quiet']
@@ -39,3 +41,20 @@ class Runtime:
     def tmp_dir(self):
         dir = tempfile.TemporaryDirectory(dir=self._tmp_root)
         return dir
+
+
+def find_peru_file(start_dir, name):
+    '''Walk up the directory tree until we find a file of the given name.'''
+    prefix = os.path.abspath(start_dir)
+    while True:
+        candidate = os.path.join(prefix, name)
+        if os.path.isfile(candidate):
+            return candidate
+        if os.path.exists(candidate):
+            raise PrintableError(
+                "Found {}, but it's not a file.".format(candidate))
+        if os.path.dirname(prefix) == prefix:
+            # We've walked all the way to the top. Bail.
+            raise PrintableError("Can't find " + name)
+        # Not found at this level. We must go...shallower.
+        prefix = os.path.dirname(prefix)

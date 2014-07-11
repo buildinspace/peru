@@ -9,10 +9,15 @@ from peru.rule import Rule
 class ParserTest(unittest.TestCase):
 
     def test_parse_empty_file(self):
-        scope, local_module = parse_string("")
+        scope, local_module = parse_string('')
         self.assertDictEqual(scope, {})
         self.assertDictEqual(local_module.imports, {})
         self.assertEqual(local_module.default_rule, None)
+        self.assertEqual(local_module.path, '.')
+
+    def test_parse_with_work_dir(self):
+        scope, local_module = parse_string('', work_dir='foo/bar')
+        self.assertEqual(local_module.path, 'foo/bar')
 
     def test_parse_rule(self):
         input = dedent("""\
