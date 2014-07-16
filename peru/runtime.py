@@ -4,7 +4,7 @@ import tempfile
 from . import cache
 from . import compat
 from .error import PrintableError
-from . import override
+from .keyval import KeyVal
 from . import parser
 
 
@@ -28,7 +28,8 @@ class Runtime:
         self._tmp_root = os.path.join(self.peru_dir, 'tmp')
         compat.makedirs(self._tmp_root)
 
-        self.overrides = override.get_overrides(self.peru_dir)
+        self.overrides = KeyVal(os.path.join(self.peru_dir, 'overrides'),
+                                self._tmp_root)
 
         self.force = args['--force']
         if args['--quiet'] and args['--verbose']:

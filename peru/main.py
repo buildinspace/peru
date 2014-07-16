@@ -6,7 +6,6 @@ import tempfile
 
 import docopt
 
-from . import override
 from .error import PrintableError
 from .runtime import Runtime
 from . import resolver
@@ -101,17 +100,19 @@ class Main:
 
     @command("override")
     def do_override(self):
-        for module in sorted(self.runtime.overrides.keys()):
+        for module in sorted(self.runtime.overrides):
             print("{}: {}".format(module, self.runtime.overrides[module]))
 
     @command("override", "add")
     def do_override_add(self):
-        override.set_override(self.runtime.peru_dir, self.args["<module>"],
-                              self.args["<path>"])
+        key = self.args['<module>']
+        val = self.args['<path>']
+        self.runtime.overrides[key] = val
 
     @command("override", "delete")
     def do_override_delete(self):
-        override.delete_override(self.runtime.peru_dir, self.args["<module>"])
+        key = self.args['<module>']
+        del self.runtime.overrides[key]
 
     @command("export")
     def do_export(self):

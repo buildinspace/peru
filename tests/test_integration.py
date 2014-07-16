@@ -8,7 +8,6 @@ import peru.compat
 import peru.cache
 import peru.main
 import peru.error
-import peru.override
 
 import shared
 
@@ -258,8 +257,9 @@ class IntegrationTest(unittest.TestCase):
         run_peru_command(['override', 'delete', 'foo'], self.test_dir,
                          self.peru_dir)
         # Confirm that the override was deleted.
-        overrides = peru.override.get_overrides(self.peru_dir)
-        self.assertDictEqual({}, overrides)
+        output = run_peru_command(['override'], self.test_dir, self.peru_dir,
+                                  capture_stdout=True)
+        self.assertEqual(output, '')
         # Rerun the sync and confirm the original content is back.
         self.do_integration_test(['sync'], {'builtfoo': 'bar!', 'x': 'x'})
 
