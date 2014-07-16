@@ -97,13 +97,17 @@ class IntegrationTest(unittest.TestCase):
             self.do_integration_test(["sync"], {"subdir/foo": "bar"})
 
     def test_sync_from_subdir(self):
-        self.write_peru_yaml("""\
-            cp module foo:
+        self.peru_yaml = dedent('''\
+            # Use a relative module path, to make sure it gets resolved
+            # relative to the project root and not the dir where peru was
+            # called.
+            cp module relative_foo:
                 path: {}
 
             imports:
-                foo: subdir
-            """)
+                relative_foo: subdir
+            '''.format(os.path.relpath(self.module_dir, start=self.test_dir)))
+        shared.write_files(self.test_dir, {'peru.yaml': self.peru_yaml})
         subdir = os.path.join(self.test_dir, 'a', 'b')
         peru.compat.makedirs(subdir)
         run_peru_command(['sync'], subdir, peru_dir=None)

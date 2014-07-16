@@ -15,23 +15,23 @@ PLUGINS_DIR = os.path.abspath(
     os.path.join(os.path.dirname(__file__), "resources", "plugins"))
 
 
-def plugin_fetch(plugins_cache_root, type, dest, plugin_fields, *,
+def plugin_fetch(cwd, plugins_cache_root, type, dest, plugin_fields, *,
                  capture_output=False, stderr_to_stdout=False):
     cache_path = _plugin_cache_path(plugins_cache_root, type)
     command = _plugin_command(type, 'fetch', plugin_fields, dest, cache_path)
 
     kwargs = {"stderr": subprocess.STDOUT} if stderr_to_stdout else {}
     if capture_output:
-        output = subprocess.check_output(command, **kwargs)
+        output = subprocess.check_output(command, cwd=cwd, **kwargs)
         return output.decode('utf8')
     else:
-        subprocess.check_call(command, **kwargs)
+        subprocess.check_call(command, cwd=cwd, **kwargs)
 
 
-def plugin_get_reup_fields(plugins_cache_root, type, plugin_fields):
+def plugin_get_reup_fields(cwd, plugins_cache_root, type, plugin_fields):
     cache_path = _plugin_cache_path(plugins_cache_root, type)
     command = _plugin_command(type, 'reup', plugin_fields, cache_path)
-    output = subprocess.check_output(command).decode('utf8')
+    output = subprocess.check_output(command, cwd=cwd).decode('utf8')
     new_fields = yaml.safe_load(output) or {}
     for key, val in new_fields.items():
         assert isinstance(key, str), 'Reup fields must always be strings.'
