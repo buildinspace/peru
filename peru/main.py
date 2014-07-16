@@ -86,9 +86,8 @@ class Main:
 
     @command("build")
     def do_build(self):
-        self.do_sync()
         rules = resolver.get_rules(self.runtime, self.args["<rules>"])
-        self.runtime.local_module.do_build(rules)
+        self.runtime.local_module.do_build(self.runtime, rules)
 
     @command("reup")
     def do_reup(self):

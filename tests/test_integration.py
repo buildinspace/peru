@@ -109,6 +109,27 @@ class IntegrationTest(unittest.TestCase):
         with self.assertRaises(peru.error.PrintableError):
             self.do_integration_test(["sync"], {"subdir/foo": "bar"})
 
+    def test_empty_imports(self):
+        self.write_peru_yaml('''\
+            cp module foo:
+                path: {0}
+            ''')
+        self.do_integration_test(['sync'], {})
+        # Now test switching back and forth between non-empty and empty.
+        self.write_peru_yaml('''\
+            cp module foo:
+                path: {0}
+            imports:
+                foo: ./
+            ''')
+        self.do_integration_test(['sync'], {'foo': 'bar'})
+        # Back to empty.
+        self.write_peru_yaml('''\
+            cp module foo:
+                path: {0}
+            ''')
+        self.do_integration_test(['sync'], {})
+
     def test_module_rules(self):
         template = """\
             cp module foo:
@@ -182,39 +203,57 @@ class IntegrationTest(unittest.TestCase):
         self.assertFalse(os.path.exists(
             os.path.join(self.peru_dir, "cache")))
 
-    def test_override(self):
-        self.write_peru_yaml("""\
-            cp module foo:
-                path: {}
-                build: mkdir subdir && mv foo subdir/builtfoo
-                export: subdir
+    override_test_yaml = '''\
+        # module x is for testing imports in the overridden module foo
+        empty module x:
+            build: printf x > x
 
-            # Test that this rule gets run in the right place (e.g. in the
-            # export dir) even when the foo module is overridden.
-            rule bang:
-                build: printf '!' >> builtfoo
-
+        cp module foo:
+            path: {}
             imports:
-                foo:bang: ./
-            """)
-        override_dir = shared.create_dir({"foo": "override"})
+                x: subdir
+            build: mv foo subdir/builtfoo
+            export: subdir
+
+        # Test that this rule gets run in the right place (e.g. in the
+        # export dir) even when the foo module is overridden.
+        rule bang:
+            build: printf '!' >> builtfoo
+
+        imports:
+            foo:bang: ./
+        '''
+
+    def test_override(self):
+        self.write_peru_yaml(self.override_test_yaml)
+        override_dir = shared.create_dir({'foo': 'override'})
         # Set the override.
-        run_peru_command(["override", "add", "foo", override_dir],
+        run_peru_command(['override', 'add', 'foo', override_dir],
                          self.test_dir, self.peru_dir)
         # Confirm that the override is configured.
-        output = run_peru_command(["override"], self.test_dir, self.peru_dir,
+        output = run_peru_command(['override'], self.test_dir, self.peru_dir,
                                   capture_stdout=True)
-        self.assertEqual(output, "foo: {}\n".format(override_dir))
+        self.assertEqual(output, 'foo: {}\n'.format(override_dir))
         # Run the sync and confirm that the override worked.
-        self.do_integration_test(["sync"], {"builtfoo": "override!"})
+        self.do_integration_test(['sync'], {'builtfoo': 'override!', 'x': 'x'})
         # Delete the override.
-        run_peru_command(["override", "delete", "foo"], self.test_dir,
+        run_peru_command(['override', 'delete', 'foo'], self.test_dir,
                          self.peru_dir)
         # Confirm that the override was deleted.
         overrides = peru.override.get_overrides(self.peru_dir)
         self.assertDictEqual({}, overrides)
         # Rerun the sync and confirm the original content is back.
-        self.do_integration_test(["sync"], {"builtfoo": "bar!"})
+        self.do_integration_test(['sync'], {'builtfoo': 'bar!', 'x': 'x'})
+
+    def test_override_after_regular_sync(self):
+        self.write_peru_yaml(self.override_test_yaml)
+        # First, do a regular sync.
+        self.do_integration_test(['sync'], {'builtfoo': 'bar!', 'x': 'x'})
+        # Now, add an override, and confirm that the new sync works.
+        override_dir = shared.create_dir({'foo': 'override'})
+        run_peru_command(['override', 'add', 'foo', override_dir],
+                         self.test_dir, self.peru_dir)
+        self.do_integration_test(['sync'], {'builtfoo': 'override!', 'x': 'x'})
 
     def test_export(self):
         self.write_peru_yaml("""\

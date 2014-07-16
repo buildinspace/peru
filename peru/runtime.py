@@ -14,10 +14,11 @@ class Runtime:
         if not os.path.isfile(self.peru_file):
             raise error.PrintableError(self.peru_file + ' not found')
 
-        self.scope, self.local_module = parser.parse_file(self.peru_file)
-
         self.peru_dir = env.get('PERU_DIR', '.peru')
         compat.makedirs(self.peru_dir)
+
+        self.scope, self.local_module = parser.parse_file(
+            self.peru_file, {"peru_dir": self.peru_dir})
 
         cache_dir = env.get('PERU_CACHE', os.path.join(self.peru_dir, 'cache'))
         self.cache = cache.Cache(cache_dir)

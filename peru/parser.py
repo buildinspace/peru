@@ -11,26 +11,26 @@ class ParserError(PrintableError):
     pass
 
 
-def parse_file(path):
+def parse_file(path, local_module_kwargs=None):
     with open(path) as f:
-        return parse_string(f.read())
+        return parse_string(f.read(), local_module_kwargs)
 
 
-def parse_string(yaml_str):
+def parse_string(yaml_str, local_module_kwargs=None):
     try:
         blob = yaml.safe_load(yaml_str)
     except yaml.scanner.ScannerError as e:
         raise PrintableError("YAML parser error:\n\n" + str(e)) from e
     if blob is None:
         blob = {}
-    return _parse_toplevel(blob)
+    return _parse_toplevel(blob, local_module_kwargs or {})
 
 
-def _parse_toplevel(blob):
+def _parse_toplevel(blob, local_module_kwargs):
     scope = {}
     _extract_named_rules(blob, scope)
     _extract_remote_modules(blob, scope)
-    local_module = _build_local_module(blob)
+    local_module = _build_local_module(blob, local_module_kwargs)
     return (scope, local_module)
 
 
@@ -88,13 +88,13 @@ def _build_remote_module(name, type, blob, yaml_name):
     return module
 
 
-def _build_local_module(blob):
+def _build_local_module(blob, local_module_kwargs):
     imports = blob.pop("imports", {})
     default_rule = _extract_default_rule(blob)
     if blob:
         raise ParserError("Unknown toplevel fields: " +
                           ", ".join(blob.keys()))
-    return LocalModule(imports, default_rule, path=".")
+    return LocalModule(imports, default_rule, path=".", **local_module_kwargs)
 
 
 def _validate_name(name):
