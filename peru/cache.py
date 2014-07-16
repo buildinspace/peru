@@ -1,11 +1,10 @@
 import hashlib
 import json
 import os
-import shutil
 import subprocess
-import tempfile
 
 from .compat import makedirs
+from .keyval import KeyVal
 
 
 def compute_key(data):
@@ -32,7 +31,7 @@ class Cache:
             os.makedirs(self.plugins_root)
         self.tmp_path = os.path.join(root, "tmp")
         makedirs(self.tmp_path)
-        self.keyval = KeyVal(self)
+        self.keyval = KeyVal(os.path.join(root, 'keyval'), self.tmp_path)
         self.trees_path = os.path.join(root, "trees")
         self._init_trees()
 
@@ -198,32 +197,3 @@ class Cache:
             self._git("reset", reset_mode, next_commit, work_tree=dest)
         except self.GitError as e:
             raise self.DirtyWorkingCopyError(e.output) from e
-
-    def _tmp_file(self):
-        fd, path = tempfile.mkstemp(dir=self.tmp_path)
-        os.close(fd)
-        return path
-
-
-class KeyVal:
-    def __init__(self, cache):
-        self.cache = cache
-        self.keyval_root = os.path.join(cache.root, "keyval")
-        makedirs(self.keyval_root)
-
-    def __getitem__(self, key):
-        with open(self.key_path(key)) as f:
-            return f.read()
-
-    def __setitem__(self, key, val):
-        # Write to a tmp file first, to avoid partial reads.
-        tmp_path = self.cache._tmp_file()
-        with open(tmp_path, "w") as f:
-            f.write(val)
-        shutil.move(tmp_path, self.key_path(key))
-
-    def __contains__(self, key):
-        return os.path.isfile(self.key_path(key))
-
-    def key_path(self, key):
-        return os.path.join(self.keyval_root, key)
