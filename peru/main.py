@@ -101,13 +101,13 @@ class Main:
     @command("override")
     def do_override(self):
         for module in sorted(self.runtime.overrides):
-            print("{}: {}".format(module, self.runtime.overrides[module]))
+            print('{}: {}'.format(module, self.runtime.get_override(module)))
 
     @command("override", "add")
     def do_override_add(self):
-        key = self.args['<module>']
-        val = self.args['<path>']
-        self.runtime.overrides[key] = val
+        name = self.args['<module>']
+        path = self.args['<path>']
+        self.runtime.set_override(name, path)
 
     @command("override", "delete")
     def do_override_delete(self):

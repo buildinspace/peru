@@ -43,6 +43,26 @@ class Runtime:
         dir = tempfile.TemporaryDirectory(dir=self._tmp_root)
         return dir
 
+    def set_override(self, name, path):
+        if not os.path.isabs(path):
+            # We can't store relative paths as given, because peru could be
+            # running from a different working dir next time. But we don't want
+            # to absolutify everything, because the user might want the paths
+            # to be relative (for example, so a whole workspace can be moved as
+            # a group while preserving all the overrides). So reinterpret all
+            # relative paths from the project root.
+            path = os.path.relpath(path, start=self.work_dir)
+        self.overrides[name] = path
+
+    def get_override(self, name):
+        path = self.overrides[name]
+        if not os.path.isabs(path):
+            # Relative paths are stored relative to the project root.
+            # Reinterpret them relative to the cwd. See the above comment in
+            # set_override.
+            path = os.path.relpath(os.path.join(self.work_dir, path))
+        return path
+
 
 def find_peru_file(start_dir, name):
     '''Walk up the directory tree until we find a file of the given name.'''

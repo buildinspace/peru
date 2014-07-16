@@ -65,14 +65,16 @@ class IntegrationTest(unittest.TestCase):
         self.peru_yaml = dedent(template.format(self.module_dir))
         shared.write_files(self.test_dir, {'peru.yaml': self.peru_yaml})
 
-    def do_integration_test(self, args, expected, **kwargs):
-        run_peru_command(args, self.test_dir, self.peru_dir, **kwargs)
+    def do_integration_test(self, args, expected, cwd=None, **kwargs):
+        if not cwd:
+            cwd = self.test_dir
+        run_peru_command(args, cwd, self.peru_dir, **kwargs)
         expected_with_yaml = expected.copy()
         expected_with_yaml["peru.yaml"] = self.peru_yaml
         self.assertDictEqual(expected_with_yaml,
                              shared.read_dir(self.test_dir))
 
-    def test_basic_import(self):
+    def test_basic_sync(self):
         self.write_peru_yaml("""\
             cp module foo:
                 path: {}
@@ -94,7 +96,7 @@ class IntegrationTest(unittest.TestCase):
         with self.assertRaises(peru.error.PrintableError):
             self.do_integration_test(["sync"], {"subdir/foo": "bar"})
 
-    def test_import_from_project_subdir(self):
+    def test_sync_from_subdir(self):
         self.write_peru_yaml("""\
             cp module foo:
                 path: {}
@@ -272,6 +274,38 @@ class IntegrationTest(unittest.TestCase):
         run_peru_command(['override', 'add', 'foo', override_dir],
                          self.test_dir, self.peru_dir)
         self.do_integration_test(['sync'], {'builtfoo': 'override!', 'x': 'x'})
+
+    def test_relative_override_from_subdir(self):
+        self.write_peru_yaml('''\
+            empty module foo:
+
+            imports:
+                foo: ./
+            ''')
+        # Create some subdirs inside the project.
+        subdir = os.path.join(self.test_dir, 'a', 'b')
+        peru.compat.makedirs(subdir)
+        # Create an override dir outside the project.
+        override_dir = shared.create_dir({'foo': 'override'})
+        # Set the override from inside subdir, using the relative path that's
+        # valid from that location. Peru is going to store this path in
+        # .peru/overrides/ at the root, so this tests that we resolve the
+        # stored path properly.
+        relative_path = os.path.relpath(override_dir, start=subdir)
+        run_peru_command(['override', 'add', 'foo', relative_path],
+                         subdir, self.peru_dir)
+        # Confirm that the right path is stored on disk.
+        expected_stored_path = os.path.relpath(
+            override_dir, start=self.test_dir)
+        with open(os.path.join(self.peru_dir, "overrides", "foo")) as f:
+            actual_stored_path = f.read()
+        self.assertEqual(expected_stored_path, actual_stored_path)
+        # Confirm that `peru override` prints output that respects the cwd.
+        output = run_peru_command(['override'], subdir, self.peru_dir,
+                                  capture_stdout=True)
+        self.assertEqual("foo: {}\n".format(relative_path), output)
+        # Confirm that syncing works.
+        self.do_integration_test(['sync'], {'foo': 'override'}, cwd=subdir)
 
     def test_export(self):
         self.write_peru_yaml("""\

@@ -61,7 +61,7 @@ def get_tree(runtime, target_str):
 
 
 def _get_override_tree(runtime, module, rules):
-    override_path = runtime.overrides[module.name]
+    override_path = runtime.get_override(module.name)
     if not os.path.exists(override_path):
         raise PrintableError(
             "override path for module '{}' does not exist: {}".format(
