@@ -13,10 +13,10 @@ class Runtime:
         peru_file_name = env.get('PERU_FILE_NAME', 'peru.yaml')
         self.peru_file = find_peru_file(os.getcwd(), peru_file_name)
 
-        self.work_dir = os.path.dirname(self.peru_file)
+        self.root = os.path.dirname(self.peru_file)
 
         self.peru_dir = env.get(
-            'PERU_DIR', os.path.join(self.work_dir, '.peru'))
+            'PERU_DIR', os.path.join(self.root, '.peru'))
         compat.makedirs(self.peru_dir)
 
         self.scope, self.local_module = parser.parse_file(
@@ -51,7 +51,7 @@ class Runtime:
             # to be relative (for example, so a whole workspace can be moved as
             # a group while preserving all the overrides). So reinterpret all
             # relative paths from the project root.
-            path = os.path.relpath(path, start=self.work_dir)
+            path = os.path.relpath(path, start=self.root)
         self.overrides[name] = path
 
     def get_override(self, name):
@@ -60,7 +60,7 @@ class Runtime:
             # Relative paths are stored relative to the project root.
             # Reinterpret them relative to the cwd. See the above comment in
             # set_override.
-            path = os.path.relpath(os.path.join(self.work_dir, path))
+            path = os.path.relpath(os.path.join(self.root, path))
         return path
 
 

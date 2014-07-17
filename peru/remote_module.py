@@ -33,7 +33,7 @@ class RemoteModule:
             # tree is already in cache
             return runtime.cache.keyval[key]
         with runtime.tmp_dir() as tmp_dir:
-            plugin_fetch(runtime.work_dir, runtime.cache.plugins_root,
+            plugin_fetch(runtime.root, runtime.cache.plugins_root,
                          self.type, tmp_dir, self.plugin_fields)
             base_tree = runtime.cache.import_tree(tmp_dir)
             tree = resolver.merge_import_trees(
@@ -45,7 +45,7 @@ class RemoteModule:
         if not runtime.quiet:
             print("reup", self.name)
         reup_fields = plugin_get_reup_fields(
-            runtime.work_dir, runtime.cache.plugins_root, self.type,
+            runtime.root, runtime.cache.plugins_root, self.type,
             self.plugin_fields)
         for field, val in reup_fields.items():
             if (field not in self.plugin_fields or

@@ -5,10 +5,10 @@ from . import resolver
 
 
 class LocalModule:
-    def __init__(self, imports, default_rule, path, peru_dir=None):
+    def __init__(self, imports, default_rule, root='.', peru_dir=None):
         self.imports = imports
         self.default_rule = default_rule
-        self.path = path
+        self.root = root
 
         # The toplevel module might relocate its own .peru directory with the
         # PERU_DIR variable. Overridden remote modules will just use the
@@ -18,7 +18,7 @@ class LocalModule:
         # override for a *different* project. The two different perus won't be
         # talking to the same lastimports file, and your imports may get dirty.
         # This is a tiny corner case, but maybe we should try to detect it?
-        self.peru_dir = peru_dir or os.path.join(path, ".peru")
+        self.peru_dir = peru_dir or os.path.join(root, ".peru")
         compat.makedirs(self.peru_dir)
 
     def apply_imports(self, runtime):
@@ -29,7 +29,7 @@ class LocalModule:
                 last_imports_tree = f.read()
 
         unified_imports_tree = resolver.apply_imports(
-            runtime, self.imports, self.path, last_imports_tree)
+            runtime, self.imports, self.root, last_imports_tree)
 
         if unified_imports_tree:
             with open(last_imports_tree_path, 'w') as f:
@@ -41,9 +41,9 @@ class LocalModule:
         """Runs all the build rules, taking their export paths into account.
         Returns the final export path."""
         self.apply_imports(runtime)
-        path = self.path
+        export_path = self.root
         if self.default_rule:
-            path = self.default_rule.do_build(path)
+            export_path = self.default_rule.do_build(export_path)
         for rule in rules:
-            path = rule.do_build(path)
-        return path
+            export_path = rule.do_build(export_path)
+        return export_path

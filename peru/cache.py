@@ -22,10 +22,9 @@ def compute_key(data):
 
 
 class Cache:
-    def __init__(self, root, plugins_root=None):
+    def __init__(self, root):
         self.root = root
-        self.plugins_root = (plugins_root if plugins_root is not None else
-                             os.path.join(root, "plugins"))
+        self.plugins_root = os.path.join(root, "plugins")
         # Don't freak out if plugins_root has nonstandard permissions.
         if not os.path.exists(self.plugins_root):
             os.makedirs(self.plugins_root)

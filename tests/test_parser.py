@@ -13,11 +13,11 @@ class ParserTest(unittest.TestCase):
         self.assertDictEqual(scope, {})
         self.assertDictEqual(local_module.imports, {})
         self.assertEqual(local_module.default_rule, None)
-        self.assertEqual(local_module.path, '.')
+        self.assertEqual(local_module.root, '.')
 
-    def test_parse_with_work_dir(self):
-        scope, local_module = parse_string('', work_dir='foo/bar')
-        self.assertEqual(local_module.path, 'foo/bar')
+    def test_parse_with_project_root(self):
+        scope, local_module = parse_string('', project_root='foo/bar')
+        self.assertEqual(local_module.root, 'foo/bar')
 
     def test_parse_rule(self):
         input = dedent("""\
