@@ -37,7 +37,7 @@ def _parse_toplevel(blob, **local_module_kwargs):
 
 
 def _build_local_module(blob, **local_module_kwargs):
-    imports = blob.pop("imports", {})
+    imports = _extract_imports(blob)
     default_rule = _extract_default_rule(blob)
     if blob:
         raise ParserError("Unknown toplevel fields: " +
@@ -87,7 +87,7 @@ def _extract_remote_modules(blob, scope):
 
 def _build_remote_module(name, type, blob, yaml_name):
     _validate_name(name)
-    imports = blob.pop("imports", {})
+    imports = _extract_imports(blob)
     default_rule = _extract_default_rule(blob)
     plugin_fields = blob
     assert all(isinstance(val, str) for val in plugin_fields.values()), \
@@ -97,6 +97,13 @@ def _build_remote_module(name, type, blob, yaml_name):
     module = RemoteModule(name, type, imports, default_rule, plugin_fields,
                           yaml_name)
     return module
+
+
+def _extract_imports(blob):
+    imports = blob.pop('imports', {})
+    # The default above handles imports being missing, but not being empty.
+    # Cover that case too, so that we always get a dict.
+    return imports if imports is not None else {}
 
 
 def _validate_name(name):

@@ -78,6 +78,14 @@ class ParserTest(unittest.TestCase):
         self.assertDictEqual(scope, {})
         self.assertDictEqual(local_module.imports, {"foo": "bar/"})
 
+    def test_parse_empty_imports(self):
+        input = dedent('''\
+            imports:
+            ''')
+        scope, local_module = parse_string(input)
+        self.assertDictEqual(scope, {})
+        self.assertDictEqual(local_module.imports, {})
+
     def test_bad_toplevel_field_throw(self):
         with self.assertRaises(ParserError):
             parse_string("foo: bar")
