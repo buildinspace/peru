@@ -3,7 +3,7 @@ import os
 import subprocess
 import unittest
 
-from peru.plugin import plugin_fetch, plugin_get_reup_fields
+import peru.plugin as plugin
 import shared
 from shared import GitRepo, HgRepo
 
@@ -18,9 +18,9 @@ class PluginsTest(unittest.TestCase):
     def do_plugin_test(self, type, plugin_fields, expected_content, *,
                        hide_stderr=False):
         fetch_dir = shared.create_dir()
-        output = plugin_fetch('.', self.cache_root, type, fetch_dir,
-                              plugin_fields, capture_output=True,
-                              stderr_to_stdout=hide_stderr)
+        output = plugin.plugin_fetch('.', self.cache_root, type, fetch_dir,
+                                     plugin_fields, capture_output=True,
+                                     stderr_to_stdout=hide_stderr)
         self.assertDictEqual(shared.read_dir(fetch_dir), expected_content,
                              msg="Fetched content did not match expected.")
         return output
@@ -95,7 +95,7 @@ class PluginsTest(unittest.TestCase):
         plugin_fields = {"url": self.content_dir}
         # By default, the git plugin should reup from master.
         expected_output = {"rev": master_head}
-        output = plugin_get_reup_fields(
+        output = plugin.plugin_get_reup_fields(
             '.', self.cache_root, "git", plugin_fields)
         self.assertDictEqual(expected_output, output)
         # Add some new commits and make sure master gets fetched properly.
@@ -104,14 +104,14 @@ class PluginsTest(unittest.TestCase):
         repo.run("git commit --allow-empty -m 'more junk'")
         new_master_head = repo.run("git rev-parse master")
         expected_output["rev"] = new_master_head
-        output = plugin_get_reup_fields(
+        output = plugin.plugin_get_reup_fields(
             '.', self.cache_root, "git", plugin_fields)
         self.assertDictEqual(expected_output, output)
         # Now specify the reup target explicitly.
         newbranch_head = repo.run("git rev-parse newbranch")
         plugin_fields["reup"] = "newbranch"
         expected_output["rev"] = newbranch_head
-        output = plugin_get_reup_fields(
+        output = plugin.plugin_get_reup_fields(
             '.', self.cache_root, "git", plugin_fields)
         self.assertDictEqual(expected_output, output)
 
@@ -121,7 +121,7 @@ class PluginsTest(unittest.TestCase):
         plugin_fields = {"url": self.content_dir}
         # By default, the hg plugin should reup from default.
         expected_output = {"rev": default_tip}
-        output = plugin_get_reup_fields(
+        output = plugin.plugin_get_reup_fields(
             '.', self.cache_root, "hg", plugin_fields)
         self.assertDictEqual(expected_output, output)
         # Add some new commits and make sure master gets fetched properly.
@@ -134,14 +134,14 @@ class PluginsTest(unittest.TestCase):
         repo.run("hg commit -A -m 'more junk'")
         new_default_tip = repo.run("hg identify --debug -r default").split()[0]
         expected_output["rev"] = new_default_tip
-        output = plugin_get_reup_fields(
+        output = plugin.plugin_get_reup_fields(
             '.', self.cache_root, "hg", plugin_fields)
         self.assertDictEqual(expected_output, output)
         # Now specify the reup target explicitly.
         newbranch_tip = repo.run("hg identify --debug -r tip").split()[0]
         plugin_fields["reup"] = "newbranch"
         expected_output["rev"] = newbranch_tip
-        output = plugin_get_reup_fields(
+        output = plugin.plugin_get_reup_fields(
             '.', self.cache_root, "hg", plugin_fields)
         self.assertDictEqual(expected_output, output)
 
@@ -171,11 +171,11 @@ class PluginsTest(unittest.TestCase):
         digest.update(b'content')
         real_hash = digest.hexdigest()
         fields = {'url': test_url}
-        output = plugin_get_reup_fields('.', '.', 'curl', fields)
+        output = plugin.plugin_get_reup_fields('.', '.', 'curl', fields)
         self.assertDictEqual({'sha1': real_hash}, output)
         # Confirm that we get the same thing with a preexisting hash.
         fields['sha1'] = 'preexisting junk'
-        output = plugin_get_reup_fields('.', '.', 'curl', fields)
+        output = plugin.plugin_get_reup_fields('.', '.', 'curl', fields)
         self.assertDictEqual({'sha1': real_hash}, output)
 
     def test_cp_plugin(self):
@@ -206,3 +206,30 @@ class PluginsTest(unittest.TestCase):
 
     def test_empty_plugin(self):
         self.do_plugin_test("empty", {}, {})
+
+    def test_plugin_roots(self):
+        plugins_dir = shared.create_dir({
+            'footype/fetch.py':
+                '#! /usr/bin/env python3\nprint("hey there!")\n',
+            'footype/reup.py':
+                '#! /usr/bin/env python3\nprint("name: val")\n'})
+        os.chmod(os.path.join(plugins_dir, 'footype', 'fetch.py'), 0o755)
+        os.chmod(os.path.join(plugins_dir, 'footype', 'reup.py'), 0o755)
+        output = plugin.plugin_fetch(
+            '.', '.', 'footype', '.', {}, plugin_roots=(plugins_dir,),
+            capture_output=True)
+        self.assertEqual('hey there!\n', output)
+        output = plugin.plugin_get_reup_fields('.', '.', 'footype', {},
+                                               plugin_roots=(plugins_dir,))
+        self.assertDictEqual({'name': 'val'}, output)
+
+    def test_no_such_plugin(self):
+        with self.assertRaises(plugin.PluginMissingError):
+            plugin.plugin_fetch('.', '.', 'nosuchtype!', '.', {})
+
+    def test_multiple_plugin_definitions(self):
+        path1 = shared.create_dir({'footype/junk': 'junk'})
+        path2 = shared.create_dir({'footype/junk': 'junk'})
+        with self.assertRaises(plugin.MultiplePluginsError):
+            plugin.plugin_fetch('.', '.', 'footype', '.', {},
+                                plugin_roots=(path1, path2))

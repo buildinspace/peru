@@ -1,5 +1,6 @@
 import io
 import os
+import shutil
 import sys
 from textwrap import dedent
 import unittest
@@ -11,7 +12,8 @@ import peru.error
 
 import shared
 
-peru_bin = os.path.join(os.path.dirname(__file__), "..", "..", "peru.sh")
+PERU_MODULE_ROOT = os.path.abspath(
+    os.path.join(os.path.dirname(peru.__file__)))
 
 
 def run_peru_command(args, test_dir, peru_dir, *, env_vars=None,
@@ -207,6 +209,27 @@ class IntegrationTest(unittest.TestCase):
             "lo": "hihihi",
             "fi": "feefee",
         })
+
+    def test_local_plugins(self):
+        cp_plugin_path = os.path.join(
+            PERU_MODULE_ROOT, 'resources', 'plugins', 'cp')
+        shutil.copytree(cp_plugin_path,
+                        os.path.join(self.test_dir, 'myplugins', 'newfangled'))
+        # Grab the contents now so that we can match it later.
+        # TODO: Rethink how these tests are structured.
+        expected_content = shared.read_dir(self.test_dir)
+        expected_content['foo'] = 'bar'
+
+        self.write_peru_yaml('''\
+            imports:
+                foo: ./
+
+            plugins: myplugins/
+
+            newfangled module foo:
+                path: {}
+            ''')
+        self.do_integration_test(['sync'], expected_content)
 
     def test_alternate_cache(self):
         self.write_peru_yaml("""\

@@ -1,3 +1,4 @@
+import collections
 import os
 import re
 import yaml
@@ -10,6 +11,10 @@ from .rule import Rule
 
 class ParserError(PrintableError):
     pass
+
+
+ParseResult = collections.namedtuple(
+    "ParseResult", ["scope", "local_module", "plugin_paths"])
 
 
 def parse_file(file_path, **local_module_kwargs):
@@ -30,10 +35,22 @@ def parse_string(yaml_str, project_root='.', **local_module_kwargs):
 
 def _parse_toplevel(blob, **local_module_kwargs):
     scope = {}
+    plugin_paths = _extract_plugin_paths(blob)
     _extract_named_rules(blob, scope)
     _extract_remote_modules(blob, scope)
     local_module = _build_local_module(blob, **local_module_kwargs)
-    return (scope, local_module)
+    return ParseResult(scope, local_module, plugin_paths)
+
+
+def _extract_plugin_paths(blob):
+    raw_value = blob.pop("plugins", [])
+    if isinstance(raw_value, str):
+        plugin_paths = (raw_value,)
+    elif isinstance(raw_value, list):
+        plugin_paths = tuple(raw_value)
+    else:
+        raise ParserError("'plugins' field must be a string or a list.")
+    return plugin_paths
 
 
 def _build_local_module(blob, **local_module_kwargs):

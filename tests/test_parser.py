@@ -9,15 +9,42 @@ from peru.rule import Rule
 class ParserTest(unittest.TestCase):
 
     def test_parse_empty_file(self):
-        scope, local_module = parse_string('')
-        self.assertDictEqual(scope, {})
-        self.assertDictEqual(local_module.imports, {})
-        self.assertEqual(local_module.default_rule, None)
-        self.assertEqual(local_module.root, '.')
+        result = parse_string('')
+        self.assertDictEqual(result.scope, {})
+        self.assertDictEqual(result.local_module.imports, {})
+        self.assertEqual(result.local_module.default_rule, None)
+        self.assertEqual(result.local_module.root, '.')
+        self.assertTupleEqual(result.plugin_paths, ())
 
     def test_parse_with_project_root(self):
-        scope, local_module = parse_string('', project_root='foo/bar')
-        self.assertEqual(local_module.root, 'foo/bar')
+        result = parse_string('', project_root='foo/bar')
+        self.assertEqual(result.local_module.root, 'foo/bar')
+
+    def test_parse_with_plugin_paths(self):
+        result = parse_string(dedent('''\
+            plugins: foo
+            '''))
+        self.assertTupleEqual(('foo',), result.plugin_paths)
+
+    def test_parse_with_list_of_plugin_paths(self):
+        result = parse_string(dedent('''\
+            plugins:
+              - foo
+              - bar
+            '''))
+        self.assertTupleEqual(('foo', 'bar'), result.plugin_paths)
+
+    def test_parse_with_bad_plugin_paths(self):
+        wrong_type = dedent('''\
+            plugins: 5
+            ''')
+        with self.assertRaises(ParserError):
+            parse_string(wrong_type)
+        empty_val = dedent('''\
+            plugins:
+            ''')
+        with self.assertRaises(ParserError):
+            parse_string(empty_val)
 
     def test_parse_rule(self):
         input = dedent("""\
@@ -25,9 +52,9 @@ class ParserTest(unittest.TestCase):
                 build: echo hi
                 export: out/
             """)
-        scope, local_module = parse_string(input)
-        self.assertIn("foo", scope)
-        rule = scope["foo"]
+        result = parse_string(input)
+        self.assertIn("foo", result.scope)
+        rule = result.scope["foo"]
         self.assertIsInstance(rule, Rule)
         self.assertEqual(rule.name, "foo")
         self.assertEqual(rule.build_command, "echo hi")
@@ -42,9 +69,9 @@ class ParserTest(unittest.TestCase):
                     wham: bam/
                     thank: you/maam
             """)
-        scope, local_module = parse_string(input)
-        self.assertIn("foo", scope)
-        module = scope["foo"]
+        result = parse_string(input)
+        self.assertIn("foo", result.scope)
+        module = result.scope["foo"]
         self.assertIsInstance(module, RemoteModule)
         self.assertEqual(module.name, "foo")
         self.assertEqual(module.type, "sometype")
@@ -61,9 +88,9 @@ class ParserTest(unittest.TestCase):
                 build: foo
                 export: bar
             """)
-        scope, local_module = parse_string(input)
-        self.assertIn("bar", scope)
-        module = scope["bar"]
+        result = parse_string(input)
+        self.assertIn("bar", result.scope)
+        module = result.scope["bar"]
         self.assertIsInstance(module, RemoteModule)
         self.assertIsInstance(module.default_rule, Rule)
         self.assertEqual(module.default_rule.build_command, "foo")
@@ -74,17 +101,17 @@ class ParserTest(unittest.TestCase):
             imports:
                 foo: bar/
             """)
-        scope, local_module = parse_string(input)
-        self.assertDictEqual(scope, {})
-        self.assertDictEqual(local_module.imports, {"foo": "bar/"})
+        result = parse_string(input)
+        self.assertDictEqual(result.scope, {})
+        self.assertDictEqual(result.local_module.imports, {"foo": "bar/"})
 
     def test_parse_empty_imports(self):
         input = dedent('''\
             imports:
             ''')
-        scope, local_module = parse_string(input)
-        self.assertDictEqual(scope, {})
-        self.assertDictEqual(local_module.imports, {})
+        result = parse_string(input)
+        self.assertDictEqual(result.scope, {})
+        self.assertDictEqual(result.local_module.imports, {})
 
     def test_bad_toplevel_field_throw(self):
         with self.assertRaises(ParserError):
