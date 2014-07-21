@@ -13,6 +13,6 @@ repo_root=$(dirname $(realpath $BASH_SOURCE))
 
 source "$repo_root/scripts/env.sh"
 
-python3 -m unittest discover --start tests
+coverage run -m unittest discover --start tests
 
 flake8 peru tests
