@@ -57,8 +57,7 @@ class IntegrationTest(unittest.TestCase):
 
     def write_peru_yaml(self, template):
         self.peru_yaml = dedent(template.format(self.module_dir))
-        with open(os.path.join(self.test_dir, "peru.yaml"), "w") as f:
-            f.write(self.peru_yaml)
+        shared.write_files(self.test_dir, {'peru.yaml': self.peru_yaml})
 
     def do_integration_test(self, args, expected, **kwargs):
         run_peru_command(args, self.test_dir, self.peru_dir, **kwargs)
@@ -85,8 +84,7 @@ class IntegrationTest(unittest.TestCase):
         self.do_integration_test(["sync"], {"subdir/foo": "bar"})
 
         # Running it with a dirty working copy should be an error.
-        with open(os.path.join(self.test_dir, "subdir", "foo"), "w") as f:
-            f.write("dirty")
+        shared.write_files(self.test_dir, {'subdir/foo': 'dirty'})
         with self.assertRaises(peru.error.PrintableError):
             self.do_integration_test(["sync"], {"subdir/foo": "bar"})
 

@@ -25,8 +25,12 @@ def _tmp_root():
 
 def create_dir(path_contents_map=None):
     dir = tmp_dir()
-    if path_contents_map is None:
-        return dir
+    if path_contents_map:
+        write_files(dir, path_contents_map)
+    return dir
+
+
+def write_files(dir, path_contents_map):
     for path, contents in path_contents_map.items():
         full_path = os.path.join(dir, path)
         full_parent = os.path.dirname(full_path)
@@ -34,7 +38,6 @@ def create_dir(path_contents_map=None):
             os.makedirs(full_parent)
         with open(full_path, "w") as f:
             f.write(contents)
-    return dir
 
 
 def read_dir(dir):

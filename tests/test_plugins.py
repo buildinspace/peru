@@ -53,8 +53,7 @@ class PluginsTest(unittest.TestCase):
         self.assertEqual(output.count("git clone"), 1)
         self.assertEqual(output.count("git fetch"), 0)
         # Add a new file to the directory and commit it.
-        with open(os.path.join(self.content_dir, "another"), "w") as f:
-            f.write("file")
+        shared.write_files(self.content_dir, {'another': 'file'})
         content_repo.run("git add -A")
         content_repo.run("git commit -m 'committing another file'")
         # Refetch the original rev. Git should not do a git-fetch.
@@ -76,8 +75,7 @@ class PluginsTest(unittest.TestCase):
         self.assertEqual(output.count("hg clone"), 1)
         self.assertEqual(output.count("hg pull"), 0)
         # Add a new file to the directory and commit it.
-        with open(os.path.join(self.content_dir, "another"), "w") as f:
-            f.write("file")
+        shared.write_files(self.content_dir, {'another': 'file'})
         content_repo.run("hg commit -A -m 'committing another file'")
         # Refetch the original rev. Hg should not do a pull.
         output = self.do_plugin_test("hg", plugin_fields, self.content)
@@ -126,11 +124,11 @@ class PluginsTest(unittest.TestCase):
             self.cache_root, "hg", plugin_fields)
         self.assertDictEqual(expected_output, output)
         # Add some new commits and make sure master gets fetched properly.
-        with open(os.path.join(self.content_dir, "randomfile"), "w") as f:
-            f.write("hg doesn't like empty commits")
+        shared.write_files(self.content_dir, {
+            'randomfile': "hg doesn't like empty commits"})
         repo.run("hg commit -A -m 'junk'")
-        with open(os.path.join(self.content_dir, "moarrandom"), "w") as f:
-            f.write("hg still doesn't like empty commits")
+        shared.write_files(self.content_dir, {
+            'randomfile': "hg still doesn't like empty commits"})
         repo.run("hg branch newbranch")
         repo.run("hg commit -A -m 'more junk'")
         new_default_tip = repo.run("hg identify --debug -r default").split()[0]
