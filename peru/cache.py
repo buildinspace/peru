@@ -105,7 +105,8 @@ class Cache:
         if not os.path.exists(src):
             raise RuntimeError("import tree called on nonexistent path " + src)
         self._git("read-tree", "--empty")  # clear the index for safety
-        self._git("add", "--all", work_tree=src)
+        # Use --force to avoid .gitignore rules. We shouldn't respect them.
+        self._git("add", "--all", "--force", work_tree=src)
         tree = self._git("write-tree")
         return tree
 

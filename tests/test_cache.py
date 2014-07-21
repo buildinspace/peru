@@ -40,6 +40,14 @@ class CacheTest(unittest.TestCase):
         self.cache.export_tree(new_tree, export_dir)
         self.assertDictEqual(new_content, shared.read_dir(export_dir))
 
+    def test_import_with_gitignore(self):
+        # Make sure our git imports don't get confused by .gitignore files.
+        new_content = {"fee/fi": "fo fum", ".gitignore": "fee/"}
+        new_tree = self.cache.import_tree(shared.create_dir(new_content))
+        export_dir = shared.create_dir()
+        self.cache.export_tree(new_tree, export_dir)
+        self.assertDictEqual(new_content, shared.read_dir(export_dir))
+
     def test_export_with_existing_files(self):
         # Create a dir with an existing file that doesn't conflict.
         more_content = {"untracked": "stuff"}
