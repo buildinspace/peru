@@ -13,13 +13,36 @@ def set_module_field_in_file(yaml_file_path, module_name, field_name, new_val):
 def set_module_field(yaml_text, module_name, field_name, new_val):
     yaml_dict = _parse_yaml_text(yaml_text)
     bounds = _get_module_field_bounds(yaml_dict, module_name, field_name)
+    quoted_val = _maybe_quote(new_val)
     if bounds:
         # field exists, modify it
-        return yaml_text[:bounds[0]] + new_val + yaml_text[bounds[1]:]
+        return yaml_text[:bounds[0]] + quoted_val + yaml_text[bounds[1]:]
     else:
         # field is new, hack it in
         return _append_module_field(yaml_text, yaml_dict, module_name,
-                                    field_name, new_val)
+                                    field_name, quoted_val)
+
+
+def _maybe_quote(val):
+    '''All of our values should be strings. Usually those can be passed in as
+    bare words, but if they're parseable as an int or float we need to quote
+    them.'''
+    assert isinstance(val, str), 'We should never set non-string values.'
+    needs_quoting = False
+    try:
+        int(val)
+        needs_quoting = True
+    except:
+        pass
+    try:
+        float(val)
+        needs_quoting = True
+    except:
+        pass
+    if needs_quoting:
+        return '"{}"'.format(val)
+    else:
+        return val
 
 
 def _append_module_field(yaml_text, yaml_dict, module_name,

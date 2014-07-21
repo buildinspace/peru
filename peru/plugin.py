@@ -32,7 +32,11 @@ def plugin_get_reup_fields(plugins_cache_root, type, plugin_fields):
     cache_path = _plugin_cache_path(plugins_cache_root, type)
     command = _plugin_command(type, 'reup', plugin_fields, cache_path)
     output = subprocess.check_output(command).decode('utf8')
-    return yaml.load(output)
+    new_fields = yaml.safe_load(output) or {}
+    for key, val in new_fields.items():
+        assert isinstance(key, str), 'Reup fields must always be strings.'
+        assert isinstance(val, str), 'Reup values must always be strings.'
+    return new_fields
 
 
 def _plugin_command(type, subcommand, plugin_fields, *args):
