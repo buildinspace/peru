@@ -1,4 +1,3 @@
-import collections
 import hashlib
 import json
 import os
@@ -110,24 +109,6 @@ class Cache:
         tree = self._git("write-tree")
         return tree
 
-    def tree_status(self, tree, path):
-        self._checkout_dummy_commit(tree)
-        output = self._git("status", "-z", "--untracked=no", work_tree=path)
-        modified = set()
-        deleted = set()
-        for line in output.split("\0"):
-            if line == "":
-                continue
-            prefix = line[:2]
-            file = line[3:]
-            if prefix == " M":
-                modified.add(file)
-            elif prefix == " D":
-                deleted.add(file)
-            else:
-                raise RuntimeError("Unexpected status line: " + repr(line))
-        return TreeStatus(modified, deleted)
-
     class MergeConflictError(RuntimeError):
         def __init__(self, msg):
             RuntimeError.__init__(self, msg)
@@ -180,32 +161,41 @@ class Cache:
         def __init__(self, msg):
             RuntimeError.__init__(self, msg)
 
-    def _throw_if_dirty(self, tree, path):
-        modified, deleted = self.tree_status(tree, path)
-        if modified or deleted:
-            message = "Imports are dirty. Giving up."
-            if modified:
-                message += "\n\nModified:\n  " + "\n  ".join(sorted(modified))
-            if deleted:
-                message += "\n\nDeleted:\n  " + "\n  ".join(sorted(deleted))
-            raise self.DirtyWorkingCopyError(message)
-
     # TODO: This method needs to take a filesystem lock.  Probably all of them
     # do.
     def export_tree(self, tree, dest, previous_tree=None, *, force=False):
         if not os.path.exists(dest):
             os.makedirs(dest)
 
-        if not force:
-            self._throw_if_dirty(previous_tree, dest)
-
         next_commit = self._dummy_commit(tree)
         self._checkout_dummy_commit(previous_tree)
+
+        # Checking git status serves two purposes here.
+        # 1) It checks for a dirty working copy, in which case we'll abort.
+        # 2) It updates file timestamps in the index. (Yes, Virginia,
+        # `git status` writes to the index file!) This solves a very subtle
+        # issue where `git reset --keep` mistakenly thinks a file is dirty when
+        # in fact only the timestamp is off. The timestamp is off because
+        # `git read-tree` can't set timestamps (git trees don't store them).
+        status = self._git("status", "--porcelain", "--untracked-files=no",
+                           work_tree=dest)
+        if status and not force:
+            # Working copy is dirty. Abort.
+            full_status = self._git("status", "--untracked-files=no",
+                                    work_tree=dest)
+            raise self.DirtyWorkingCopyError(full_status)
+
+        # Use `git reset` to update the working copy instead of `git checkout`.
+        # The checkout command normally refuses to overwrite existing files,
+        # which is good, but it will gladly overwrite ignored files. In our
+        # case, we don't control any .gitignore files that might be in the
+        # working copy. (In fact, it's expected that users will gitignore the
+        # files that peru syncs.) Without the --force flag, we should never
+        # overwrite any dirty files, ignored or otherwise. Luckily, `git reset`
+        # doesn't pay attention to .gitignore.
+        reset_mode = "--hard" if force else "--keep"
         try:
-            if force:
-                self._git("checkout", next_commit, "--force", work_tree=dest)
-            else:
-                self._git("checkout", next_commit, work_tree=dest)
+            self._git("reset", reset_mode, next_commit, work_tree=dest)
         except self.GitError as e:
             raise self.DirtyWorkingCopyError(e.output) from e
 
@@ -241,6 +231,3 @@ class KeyVal:
 
     def key_path(self, key):
         return os.path.join(self.keyval_root, key)
-
-
-TreeStatus = collections.namedtuple("TreeStatus", ["modified", "deleted"])
