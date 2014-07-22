@@ -1,8 +1,100 @@
-<html>
+<!DOCTYPE html>
+<html lang="en" class="no-skrollr">
   <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no">
+
+    <!-- jQuery. -->
+    <script src="//code.jquery.com/jquery-1.11.0.min.js"></script>
+    <script src="//code.jquery.com/jquery-migrate-1.2.1.min.js"></script>
+
+    <!-- Bootstrap. -->
+    <link rel="stylesheet" href="//maxcdn.bootstrapcdn.com/bootstrap/3.2.0/css/bootstrap.min.css">
+    <link rel="stylesheet" href="//maxcdn.bootstrapcdn.com/bootstrap/3.2.0/css/bootstrap-theme.min.css">
+    <script src="//maxcdn.bootstrapcdn.com/bootstrap/3.2.0/js/bootstrap.min.js"></script>
+
+    <!-- Skrollr. -->
+    <script src="//cdnjs.cloudflare.com/ajax/libs/skrollr/0.6.26/skrollr.min.js"></script>
+    <script type="text/javascript">
+      $(document).ready(function() {
+        skrollr.init({
+          smoothScrolling: false,
+          mobileDeceleration: 0.004});
+      });
+    </script>
+
+    <link rel="stylesheet" href="css/parallax.css">
+
     <title>peru</title>
   </head>
   <body>
-    <h1>peru</h1>
+    <!-- Outboard parallax images. -->
+    <div
+    class="parallax-image-container parallax-image-container-100"
+    data-anchor-target="#tagline + .parallax-gap"
+    data-bottom-top="transform: translate3d(0, 200%, 0);"
+    data-top-bottom="transform: translate3d(0, 0, 0);">
+      <!-- Adjust y translation to control scroll speed. -->
+      <div
+      class="parallax-image parallax-image-100"
+      style="background-image: url(img/picchu-1.jpg);"
+      data-anchor-target="#tagline + .parallax-gap"
+      data-bottom-top="transform: translate3d(0, -80%, 0);"
+      data-top-bottom="transform: translate3d(0, 80%, 0);">
+      </div>
+    </div>
+    <div
+    class="parallax-image-container parallax-image-container-100"
+    data-anchor-target="#gist + .parallax-gap"
+    data-bottom-top="transform: translate3d(0, 200%, 0);"
+    data-top-bottom="transform: translate3d(0, 0, 0);">
+      <!-- Adjust y translation to control scroll speed. -->
+      <div
+      class="parallax-image parallax-image-100"
+      style="background-image: url(img/cotr-1.jpg);"
+      data-anchor-target="#gist + .parallax-gap"
+      data-bottom-top="transform: translate3d(0, -80%, 0);"
+      data-top-bottom="transform: translate3d(0, 80%, 0);">
+      </div>
+    </div>
+
+    <!-- Parallax body. -->
+    <div id="skrollr-body">
+      <div class="header", id="tagline">
+        <div class="navbar navbar-default navbar-fixed-top" style="margin: 0;" role="navigation">
+          <div class="container-fluid">
+            <div class="navbar-header">
+              <span class="navbar-brand">peru</span>
+            </div>
+            <ul class="nav navbar-nav">
+              <li><a href="//github.com/buildinspace/peru">github</a></li>
+              <li><a href="//phabricator.buildinspace.com">phabricator</a></li>
+              <li><a href="#">pypi</a></li>
+            </ul>
+            <p class="navbar-text navbar-right">distributed freely under the MIT license</p>
+          </div>
+        </div>
+      </div>
+      <div
+      class="parallax-gap parallax-gap-50"
+      style="background-image: url(img/picchu-1.jpg);">
+        <div style="position: relative; height: 100%;">
+            <p class="overlay-text">sometimes maybe better than copy-paste</p>
+        </div>
+      </div>
+      <div class="content content-50" id="gist">
+        <div class="container-fluid">
+          <h1>peru fetches stuff for your projects <small>code, distributions, docs, you name it</small></h1>
+          <p>Unlike other tools that fetch code, peru doesn't take over your project's build or version control tools. With peru, you continue to use whichever tools work for you and integrate as little or as much as you like.</p>
+        </div>
+      </div>
+      <div
+      class="parallax-gap parallax-gap-100"
+      style="background-image: url(img/cotr-1.jpg);">
+      </div>
+      <div class="content" id="bottom">
+        <h1>using peru is easy <small>here's how</small></h1>
+      </div>
+    </div>
   </body>
 </html>
