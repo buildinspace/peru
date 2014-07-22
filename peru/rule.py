@@ -1,3 +1,4 @@
+from pathlib import Path
 import os
 import subprocess
 
@@ -6,16 +7,18 @@ from .error import PrintableError
 
 
 class Rule:
-    def __init__(self, name, build_command, export):
+    def __init__(self, name, build_command, export, files):
         self.name = name
         self.build_command = build_command
         self.export = export
+        self.files = files
 
     def _cache_key(self, input_tree):
         return compute_key({
-            "input_tree": input_tree,
-            "build": self.build_command,
-            "export": self.export,
+            'input_tree': input_tree,
+            'build': self.build_command,
+            'export': self.export,
+            'files': self.files,
         })
 
     def do_build(self, path):
@@ -47,7 +50,25 @@ class Rule:
         with runtime.tmp_dir() as tmp_dir:
             runtime.cache.export_tree(input_tree, tmp_dir)
             export_dir = self.do_build(tmp_dir)
-            tree = runtime.cache.import_tree(export_dir)
+            files = self._get_files(export_dir)
+            tree = runtime.cache.import_tree(export_dir, files)
 
         runtime.cache.keyval[key] = tree
         return tree
+
+    def _get_files(self, export_path):
+        if not self.files:
+            return None
+        all_files = set()
+        for glob in self.files:
+            matches = set(str(match.relative_to(export_path))
+                          for match in Path(export_path).glob(glob))
+            if not matches:
+                raise NoMatchingFilesError(
+                    'No matches for path "{}".'.format(glob))
+            all_files |= matches
+        return all_files
+
+
+class NoMatchingFilesError(PrintableError):
+    pass

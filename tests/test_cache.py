@@ -61,6 +61,19 @@ class CacheTest(unittest.TestCase):
         self.cache.export_tree(new_tree, export_dir)
         self.assertDictEqual(new_content, shared.read_dir(export_dir))
 
+    def test_import_with_files(self):
+        all_content = {'foo': '',
+                       'bar': '',
+                       'baz/bing': ''}
+        test_dir = shared.create_dir(all_content)
+        tree = self.cache.import_tree(test_dir, ['foo', 'baz'])
+        expected_content = {'foo': '',
+                            'baz/bing': ''}
+        out_dir = shared.create_dir()
+        self.cache.export_tree(tree, out_dir)
+        actual_content = shared.read_dir(out_dir)
+        self.assertDictEqual(expected_content, actual_content)
+
     def test_export_with_existing_files(self):
         # Create a dir with an existing file that doesn't conflict.
         more_content = {"untracked": "stuff"}

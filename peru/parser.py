@@ -35,22 +35,11 @@ def parse_string(yaml_str, project_root='.', **local_module_kwargs):
 
 def _parse_toplevel(blob, **local_module_kwargs):
     scope = {}
-    plugin_paths = _extract_plugin_paths(blob)
+    plugin_paths = _extract_maybe_list_field(blob, 'plugins')
     _extract_named_rules(blob, scope)
     _extract_remote_modules(blob, scope)
     local_module = _build_local_module(blob, **local_module_kwargs)
     return ParseResult(scope, local_module, plugin_paths)
-
-
-def _extract_plugin_paths(blob):
-    raw_value = blob.pop("plugins", [])
-    if isinstance(raw_value, str):
-        plugin_paths = (raw_value,)
-    elif isinstance(raw_value, list):
-        plugin_paths = tuple(raw_value)
-    else:
-        raise ParserError("'plugins' field must be a string or a list.")
-    return plugin_paths
 
 
 def _build_local_module(blob, **local_module_kwargs):
@@ -78,11 +67,12 @@ def _extract_named_rules(blob, scope):
 
 def _extract_rule(name, blob):
     _validate_name(name)
-    build_command = blob.pop("build", None)
-    export = blob.pop("export", None)
-    if build_command is None and export is None:
+    build_command = blob.pop('build', None)
+    export = blob.pop('export', None)
+    files = _extract_maybe_list_field(blob, 'files')
+    if not build_command and not export and not files:
         return None
-    rule = Rule(name, build_command, export)
+    rule = Rule(name, build_command, export, files)
     return rule
 
 
@@ -133,3 +123,17 @@ def _add_to_scope(scope, name, obj):
     if name in scope:
         raise ParserError('"{}" is defined more than once'.format(name))
     scope[name] = obj
+
+
+def _extract_maybe_list_field(blob, name):
+    '''Handle optional fields that can be either a string or a list of
+    strings.'''
+    raw_value = blob.pop(name, [])
+    if isinstance(raw_value, str):
+        value = (raw_value,)
+    elif isinstance(raw_value, list):
+        value = tuple(raw_value)
+    else:
+        raise ParserError('"{}" field must be a string or a list.'
+                          .format(name))
+    return value

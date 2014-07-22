@@ -5,10 +5,11 @@ import sys
 from textwrap import dedent
 import unittest
 
-import peru.compat
 import peru.cache
-import peru.main
+import peru.compat
 import peru.error
+import peru.main
+import peru.rule
 
 import shared
 
@@ -177,6 +178,47 @@ class IntegrationTest(unittest.TestCase):
         template = template.replace("foo:copy1", "foo:copy2")
         self.write_peru_yaml(template)
         self.do_integration_test(["sync"], {"foo": "bar2", "copy2": "bar2"})
+
+    def test_rule_with_files(self):
+        content = {name: '' for name in [
+            'foo',
+            'bar',
+            'special',
+            'baz/bing',
+            'baz/boo/a',
+            'baz/boo/b',
+        ]}
+        self.module_dir = shared.create_dir(content)
+        self.write_peru_yaml('''\
+            cp module foo:
+                path: {}
+
+            rule filter:
+                files:
+                  - "**/*oo"
+                  - special
+
+            imports:
+                foo:filter: ./
+            ''')
+        filtered_content = {name: '' for name in [
+            'foo',
+            'special',
+            'baz/boo/a',
+            'baz/boo/b',
+        ]}
+        self.do_integration_test(['sync'], filtered_content)
+
+    def test_rule_with_files_that_dont_match(self):
+        self.write_peru_yaml('''\
+            cp module foo:
+                path: {}
+                files: idontexist
+            imports:
+                foo: ./
+            ''')
+        with self.assertRaises(peru.rule.NoMatchingFilesError):
+            self.do_integration_test(['sync'], {})
 
     def test_local_build(self):
         self.write_peru_yaml("""\

@@ -98,13 +98,16 @@ class Cache:
                                tree)
         self._git("branch", "-f", name, commit)
 
-    def import_tree(self, src):
+    def import_tree(self, src, files=None):
         if not os.path.exists(src):
-            raise RuntimeError("import tree called on nonexistent path " + src)
-        self._git("read-tree", "--empty")  # clear the index for safety
+            raise RuntimeError('import tree called on nonexistent path ' + src)
+        self._git('read-tree', '--empty')  # clear the index for safety
         # Use --force to avoid .gitignore rules. We shouldn't respect them.
-        self._git("add", "--all", "--force", work_tree=src)
-        tree = self._git("write-tree")
+        if files:
+            self._git('add', '--force', '--', *files, work_tree=src)
+        else:
+            self._git('add', '--all', '--force', work_tree=src)
+        tree = self._git('write-tree')
         return tree
 
     class MergeConflictError(RuntimeError):
