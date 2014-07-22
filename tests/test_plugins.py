@@ -1,3 +1,4 @@
+import hashlib
 import os
 import subprocess
 import unittest
@@ -143,6 +144,39 @@ class PluginsTest(unittest.TestCase):
         output = plugin_get_reup_fields(
             self.cache_root, "hg", plugin_fields)
         self.assertDictEqual(expected_output, output)
+
+    def test_curl_plugin_fetch(self):
+        curl_content = {'myfile': 'content'}
+        test_dir = shared.create_dir(curl_content)
+        test_url = 'file://{}/{}'.format(test_dir, 'myfile')
+        fields = {'url': test_url}
+        self.do_plugin_test('curl', fields, curl_content)
+        # Run the test again with an explicit hash and an explicit filename.
+        digest = hashlib.sha1()
+        digest.update(b'content')
+        real_hash = digest.hexdigest()
+        fields['sha1'] = real_hash
+        fields['filename'] = 'newname'
+        self.do_plugin_test('curl', fields, {'newname': 'content'})
+        # Now run it with the wrong hash, and confirm that there's an error.
+        fields['sha1'] = 'wrong hash'
+        with self.assertRaises(subprocess.CalledProcessError):
+            self.do_plugin_test('curl', fields, curl_content, hide_stderr=True)
+
+    def test_curl_plugin_reup(self):
+        curl_content = {'myfile': 'content'}
+        test_dir = shared.create_dir(curl_content)
+        test_url = 'file://{}/{}'.format(test_dir, 'myfile')
+        digest = hashlib.sha1()
+        digest.update(b'content')
+        real_hash = digest.hexdigest()
+        fields = {'url': test_url}
+        output = plugin_get_reup_fields('.', 'curl', fields)
+        self.assertDictEqual({'sha1': real_hash}, output)
+        # Confirm that we get the same thing with a preexisting hash.
+        fields['sha1'] = 'preexisting junk'
+        output = plugin_get_reup_fields('.', 'curl', fields)
+        self.assertDictEqual({'sha1': real_hash}, output)
 
     def test_cp_plugin(self):
         self.do_plugin_test("cp", {"path": self.content_dir}, self.content)
