@@ -17,6 +17,7 @@ Usage:
   peru reup [-qv] (--all | <modules>...)
   peru override [add <module> <path> | delete <module>]
   peru export [-fqv] <target> [<dest>]
+  peru clean [-f]
   peru (help | --help | --version)
 
 Commands:
@@ -27,6 +28,7 @@ Commands:
             (with no arguments, list active overrides)
   export    copy the outputs of a build target to a
             temp directory or supplied path
+  clean     delete imports from the working copy
 
 Options:
   -a --all      reup all modules
@@ -124,6 +126,11 @@ class Main:
         self.runtime.cache.export_tree(tree, dest, force=self.runtime.force)
         if not self.args["<dest>"]:
             print(dest)
+
+    @command('clean')
+    def do_clean(self):
+        # Apply empty imports.
+        self.runtime.local_module.apply_imports(self.runtime, {})
 
 
 def print_red(*args, **kwargs):

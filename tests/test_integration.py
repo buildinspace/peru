@@ -390,6 +390,20 @@ class IntegrationTest(unittest.TestCase):
         self.do_integration_test(["export", "--force", "foo", "."],
                                  {"foo": "bar"})
 
+    def test_clean(self):
+        self.write_peru_yaml('''\
+            imports:
+                foo: ./
+            cp module foo:
+                path: {}
+            ''')
+        self.do_integration_test(['clean'], {})
+        self.do_integration_test(['sync'], {'foo': 'bar'})
+        shared.write_files(self.test_dir, {'foo': 'DIRTY'})
+        with self.assertRaises(peru.cache.DirtyWorkingCopyError):
+            self.do_integration_test(['clean'], {})
+        self.do_integration_test(['clean', '--force'], {})
+
     def test_help(self):
         flag_output = run_peru_command(['--help'], self.test_dir,
                                        self.peru_dir, capture_stdout=True)

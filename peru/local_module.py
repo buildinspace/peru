@@ -21,7 +21,10 @@ class LocalModule:
         self.peru_dir = peru_dir or os.path.join(root, ".peru")
         compat.makedirs(self.peru_dir)
 
-    def apply_imports(self, runtime):
+    def apply_imports(self, runtime, imports=None):
+        if imports is None:
+            imports = self.imports
+
         last_imports_tree_path = os.path.join(self.peru_dir, 'lastimports')
         last_imports_tree = None
         if os.path.exists(last_imports_tree_path):
@@ -29,7 +32,7 @@ class LocalModule:
                 last_imports_tree = f.read()
 
         unified_imports_tree = resolver.apply_imports(
-            runtime, self.imports, self.root, last_imports_tree)
+            runtime, imports, self.root, last_imports_tree)
 
         if unified_imports_tree:
             with open(last_imports_tree_path, 'w') as f:
