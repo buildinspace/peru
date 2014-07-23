@@ -17,7 +17,7 @@ Usage:
   peru reup [-qv] (--all | <modules>...)
   peru override [add <module> <path> | delete <module>]
   peru export [-fqv] <target> [<dest>]
-  peru [--help | --version]
+  peru (help | --help | --version)
 
 Commands:
   sync      apply imports to the working copy
