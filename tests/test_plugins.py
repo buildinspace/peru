@@ -171,11 +171,13 @@ class PluginsTest(unittest.TestCase):
         digest.update(b'content')
         real_hash = digest.hexdigest()
         fields = {'url': test_url}
-        output = plugin.plugin_get_reup_fields('.', '.', 'curl', fields)
+        output = plugin.plugin_get_reup_fields(
+            '.', self.cache_root, 'curl', fields)
         self.assertDictEqual({'sha1': real_hash}, output)
         # Confirm that we get the same thing with a preexisting hash.
         fields['sha1'] = 'preexisting junk'
-        output = plugin.plugin_get_reup_fields('.', '.', 'curl', fields)
+        output = plugin.plugin_get_reup_fields(
+            '.', self.cache_root, 'curl', fields)
         self.assertDictEqual({'sha1': real_hash}, output)
 
     def test_cp_plugin(self):
@@ -215,21 +217,22 @@ class PluginsTest(unittest.TestCase):
                 '#! /usr/bin/env python3\nprint("name: val")\n'})
         os.chmod(os.path.join(plugins_dir, 'footype', 'fetch.py'), 0o755)
         os.chmod(os.path.join(plugins_dir, 'footype', 'reup.py'), 0o755)
+        fetch_dir = shared.create_dir()
         output = plugin.plugin_fetch(
-            '.', '.', 'footype', '.', {}, plugin_roots=(plugins_dir,),
-            capture_output=True)
+            '.', self.cache_root, 'footype', fetch_dir, {},
+            plugin_roots=(plugins_dir,), capture_output=True)
         self.assertEqual('hey there!\n', output)
-        output = plugin.plugin_get_reup_fields('.', '.', 'footype', {},
-                                               plugin_roots=(plugins_dir,))
+        output = plugin.plugin_get_reup_fields(
+            '.', self.cache_root, 'footype', {}, plugin_roots=(plugins_dir,))
         self.assertDictEqual({'name': 'val'}, output)
 
     def test_no_such_plugin(self):
         with self.assertRaises(plugin.PluginMissingError):
-            plugin.plugin_fetch('.', '.', 'nosuchtype!', '.', {})
+            plugin.plugin_fetch('.', self.cache_root, 'nosuchtype!', '.', {})
 
     def test_multiple_plugin_definitions(self):
         path1 = shared.create_dir({'footype/junk': 'junk'})
         path2 = shared.create_dir({'footype/junk': 'junk'})
         with self.assertRaises(plugin.MultiplePluginsError):
-            plugin.plugin_fetch('.', '.', 'footype', '.', {},
+            plugin.plugin_fetch('.', self.cache_root, 'footype', '.', {},
                                 plugin_roots=(path1, path2))

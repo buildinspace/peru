@@ -5,6 +5,8 @@ from peru.parser import parse_string, ParserError
 from peru.remote_module import RemoteModule
 from peru.rule import Rule
 
+import shared
+
 
 class ParserTest(unittest.TestCase):
 
@@ -17,8 +19,9 @@ class ParserTest(unittest.TestCase):
         self.assertTupleEqual(result.plugin_paths, ())
 
     def test_parse_with_project_root(self):
-        result = parse_string('', project_root='foo/bar')
-        self.assertEqual(result.local_module.root, 'foo/bar')
+        project_root = shared.create_dir()
+        result = parse_string('', project_root=project_root)
+        self.assertEqual(result.local_module.root, project_root)
 
     def test_parse_with_plugin_paths(self):
         result = parse_string(dedent('''\
