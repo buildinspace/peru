@@ -1,13 +1,13 @@
 import os
 import unittest
 
-from peru.cache import Cache
+import peru.cache
 import shared
 
 
 class CacheTest(unittest.TestCase):
     def setUp(self):
-        self.cache = Cache(shared.create_dir())
+        self.cache = peru.cache.Cache(shared.create_dir())
         self.content = {
             "a": "foo",
             "b/c": "bar",
@@ -26,7 +26,7 @@ class CacheTest(unittest.TestCase):
         dirty_content = {"a": "junk"}
         export_dir = shared.create_dir(dirty_content)
         # Export should fail by default.
-        with self.assertRaises(Cache.DirtyWorkingCopyError):
+        with self.assertRaises(peru.cache.DirtyWorkingCopyError):
             self.cache.export_tree(self.content_tree, export_dir)
         self.assertDictEqual(dirty_content, shared.read_dir(export_dir))
         # But it should suceed with the force flag.
@@ -39,7 +39,7 @@ class CacheTest(unittest.TestCase):
         # If we dirty a file, a resync should fail.
         with open(os.path.join(export_dir, "a"), "w") as f:
             f.write("dirty")
-        with self.assertRaises(Cache.DirtyWorkingCopyError):
+        with self.assertRaises(peru.cache.DirtyWorkingCopyError):
             self.cache.export_tree(self.content_tree, export_dir,
                                    previous_tree=self.content_tree)
         # But it should succeed with the --force flag.
@@ -85,7 +85,7 @@ class CacheTest(unittest.TestCase):
 
         # But if we try to export twice, the export_dir will now have
         # conflicting files, and export_tree() should throw.
-        with self.assertRaises(Cache.DirtyWorkingCopyError):
+        with self.assertRaises(peru.cache.DirtyWorkingCopyError):
             self.cache.export_tree(self.content_tree, export_dir)
 
         # By default, git's checkout safety doesn't protect files that are
@@ -93,7 +93,7 @@ class CacheTest(unittest.TestCase):
         # presence of a .gitignore file.
         with open(os.path.join(export_dir, '.gitignore'), "w") as f:
             f.write('*\n')  # .gitignore everything
-        with self.assertRaises(Cache.DirtyWorkingCopyError):
+        with self.assertRaises(peru.cache.DirtyWorkingCopyError):
             self.cache.export_tree(self.content_tree, export_dir)
 
     def test_previous_tree(self):
@@ -117,7 +117,7 @@ class CacheTest(unittest.TestCase):
         dirty_content = self.content.copy()
         dirty_content["a"] += " dirty"
         dirty_dir = shared.create_dir(dirty_content)
-        with self.assertRaises(Cache.DirtyWorkingCopyError):
+        with self.assertRaises(peru.cache.DirtyWorkingCopyError):
             self.cache.export_tree(new_tree, dirty_dir,
                                    previous_tree=self.content_tree)
 
@@ -126,7 +126,7 @@ class CacheTest(unittest.TestCase):
         no_conflict_dirty_content = self.content.copy()
         no_conflict_dirty_content["b/c"] += " dirty"
         no_conflict_dirty_dir = shared.create_dir(no_conflict_dirty_content)
-        with self.assertRaises(Cache.DirtyWorkingCopyError):
+        with self.assertRaises(peru.cache.DirtyWorkingCopyError):
             self.cache.export_tree(new_tree, no_conflict_dirty_dir,
                                    previous_tree=self.content_tree)
 
@@ -142,6 +142,6 @@ class CacheTest(unittest.TestCase):
         exported_content = shared.read_dir(export_dir)
         self.assertDictEqual(exported_content, expected_content)
 
-        with self.assertRaises(Cache.MergeConflictError):
+        with self.assertRaises(peru.cache.MergeConflictError):
             # subdir/ is already populated, so this merge should throw.
             self.cache.merge_trees(merged_tree, self.content_tree, "subdir")

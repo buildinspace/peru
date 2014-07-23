@@ -4,6 +4,7 @@ import os
 import subprocess
 
 from .compat import makedirs
+from .error import PrintableError
 from .keyval import KeyVal
 
 
@@ -110,10 +111,6 @@ class Cache:
         tree = self._git('write-tree')
         return tree
 
-    class MergeConflictError(RuntimeError):
-        def __init__(self, msg):
-            RuntimeError.__init__(self, msg)
-
     def merge_trees(self, base_tree, merge_tree, merge_path):
         if base_tree:
             self._git("read-tree", base_tree)
@@ -141,7 +138,7 @@ class Cache:
         try:
             self._git("read-tree", "-i", "--prefix", prefix, merge_tree)
         except self.GitError as e:
-            raise self.MergeConflictError(e.output) from e
+            raise MergeConflictError(e.output) from e
 
         unified_tree = self._git("write-tree")
         return unified_tree
@@ -157,10 +154,6 @@ class Cache:
         dummy = self._dummy_commit(tree)  # includes a call to read-tree
         self._git("update-ref", "--no-deref", "HEAD", dummy)
         return dummy
-
-    class DirtyWorkingCopyError(RuntimeError):
-        def __init__(self, msg):
-            RuntimeError.__init__(self, msg)
 
     # TODO: This method needs to take a filesystem lock.  Probably all of them
     # do.
@@ -182,9 +175,7 @@ class Cache:
                            work_tree=dest)
         if status and not force:
             # Working copy is dirty. Abort.
-            full_status = self._git("status", "--untracked-files=no",
-                                    work_tree=dest)
-            raise self.DirtyWorkingCopyError(full_status)
+            raise DirtyWorkingCopyError(status)
 
         # Use `git reset` to update the working copy instead of `git checkout`.
         # The checkout command normally refuses to overwrite existing files,
@@ -198,4 +189,12 @@ class Cache:
         try:
             self._git("reset", reset_mode, next_commit, work_tree=dest)
         except self.GitError as e:
-            raise self.DirtyWorkingCopyError(e.output) from e
+            raise DirtyWorkingCopyError(e.output) from e
+
+
+class DirtyWorkingCopyError(PrintableError):
+    pass
+
+
+class MergeConflictError(PrintableError):
+    pass

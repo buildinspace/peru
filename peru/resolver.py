@@ -1,7 +1,7 @@
 import collections
 import os
 
-from .cache import Cache
+from . import cache
 from .compat import indent
 from .error import PrintableError
 
@@ -28,10 +28,10 @@ def merge_import_trees(runtime, imports, base_tree=None):
         try:
             unified_tree = runtime.cache.merge_trees(
                 unified_tree, import_tree, import_path)
-        except Cache.MergeConflictError as e:
-            raise PrintableError(
-                "merge conflict in import '{}' at '{}':\n\n{}".format(
-                    target, import_path, indent(e.args[0], "  ")))
+        except cache.MergeConflictError as e:
+            e.msg = "Merge conflict in import '{}' at '{}':\n\n{}".format(
+                target, import_path, indent(e.msg, "  "))
+            raise
 
     return unified_tree
 
@@ -41,10 +41,11 @@ def apply_imports(runtime, imports, path, last_imports_tree=None):
     try:
         runtime.cache.export_tree(unified_imports_tree, path,
                                   last_imports_tree, force=runtime.force)
-    except Cache.DirtyWorkingCopyError as e:
-        raise PrintableError(
-            "imports conflict with the working copy:\n\n" +
-            indent(e.args[0], "  "))
+    except cache.DirtyWorkingCopyError as e:
+        e.msg = ('The working copy is dirty. ' +
+                 'To run anyway, use --force/-f\n\n' +
+                 indent(e.msg, '  '))
+        raise
     return unified_imports_tree
 
 

@@ -96,7 +96,7 @@ class IntegrationTest(unittest.TestCase):
 
         # Running it with a dirty working copy should be an error.
         shared.write_files(self.test_dir, {'subdir/foo': 'dirty'})
-        with self.assertRaises(peru.error.PrintableError):
+        with self.assertRaises(peru.cache.DirtyWorkingCopyError):
             self.do_integration_test(["sync"], {"subdir/foo": "bar"})
 
     def test_sync_from_subdir(self):
@@ -132,7 +132,7 @@ class IntegrationTest(unittest.TestCase):
                 foo: subdir
                 bar: subdir
             """)
-        with self.assertRaises(peru.error.PrintableError):
+        with self.assertRaises(peru.cache.MergeConflictError):
             self.do_integration_test(["sync"], {"subdir/foo": "bar"})
 
     def test_empty_imports(self):
@@ -384,7 +384,7 @@ class IntegrationTest(unittest.TestCase):
         # Do a simple export and check the results.
         self.do_integration_test(["export", "foo", "."], {"foo": "bar"})
         # Running the same export again should fail, because of conflicts.
-        with self.assertRaises(peru.cache.Cache.DirtyWorkingCopyError):
+        with self.assertRaises(peru.cache.DirtyWorkingCopyError):
             self.do_integration_test(["export", "foo", "."], {"foo": "bar"})
         # Passing the --force flag should pave over conflicts.
         self.do_integration_test(["export", "--force", "foo", "."],
