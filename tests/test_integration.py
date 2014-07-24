@@ -322,6 +322,10 @@ class IntegrationTest(unittest.TestCase):
         output = run_peru_command(['override'], self.test_dir, self.peru_dir,
                                   capture_stdout=True)
         self.assertEqual(output, 'foo: {}\n'.format(override_dir))
+        # Make sure 'override list' gives the same output as 'override'.
+        output = run_peru_command(['override', 'list'], self.test_dir,
+                                  self.peru_dir, capture_stdout=True)
+        self.assertEqual(output, 'foo: {}\n'.format(override_dir))
         # Run the sync and confirm that the override worked.
         self.do_integration_test(['sync'], {'builtfoo': 'override!', 'x': 'x'})
         # Delete the override.

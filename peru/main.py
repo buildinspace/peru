@@ -15,7 +15,7 @@ Usage:
   peru sync [-fqv]
   peru build [-fqv] [<rules>...]
   peru reup [-qv] (--all | <modules>...)
-  peru override [add <module> <path> | delete <module>]
+  peru override [list | add <module> <path> | delete <module>]
   peru export [-fqv] <target> [<dest>]
   peru clean [-f]
   peru (help | --help | --version)
@@ -53,8 +53,10 @@ def command(*subcommand_list):
 
 
 def find_matching_command(args):
-    """If "peru override add" matches, "peru override" will also match. Solve
-    this by always choosing the longest match."""
+    '''If 'peru override add' matches, 'peru override' will also match. Solve
+    this by always choosing the longest match. This also means that a command
+    like `peru override list`, which has the same effect as the shorter
+    `peru override`, doesn't need to be separately implemented.'''
     matches = [(cmds, f) for cmds, f in commands_map.items() if
                all(args[cmd] for cmd in cmds)]
     if not matches:
