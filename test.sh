@@ -9,9 +9,9 @@ for var in `env | grep PERU_ | cut -d = -f 1` ; do
   unset $var
 done
 
-repo_root=$(dirname $(realpath $BASH_SOURCE))
+cd $(dirname "$BASH_SOURCE")
 
-source "$repo_root/scripts/env.sh"
+source ./scripts/env.sh
 
 # Make sure tests don't create random untracked files in the project. I've
 # missed this before, and it's hard to track down the offending test later.

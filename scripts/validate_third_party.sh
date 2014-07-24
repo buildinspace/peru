@@ -16,8 +16,8 @@
 
 set -e
 
-repo_root=$(realpath $(dirname $BASH_SOURCE)/..)
-cd "$repo_root"
+cd $(dirname "$BASH_SOURCE")/..
+repo_root=`pwd`
 
 mkdir -p /tmp/perutest
 found_dir=`mktemp -d --tmpdir=/tmp/perutest found.XXXXXX`

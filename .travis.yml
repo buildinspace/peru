@@ -3,10 +3,7 @@ python:
   - "3.2"
   - "3.3"
   - "3.4"
-before_install:
-  - sudo apt-get update -qq
 install:
-  - sudo apt-get install -qq realpath
   - pip install coveralls flake8
 script:
   - ./test.sh
