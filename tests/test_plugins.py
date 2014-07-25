@@ -5,7 +5,7 @@ import unittest
 
 import peru.plugin as plugin
 import shared
-from shared import GitRepo, HgRepo
+from shared import Repo, GitRepo, HgRepo
 
 
 class PluginsTest(unittest.TestCase):
@@ -32,6 +32,17 @@ class PluginsTest(unittest.TestCase):
     def test_hg_plugin(self):
         HgRepo(self.content_dir)
         self.do_plugin_test("hg", {"url": self.content_dir}, self.content)
+
+    def test_svn_plugin(self):
+        repo_dir = shared.create_dir()
+        url = 'file://{}'.format(os.path.join(repo_dir, 'trunk'))
+        repo = Repo(repo_dir)  # Using Repo for subprocess. Blech.
+        repo.run('svnadmin create .')
+        repo.run('svn import {} {} -m "initial commit"'.format(
+            self.content_dir,
+            url))
+
+        self.do_plugin_test('svn', {'url': url}, self.content)
 
     def test_git_plugin_with_submodule(self):
         content_repo = GitRepo(self.content_dir)

@@ -52,23 +52,30 @@ def read_dir(dir):
     return contents
 
 
-class GitRepo:
-    def __init__(self, content_dir):
-        self.path = content_dir
-        self.run("git init")
-        self.run("git config user.name peru")
-        self.run("git config user.email peru")
-        self.run("git add -A")
-        self.run("git commit --allow-empty -m 'first commit'")
+class Repo:
+    def __init__(self, path=None):
+        self.path = path
 
     def run(self, command):
         output = subprocess.check_output(command, shell=True, cwd=self.path)
         return output.decode('utf8').strip()
 
 
-class HgRepo:
+class GitRepo(Repo):
     def __init__(self, content_dir):
-        self.path = content_dir
+        super().__init__(content_dir)
+
+        self.run("git init")
+        self.run("git config user.name peru")
+        self.run("git config user.email peru")
+        self.run("git add -A")
+        self.run("git commit --allow-empty -m 'first commit'")
+
+
+class HgRepo(Repo):
+    def __init__(self, content_dir):
+        super().__init__(content_dir)
+
         self.run("hg init")
         hgrc_path = os.path.join(content_dir, ".hg", "hgrc")
         with open(hgrc_path, "a") as f:
@@ -77,8 +84,3 @@ class HgRepo:
                 username = peru <peru>
                 """))
         self.run("hg commit -A -m 'first commit'")
-
-    def run(self, command):
-        # TODO: Deduplicate with GitRepo.
-        output = subprocess.check_output(command, shell=True, cwd=self.path)
-        return output.decode('utf8').strip()
