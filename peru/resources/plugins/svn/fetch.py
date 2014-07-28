@@ -13,4 +13,4 @@ url, rev, reup = svn_plugin_shared.unpack_fields(fields)
 
 # Just fetch the target revision and strip the metadata.
 # Plugin-level caching for Subversion is futile.
-svn('export', '--force', '--revision', 'HEAD', url, dest)
+svn('export', '--force', '--revision', rev, url, dest)
