@@ -11,7 +11,6 @@ fields, _ = parse_plugin_args(
     optional_fields={'sha1', 'filename'})
 url = fields['url']
 sha1 = fields.get('sha1')
-filename = fields.get('filename')
 
 digest = hashlib.sha1()
 with urllib.request.urlopen(url) as request:

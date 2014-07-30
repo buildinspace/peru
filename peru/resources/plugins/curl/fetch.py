@@ -4,9 +4,10 @@ import hashlib
 import os
 import sys
 import urllib.request
-from urllib.parse import urlsplit
 
 from peru.plugin_shared import parse_plugin_args
+
+from curl_plugin_shared import get_request_filename
 
 
 fields, dest, _ = parse_plugin_args(
@@ -15,19 +16,19 @@ fields, dest, _ = parse_plugin_args(
 url = fields['url']
 sha1 = fields.get('sha1')
 filename = fields.get('filename')
-if not filename:
-    filename = os.path.basename(urlsplit(url).path) or 'index.html'
-full_filepath = os.path.join(dest, filename)
 
 digest = hashlib.sha1()
-with urllib.request.urlopen(url) as request, \
-        open(full_filepath, 'wb') as outfile:
-    while True:
-        buf = request.read(4096)
-        if not buf:
-            break
-        outfile.write(buf)
-        digest.update(buf)
+with urllib.request.urlopen(url) as request:
+    if filename is None:
+        filename = get_request_filename(request)
+    full_filepath = os.path.join(dest, filename)
+    with open(full_filepath, 'wb') as outfile:
+        while True:
+            buf = request.read(4096)
+            if not buf:
+                break
+            outfile.write(buf)
+            digest.update(buf)
 
 if sha1 and digest.hexdigest() != sha1:
     print('Bad checksum!\n     url: {}\nexpected: {}\n  actual: {}'
