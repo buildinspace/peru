@@ -1,6 +1,13 @@
+import imp
+from os.path import abspath, join, dirname
 import unittest
 
-from peru.resources.plugins.curl.curl_plugin_shared import get_request_filename
+import peru
+
+CURL_SHARED_PATH = abspath(
+    join(dirname(peru.__file__), 'resources', 'plugins', 'curl',
+         'curl_plugin_shared.py'))
+curl_plugin_shared = imp.load_source('_curl_plugin_shared', CURL_SHARED_PATH)
 
 
 class CurlPluginTest(unittest.TestCase):
@@ -13,9 +20,12 @@ class CurlPluginTest(unittest.TestCase):
 
         request = MockRequest()
         request.url = 'http://www.example.com/'
-        self.assertEqual('index.html', get_request_filename(request))
+        self.assertEqual('index.html',
+                         curl_plugin_shared.get_request_filename(request))
         request.url = 'http://www.example.com/foo'
-        self.assertEqual('foo', get_request_filename(request))
+        self.assertEqual('foo',
+                         curl_plugin_shared.get_request_filename(request))
         request._info = {'Content-Disposition':
                          'attachment; filename=bar'}
-        self.assertEqual('bar', get_request_filename(request))
+        self.assertEqual('bar',
+                         curl_plugin_shared.get_request_filename(request))
