@@ -36,20 +36,20 @@ def git(*args, git_dir=None):
     return output
 
 
-def clone_if_needed(url, cache_path, log_fn=None):
+def has_clone(url, cache_path):
+    return os.path.exists(repo_cache_path(url, cache_path))
+
+
+def clone_if_needed(url, cache_path):
     repo_path = repo_cache_path(url, cache_path)
-    if not os.path.exists(repo_path):
-        os.makedirs(repo_path)
+    if not has_clone(url, cache_path):
         try:
-            if log_fn:
-                log_fn()
             git('clone', '--mirror', url, repo_path)
         except:
             # Delete the whole thing if the clone failed to avoid confusing the
             # cache.
             shutil.rmtree(repo_path)
             raise
-
     return repo_path
 
 
