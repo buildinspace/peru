@@ -182,16 +182,15 @@ up to date, and you'll still be able to reach old versions in your history.
 - `reup`
   - Update plugin fields with new revision information. For `git`, `hg`, and
     `svn`, this updates the `rev` field. For the `curl` plugin, this sets the
-    `sha1` field. List the modules to reup explicitly, or use `--all`/`-a`.
+    `sha1` field. You can optionally give specific module names as arguments.
 - `export`
-  - Make a copy of all the files in a module. Either specify a directory to
-    put them in, or peru will create a temp dir for you. This lets you take a
-    look at modules you don't import yourself, like nested dependencies.
+  - Make a copy of all the files in a module. Either specify a directory to put
+    them in, or peru will create a temp dir for you. This lets you take a look
+    at modules you don't import yourself, like nested dependencies.
 - `override`
   - Replace the contents of a module with a local directory path, usually a
-    clone you've made of the same repo. This lets you test changes to
-    imported modules without needing to push your changes upstream or edit
-    `peru.yaml`.
+    clone you've made of the same repo. This lets you test changes to imported
+    modules without needing to push your changes upstream or edit `peru.yaml`.
 - `build`
   - We're not sure what this does yet.
 

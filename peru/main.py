@@ -14,7 +14,7 @@ __doc__ = """\
 Usage:
   peru sync [-fqv]
   peru build [-fqv] [<rules>...]
-  peru reup [-qv] (--all | <modules>...)
+  peru reup [-qv] [<modules>...]
   peru override [list | add <module> <path> | delete <module>]
   peru export [-fqv] <target> [<dest>]
   peru clean [-f]
@@ -31,7 +31,6 @@ Commands:
   clean     delete imports from the working copy
 
 Options:
-  -a --all      reup all modules
   -d --delete   unset an override
   -f --force    sync even when the working copy is dirty
   -h --help     show help
@@ -92,13 +91,13 @@ class Main:
         rules = resolver.get_rules(self.runtime, self.args["<rules>"])
         self.runtime.local_module.do_build(self.runtime, rules)
 
-    @command("reup")
+    @command('reup')
     def do_reup(self):
-        if self.args["--all"]:
+        if not self.args['<modules>']:
             modules = resolver.get_all_modules(self.runtime)
         else:
             modules = resolver.get_modules(
-                self.runtime, self.args["<modules>"])
+                self.runtime, self.args['<modules>'])
         for module in modules:
             module.reup(self.runtime)
 

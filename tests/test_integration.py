@@ -474,4 +474,4 @@ class ReupIntegrationTest(unittest.TestCase):
                 rev: {}
             """).format(self.foo_dir, self.foo_master, self.bar_dir,
                         self.bar_otherbranch)
-        self.do_integration_test(["reup", "--all", "--quiet"], expected)
+        self.do_integration_test(["reup", "--quiet"], expected)
