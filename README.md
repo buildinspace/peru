@@ -224,7 +224,7 @@ up to date, and you'll still be able to reach old versions in your history.
   undocumented syntax.
 
 ## Configuration
-- Set `PERU_CACHE` to move your peru's cache somewhere outside the `.peru`
+- Set `PERU_CACHE` to move peru's cache somewhere outside the `.peru`
   directory. In particular, you can put it somewhere central, like
   `~/.peru-cache`. This lets you run commands like `git clean -dfx` without
   losing all your cloned repos, and it also lets you share clones between
