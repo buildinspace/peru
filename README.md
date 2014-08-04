@@ -129,11 +129,11 @@ next section is about making that easier.
 
 ## Magical Updates
 
-If you run `peru reup --all`, peru will talk to each of your upstream repos,
-get their latest versions, and then edit your `peru.yaml` file with any
-updates. If you don't have `peru.yaml` checked into some kind of source
-control, you should probably do that first, because the reup will modify it in
-place. When we reup the example above, the changes look something like this:
+If you run `peru reup`, peru will talk to each of your upstream repos, get
+their latest versions, and then edit your `peru.yaml` file with any updates. If
+you don't have `peru.yaml` checked into some kind of source control, you should
+probably do that first, because the reup will modify it in place. When we reup
+the example above, the changes look something like this:
 
 ```diff
 diff --git a/peru.yaml b/peru.yaml
