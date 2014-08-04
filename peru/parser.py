@@ -53,7 +53,7 @@ def _build_local_module(blob, **local_module_kwargs):
 
 def _extract_named_rules(blob, scope):
     for field in list(blob.keys()):
-        parts = field.split()
+        parts = field.split(' ')
         if len(parts) == 2 and parts[0] == "rule":
             _, name = parts
             inner_blob = blob.pop(field)  # remove the field from blob
@@ -82,7 +82,7 @@ def _extract_default_rule(blob):
 
 def _extract_remote_modules(blob, scope):
     for field in list(blob.keys()):
-        parts = field.split()
+        parts = field.split(' ')
         if len(parts) == 3 and parts[1] == "module":
             type, _, name = parts
             inner_blob = blob.pop(field)  # remove the field from blob
