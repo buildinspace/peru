@@ -120,6 +120,11 @@ class CacheTest(unittest.TestCase):
         with self.assertRaises(peru.cache.DirtyWorkingCopyError):
             self.cache.export_tree(new_tree, dirty_dir,
                                    previous_tree=self.content_tree)
+        # But if the file is simply missing, it should work.
+        os.remove(os.path.join(dirty_dir, 'a'))
+        self.cache.export_tree(new_tree, dirty_dir,
+                               previous_tree=self.content_tree)
+        self.assertDictEqual(new_content, shared.read_dir(dirty_dir))
 
         # Make sure we get an error even if the dirty file is unchanged between
         # the previous tree and the new one.

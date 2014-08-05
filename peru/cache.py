@@ -36,12 +36,11 @@ class Cache:
         self._init_trees()
 
     def _init_trees(self):
-        if os.path.exists(self.trees_path):
-            return
-        os.makedirs(self.trees_path)
-        self._git("init", "--bare")
-        self._git("config", "user.name", "peru")
-        self._git("config", "user.email", "peru")
+        if not os.path.exists(self.trees_path):
+            os.makedirs(self.trees_path)
+            self._git('init', '--bare')
+        self._git('read-tree', '--empty')
+        self._empty_tree = self._git('write-tree')
 
     class GitError(RuntimeError):
         def __init__(self, command, output, errorcode):
@@ -82,22 +81,6 @@ class Cache:
                 del env[var]
         env["GIT_CONFIG_NOSYSTEM"] = "true"
         return env
-
-    def save_tree(self, tree, name, message=None):
-        if message is None:
-            message = name
-        try:
-            # throws if branch doesn't exist
-            self._git("show-ref", "--verify", "--quiet", "refs/heads/" + name)
-        except self.GitError:
-            # branch doesn't exist, create an orphan commit
-            commit = self._git("commit-tree", "-m", message, tree)
-        else:
-            # branch does exist, use it as the parent
-            parent = self._git("rev-parse", name)
-            commit = self._git("commit-tree", "-m", message, "-p", parent,
-                               tree)
-        self._git("branch", "-f", name, commit)
 
     def import_tree(self, src, files=None):
         if not os.path.exists(src):
@@ -143,53 +126,64 @@ class Cache:
         unified_tree = self._git("write-tree")
         return unified_tree
 
-    def _dummy_commit(self, tree):
-        if tree is None:
-            self._git("read-tree", "--empty")
-            tree = self._git("write-tree")
-        self._git("read-tree", tree)
-        return self._git("commit-tree", "-m", "<dummy>", tree)
-
-    def _checkout_dummy_commit(self, tree):
-        dummy = self._dummy_commit(tree)  # includes a call to read-tree
-        self._git("update-ref", "--no-deref", "HEAD", dummy)
-        return dummy
-
-    # TODO: This method needs to take a filesystem lock.  Probably all of them
-    # do.
+    # TODO: Use temporary index files for everything in Cache.
     def export_tree(self, tree, dest, previous_tree=None, *, force=False):
+        tree = tree or self._empty_tree
+        previous_tree = previous_tree or self._empty_tree
+
         if not os.path.exists(dest):
             os.makedirs(dest)
 
-        next_commit = self._dummy_commit(tree)
-        self._checkout_dummy_commit(previous_tree)
+        self._read_tree_and_error_on_modified(previous_tree, dest, force)
 
-        # Checking git status serves two purposes here.
-        # 1) It checks for a dirty working copy, in which case we'll abort.
-        # 2) It updates file timestamps in the index. (Yes, Virginia,
-        # `git status` writes to the index file!) This solves a very subtle
-        # issue where `git reset --keep` mistakenly thinks a file is dirty when
-        # in fact only the timestamp is off. The timestamp is off because
-        # `git read-tree` can't set timestamps (git trees don't store them).
-        status = self._git("status", "--porcelain", "--untracked-files=no",
-                           work_tree=dest)
-        if status and not force:
-            # Working copy is dirty. Abort.
-            raise DirtyWorkingCopyError(status)
+        # Check out the new tree using read-tree's -u flag.
+        if force:
+            self._git('read-tree', '--reset', '-u', tree, work_tree=dest)
+        else:
+            try:
+                self._git('read-tree', '-m', '-u', tree, work_tree=dest)
+            except self.GitError:
+                self._error_on_preexisting_files(previous_tree, tree, dest)
+                raise  # If it wasn't related to preexisting files, rethrow.
 
-        # Use `git reset` to update the working copy instead of `git checkout`.
-        # The checkout command normally refuses to overwrite existing files,
-        # which is good, but it will gladly overwrite ignored files. In our
-        # case, we don't control any .gitignore files that might be in the
-        # working copy. (In fact, it's expected that users will gitignore the
-        # files that peru syncs.) Without the --force flag, we should never
-        # overwrite any dirty files, ignored or otherwise. Luckily, `git reset`
-        # doesn't pay attention to .gitignore.
-        reset_mode = "--hard" if force else "--keep"
+    def _read_tree_and_error_on_modified(self, tree, dest, force):
+        self._read_tree(tree, dest)
+        # We allow deleted files, and the -m flag skips them for us.
+        modified_output = self._git(
+            'diff-index', '-m', '-z', '--name-only', tree,
+            work_tree=dest)
+        modified = [name for name in modified_output.split('\x00') if name]
+        if modified and not force:
+            raise DirtyWorkingCopyError(
+                'Imported files have been modified ' +
+                '(use --force to overwrite):\n\n' +
+                '\n'.join(modified))
+
+    def _read_tree(self, tree, dest):
+        # Read previous_tree into the index.
+        self._git('read-tree', tree)
+        # Refresh all the stat() information in the index.
         try:
-            self._git("reset", reset_mode, next_commit, work_tree=dest)
+            # This throws an error on modified files. Suppress it.
+            self._git('update-index', '--refresh', work_tree=dest)
         except self.GitError as e:
-            raise DirtyWorkingCopyError(e.output) from e
+            if 'needs update' not in e.output:
+                # Reraise any errors we don't recognize.
+                raise
+
+    def _error_on_preexisting_files(self, previous_tree, tree, dest):
+        added_files_output = self._git(
+            'diff-tree', '--diff-filter=A', '--name-only', '-r', '-z',
+            previous_tree, tree)
+        added_files = added_files_output.split('\x00')
+        existing_added_files = [f for f in added_files if f and
+                                os.path.exists(os.path.join(dest, f))]
+        existing_added_files.sort()
+        if existing_added_files:
+            raise DirtyWorkingCopyError(
+                'Imports would overwrite preexisting files '
+                '(use --force to write anyway):\n\n' +
+                '\n'.join(existing_added_files))
 
 
 class DirtyWorkingCopyError(PrintableError):

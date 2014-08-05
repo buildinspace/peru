@@ -38,14 +38,8 @@ def merge_import_trees(runtime, imports, base_tree=None):
 
 def apply_imports(runtime, imports, path, last_imports_tree=None):
     unified_imports_tree = merge_import_trees(runtime, imports)
-    try:
-        runtime.cache.export_tree(unified_imports_tree, path,
-                                  last_imports_tree, force=runtime.force)
-    except cache.DirtyWorkingCopyError as e:
-        e.msg = ('The working copy is dirty. ' +
-                 'To run anyway, use --force/-f\n\n' +
-                 indent(e.msg, '  '))
-        raise
+    runtime.cache.export_tree(unified_imports_tree, path,
+                              last_imports_tree, force=runtime.force)
     return unified_imports_tree
 
 
