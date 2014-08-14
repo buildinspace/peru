@@ -46,16 +46,26 @@ class PluginsTest(unittest.TestCase):
 
     def test_git_plugin_with_submodule(self):
         content_repo = GitRepo(self.content_dir)
-        submodule_dir = shared.create_dir({"another": "file"})
-        GitRepo(submodule_dir)
-        content_repo.run("git submodule add -q '{}' subdir/".format(
+        submodule_dir = shared.create_dir({'another': 'file'})
+        submodule_repo = GitRepo(submodule_dir)
+        content_repo.run('git submodule add -q "{}" subdir/'.format(
             submodule_dir))
-        content_repo.run("git commit -m 'submodule commit'")
+        content_repo.run('git commit -m "submodule commit"')
         expected_content = self.content.copy()
-        expected_content["subdir/another"] = "file"
-        with open(os.path.join(self.content_dir, ".gitmodules")) as f:
-            expected_content[".gitmodules"] = f.read()
-        self.do_plugin_test("git", {"url": self.content_dir}, expected_content)
+        expected_content['subdir/another'] = 'file'
+        with open(os.path.join(self.content_dir, '.gitmodules')) as f:
+            expected_content['.gitmodules'] = f.read()
+        self.do_plugin_test('git', {'url': self.content_dir}, expected_content)
+        # Now move the submodule forward. Make sure it gets fetched again.
+        shared.write_files(submodule_dir, {'more': 'stuff'})
+        submodule_repo.run('git add -A')
+        submodule_repo.run('git commit -m "more stuff"')
+        subprocess.check_output(
+            ['git', 'pull', '-q'],
+            cwd=os.path.join(self.content_dir, 'subdir'))
+        content_repo.run('git commit -am "submodule udate"')
+        expected_content['subdir/more'] = 'stuff'
+        self.do_plugin_test('git', {'url': self.content_dir}, expected_content)
 
     def test_git_plugin_multiple_fetches(self):
         content_repo = GitRepo(self.content_dir)

@@ -7,7 +7,7 @@ import git_plugin_shared
 from git_plugin_shared import git
 
 
-def clone_cached(url):
+def clone_and_maybe_print(url, cache_path):
     if not git_plugin_shared.has_clone(url, cache_path):
         print('git clone ' + url)
     return git_plugin_shared.clone_if_needed(url, cache_path)
@@ -30,12 +30,16 @@ def already_has_rev(repo, rev):
     return output.strip() == rev
 
 
-def checkout_tree(clone, rev, dest):
+def checkout_tree(cache_path, dest, url, rev):
+    clone = clone_and_maybe_print(url, cache_path)
+    if not already_has_rev(clone, rev):
+        print('git fetch ' + url)
+        git('fetch', '--prune', git_dir=clone)
     git('--work-tree=' + dest, 'checkout', rev, '--', '.', git_dir=clone)
-    checkout_subrepos(clone, rev, dest)
+    checkout_subrepos(cache_path, clone, rev, dest)
 
 
-def checkout_subrepos(clone_path, rev, work_tree):
+def checkout_subrepos(cache_path, clone_path, rev, work_tree):
     gitmodules = os.path.join(work_tree, '.gitmodules')
     if not os.path.exists(gitmodules):
         return
@@ -46,25 +50,15 @@ def checkout_subrepos(clone_path, rev, work_tree):
         sub_relative_path = parser[section]['path']
         sub_full_path = os.path.join(work_tree, sub_relative_path)
         sub_url = parser[section]['url']
-        sub_clone = clone_cached(sub_url)
         ls_tree = git('ls-tree', '-r', rev, sub_relative_path,
                       git_dir=clone_path)
         sub_rev = ls_tree.split()[2]
-        checkout_tree(sub_clone, sub_rev, sub_full_path)
-
-
-def fetch(cache_path, dest, url, rev):
-    cached_dir = clone_cached(url)
-    if not already_has_rev(cached_dir, rev):
-        print('git fetch ' + url)
-        git('fetch', '--prune', git_dir=cached_dir)
-
-    checkout_tree(cached_dir, rev, dest)
+        checkout_tree(cache_path, sub_full_path, sub_url, sub_rev)
 
 
 # Referenced by clone_cached.
 cache_path = os.environ['PERU_PLUGIN_CACHE']
-fetch(
+checkout_tree(
     cache_path,
     os.environ['PERU_FETCH_DEST'],
     os.environ['PERU_MODULE_URL'],
