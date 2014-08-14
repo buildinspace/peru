@@ -53,7 +53,7 @@ class Cache:
                 self.output)
             RuntimeError.__init__(self, message)
 
-    def _git(self, *args, work_tree=None, input=None):
+    def _git(self, *args, work_tree=None, input=None, text=True):
         command = ["git"]
         command.append("--git-dir=" + self.trees_path)
         if work_tree:
@@ -65,9 +65,10 @@ class Cache:
             stdin=subprocess.PIPE,
             stdout=subprocess.PIPE,
             stderr=subprocess.STDOUT,
-            universal_newlines=True)
+            universal_newlines=text)
         output, _ = process.communicate(input=input)
-        output = output.rstrip()
+        if text:
+            output = output.rstrip()
         if process.returncode != 0:
             raise self.GitError(command, output, process.returncode)
         return output
@@ -184,6 +185,18 @@ class Cache:
                 'Imports would overwrite preexisting files '
                 '(use --force to write anyway):\n\n' +
                 '\n'.join(existing_added_files))
+
+    def read_file(self, tree, path):
+        # --full-tree makes ls-tree ignore the cwd
+        ls_output = self._git('ls-tree', '--full-tree', '-z', tree, path)
+        ls_lines = ls_output.strip('\x00').split('\x00')
+        assert len(ls_lines) > 0, 'Nothing for path "{}" in tree {}.'.format(
+            path, tree)
+        assert len(ls_lines) == 1, 'Path "{}" in tree {} is a dir.'.format(
+            path, tree)
+        sha1 = ls_lines[0].split()[2]
+        file_bytes = self._git('cat-file', '-p', sha1, text=False)
+        return file_bytes
 
 
 class DirtyWorkingCopyError(PrintableError):

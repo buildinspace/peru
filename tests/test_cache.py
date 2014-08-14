@@ -150,3 +150,9 @@ class CacheTest(unittest.TestCase):
         with self.assertRaises(peru.cache.MergeConflictError):
             # subdir/ is already populated, so this merge should throw.
             self.cache.merge_trees(merged_tree, self.content_tree, "subdir")
+
+    def test_read_file(self):
+        self.assertEqual(
+            b'foo', self.cache.read_file(self.content_tree, 'a'))
+        self.assertEqual(
+            b'bar', self.cache.read_file(self.content_tree, 'b/c'))
