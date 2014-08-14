@@ -31,7 +31,6 @@ Commands:
   clean     delete imports from the working copy
 
 Options:
-  -d --delete   unset an override
   -f --force    sync even when the working copy is dirty
   -h --help     show help
   -q --quiet    don't print anything
