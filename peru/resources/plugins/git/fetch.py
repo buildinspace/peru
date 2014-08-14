@@ -3,8 +3,6 @@
 import configparser
 import os
 
-from peru import plugin_shared
-
 import git_plugin_shared
 from git_plugin_shared import git
 
@@ -55,7 +53,7 @@ def checkout_subrepos(clone_path, rev, work_tree):
         checkout_tree(sub_clone, sub_rev, sub_full_path)
 
 
-def do_fetch(cache_path, dest, url, rev):
+def fetch(cache_path, dest, url, rev):
     cached_dir = clone_cached(url)
     if not already_has_rev(cached_dir, rev):
         print('git fetch ' + url)
@@ -64,9 +62,10 @@ def do_fetch(cache_path, dest, url, rev):
     checkout_tree(cached_dir, rev, dest)
 
 
-fields, dest, cache_path = plugin_shared.parse_plugin_args(
-    git_plugin_shared.required_fields,
-    git_plugin_shared.optional_fields)
-url, rev, _ = git_plugin_shared.unpack_fields(fields)
-
-do_fetch(cache_path, dest, url, rev)
+# Referenced by clone_cached.
+cache_path = os.environ['PERU_PLUGIN_CACHE']
+fetch(
+    cache_path,
+    os.environ['PERU_FETCH_DEST'],
+    os.environ['PERU_MODULE_URL'],
+    os.environ.get('PERU_MODULE_REV') or 'master')

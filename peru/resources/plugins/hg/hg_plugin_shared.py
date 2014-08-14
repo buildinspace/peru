@@ -7,10 +7,6 @@ import textwrap
 import urllib.parse
 
 
-required_fields = {'url'}
-optional_fields = {'rev', 'reup'}
-
-
 def hg(*args, hg_dir=None):
     # Avoid forgetting this arg.
     assert hg_dir is None or os.path.isdir(hg_dir)
@@ -83,9 +79,3 @@ def repo_cache_path(url, cache_root):
     escaped = urllib.parse.quote(url, safe='')
 
     return os.path.join(cache_root, escaped)
-
-
-def unpack_fields(fields):
-    return (fields['url'],
-            fields.get('rev', 'default'),
-            fields.get('reup', 'default'))

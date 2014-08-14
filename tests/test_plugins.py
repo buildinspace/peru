@@ -18,9 +18,9 @@ class PluginsTest(unittest.TestCase):
     def do_plugin_test(self, type, plugin_fields, expected_content, *,
                        hide_stderr=False):
         fetch_dir = shared.create_dir()
-        output = plugin.plugin_fetch('.', self.cache_root, type, fetch_dir,
-                                     plugin_fields, capture_output=True,
-                                     stderr_to_stdout=hide_stderr)
+        output = plugin.plugin_fetch(
+            '.', self.cache_root, fetch_dir, type, plugin_fields,
+            capture_output=True, stderr_to_stdout=hide_stderr)
         self.assertDictEqual(shared.read_dir(fetch_dir), expected_content,
                              msg="Fetched content did not match expected.")
         return output
@@ -194,56 +194,47 @@ class PluginsTest(unittest.TestCase):
     def test_cp_plugin(self):
         self.do_plugin_test("cp", {"path": self.content_dir}, self.content)
 
-    def test_cp_plugin_bad_fields(self):
-        # "path" field is required.
-        with self.assertRaises(subprocess.CalledProcessError):
-            self.do_plugin_test("cp", {}, self.content, hide_stderr=True)
-        # Also test unrecognized field.
-        bad_fields = {"path": self.content_dir, "junk": "junk"}
-        with self.assertRaises(subprocess.CalledProcessError):
-            self.do_plugin_test("cp", bad_fields, self.content,
-                                hide_stderr=True)
-
     def test_rsync_plugin(self):
         self.do_plugin_test("rsync", {"path": self.content_dir}, self.content)
 
-    def test_rsync_plugin_bad_fields(self):
-        # "path" field is required.
-        with self.assertRaises(subprocess.CalledProcessError):
+    def test_empty_plugin(self):
+        self.do_plugin_test("empty", {}, {})
+
+    def test_bad_fields(self):
+        # "path" field is required for rsync.
+        with self.assertRaises(plugin.PluginModuleFieldError):
             self.do_plugin_test("rsync", {}, self.content, hide_stderr=True)
         # Also test unrecognized field.
         bad_fields = {"path": self.content_dir, "junk": "junk"}
-        with self.assertRaises(subprocess.CalledProcessError):
+        with self.assertRaises(plugin.PluginModuleFieldError):
             self.do_plugin_test("rsync", bad_fields, self.content,
                                 hide_stderr=True)
-
-    def test_empty_plugin(self):
-        self.do_plugin_test("empty", {}, {})
 
     def test_plugin_roots(self):
         plugins_dir = shared.create_dir({
             'footype/fetch.py':
                 '#! /usr/bin/env python3\nprint("hey there!")\n',
             'footype/reup.py':
-                '#! /usr/bin/env python3\nprint("name: val")\n'})
+                '#! /usr/bin/env python3\nprint("name: val")\n',
+            'footype/plugin.yaml': ''})
         os.chmod(os.path.join(plugins_dir, 'footype', 'fetch.py'), 0o755)
         os.chmod(os.path.join(plugins_dir, 'footype', 'reup.py'), 0o755)
         fetch_dir = shared.create_dir()
         output = plugin.plugin_fetch(
-            '.', self.cache_root, 'footype', fetch_dir, {},
-            plugin_roots=(plugins_dir,), capture_output=True)
+            '.', self.cache_root, fetch_dir, 'footype', {},
+            capture_output=True, plugin_roots=(plugins_dir,))
         self.assertEqual('hey there!\n', output)
         output = plugin.plugin_get_reup_fields(
             '.', self.cache_root, 'footype', {}, plugin_roots=(plugins_dir,))
         self.assertDictEqual({'name': 'val'}, output)
 
     def test_no_such_plugin(self):
-        with self.assertRaises(plugin.PluginMissingError):
-            plugin.plugin_fetch('.', self.cache_root, 'nosuchtype!', '.', {})
+        with self.assertRaises(plugin.PluginCandidateError):
+            plugin.plugin_fetch('.', self.cache_root, '.', 'nosuchtype!', {})
 
     def test_multiple_plugin_definitions(self):
         path1 = shared.create_dir({'footype/junk': 'junk'})
         path2 = shared.create_dir({'footype/junk': 'junk'})
-        with self.assertRaises(plugin.MultiplePluginsError):
-            plugin.plugin_fetch('.', self.cache_root, 'footype', '.', {},
+        with self.assertRaises(plugin.PluginCandidateError):
+            plugin.plugin_fetch('.', self.cache_root, '.', 'footype', {},
                                 plugin_roots=(path1, path2))

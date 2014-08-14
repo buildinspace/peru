@@ -1,13 +1,10 @@
 #! /usr/bin/env python3
 
 import distutils.dir_util
+import os
 
-from peru.plugin_shared import parse_plugin_args
 
-
-fields, dest, _ = parse_plugin_args(
-    required_fields={'path'},
-    optional_fields=set())
-path = fields['path']
-
-distutils.dir_util.copy_tree(path, dest, preserve_symlinks=True)
+distutils.dir_util.copy_tree(
+    os.environ['PERU_MODULE_PATH'],
+    os.environ['PERU_FETCH_DEST'],
+    preserve_symlinks=True)

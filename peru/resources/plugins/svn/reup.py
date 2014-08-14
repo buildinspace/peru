@@ -1,14 +1,19 @@
 #! /usr/bin/env python3
 
-from peru import plugin_shared
+import os
+import sys
 
-import svn_plugin_shared
+from svn_plugin_shared import svn
 
 
-fields, _ = plugin_shared.parse_plugin_args(
-    svn_plugin_shared.required_fields,
-    svn_plugin_shared.optional_fields)
-url, rev, reup = svn_plugin_shared.unpack_fields(fields)
+def remote_head_rev(url):
+    info = svn('info', url).split('\n')
+    for item in info:
+        if item.startswith('Revision: '):
+            return item.split()[1]
+
+    print('svn revision info not found', file=sys.stderr)
+    sys.exit(1)
 
 # Quote Subversion revisions to prevent integer intepretation.
-print('rev:', '"{}"'.format(svn_plugin_shared.remote_head_rev(url)))
+print('rev:', '"{}"'.format(remote_head_rev(os.environ['PERU_MODULE_URL'])))

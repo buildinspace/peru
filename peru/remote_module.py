@@ -34,7 +34,7 @@ class RemoteModule:
             return runtime.cache.keyval[key]
         with runtime.tmp_dir() as tmp_dir:
             plugin_fetch(runtime.root, runtime.cache.plugins_root,
-                         self.type, tmp_dir, self.plugin_fields,
+                         tmp_dir, self.type, self.plugin_fields,
                          plugin_roots=runtime.plugin_roots)
             base_tree = runtime.cache.import_tree(tmp_dir)
             tree = resolver.merge_import_trees(

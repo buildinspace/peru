@@ -1,0 +1,5 @@
+required fields:
+    - url
+optional fields:
+    - rev
+    - reup

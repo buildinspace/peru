@@ -2,11 +2,6 @@
 
 import os
 import subprocess
-import sys
-
-
-required_fields = {'url'}
-optional_fields = {'rev', 'reup'}
 
 
 def svn(*args, svn_dir=None):
@@ -28,19 +23,3 @@ def svn(*args, svn_dir=None):
                 output))
 
     return output
-
-
-def remote_head_rev(url):
-    info = svn('info', url).split('\n')
-    for item in info:
-        if item.startswith('Revision: '):
-            return item.split()[1]
-
-    print('svn revision info not found', file=sys.stderr)
-    sys.exit(1)
-
-
-def unpack_fields(fields):
-    return (fields['url'],
-            fields.get('rev', 'HEAD'),
-            fields.get('reup', 'HEAD'))

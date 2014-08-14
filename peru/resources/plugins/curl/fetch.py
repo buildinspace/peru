@@ -5,23 +5,18 @@ import os
 import sys
 import urllib.request
 
-from peru.plugin_shared import parse_plugin_args
-
 from curl_plugin_shared import get_request_filename
 
 
-fields, dest, _ = parse_plugin_args(
-    required_fields={'url'},
-    optional_fields={'sha1', 'filename'})
-url = fields['url']
-sha1 = fields.get('sha1')
-filename = fields.get('filename')
+url = os.environ['PERU_MODULE_URL']
+sha1 = os.environ.get('PERU_MODULE_SHA1')
+filename = os.environ.get('PERU_MODULE_FILENAME')
 
 digest = hashlib.sha1()
 with urllib.request.urlopen(url) as request:
     if filename is None:
         filename = get_request_filename(request)
-    full_filepath = os.path.join(dest, filename)
+    full_filepath = os.path.join(os.environ['PERU_FETCH_DEST'], filename)
     with open(full_filepath, 'wb') as outfile:
         while True:
             buf = request.read(4096)

@@ -6,34 +6,15 @@
 
 set -e
 
-# Command line arguments before the "--" are plugin fields. Parse them.
-while [[ "$1" != "--" ]] ; do
-  name="$1"
-  shift
-  val="$1"
-  shift
-  case "$name" in
-    path)
-      path="$val"
-      ;;
-    *)
-      echo unrecognized rsync field: $1 >&2
-      exit 1
-      ;;
-  esac
-done
-if [[ -z "$path" ]] ; then
-  echo path field is required >&2
+# Don't perform the copy without a source. Generally, plugins should not need
+# to worry about this, and peru should ensure that required fields are set, but
+# the validation may break, and that results in a destructive rsync command
+# that will copy root to the destination.
+if [ -z "$PERU_MODULE_PATH" ]; then
+  echo >&2 "No source path has been set for rsync. Aborting."
   exit 1
 fi
 
-shift  # the "--"
-
-dest="$1"
-shift
-cache_path="$1"  # unused
-shift
-
-# Do the copy. Always append a trailing slash to $path, so that the contents
-# are copied rather than the directory itself.
-rsync -r "$path/" "$dest"
+# Do the copy. Always append a trailing slash to the path, so that the
+# contents are copied rather than the directory itself.
+rsync -r "$PERU_MODULE_PATH/" "$PERU_FETCH_DEST"
