@@ -1,17 +1,23 @@
+import asyncio
 import os
 
 from .error import PrintableError
 
 
+@asyncio.coroutine
 def get_trees(runtime, targets):
-    return {target: get_tree(runtime, target) for target in targets}
+    futures = [get_tree(runtime, target) for target in targets]
+    trees = yield from asyncio.gather(*futures)
+    return dict(zip(targets, trees))
 
 
+@asyncio.coroutine
 def get_tree(runtime, target_str):
     module, rules = _parse_target(runtime, target_str)
     if module.name in runtime.overrides:
-        return _get_override_tree(runtime, module, rules)
-    tree = module.get_tree(runtime)
+        tree = yield from _get_override_tree(runtime, module, rules)
+        return tree
+    tree = yield from module.get_tree(runtime)
     if module.default_rule:
         tree = module.default_rule.get_tree(runtime, tree)
     for rule in rules:
@@ -19,6 +25,7 @@ def get_tree(runtime, target_str):
     return tree
 
 
+@asyncio.coroutine
 def _get_override_tree(runtime, module, rules):
     override_path = runtime.get_override(module.name)
     if not os.path.exists(override_path):
@@ -30,7 +37,8 @@ def _get_override_tree(runtime, module, rules):
             "override path for module '{}' is not a directory: {}".format(
                 module.name, override_path))
     override_module = module.get_local_override(override_path)
-    return override_module.get_tree(runtime, rules)
+    tree = yield from override_module.get_tree(runtime, rules)
+    return tree
 
 
 def _parse_target(runtime, target_str):

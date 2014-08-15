@@ -13,6 +13,8 @@ cd $(dirname "$BASH_SOURCE")
 
 source ./scripts/env.sh
 
+export PYTHONASYNCIODEBUG=1
+
 # Make sure tests don't create random untracked files in the project. I've
 # missed this before, and it's hard to track down the offending test later.
 showuntracked() {

@@ -1,3 +1,4 @@
+import asyncio
 import os
 
 from . import compat
@@ -22,13 +23,14 @@ class LocalModule:
         self.peru_dir = peru_dir or os.path.join(root, ".peru")
         compat.makedirs(self.peru_dir)
 
+    @asyncio.coroutine
     def apply_imports(self, runtime, imports=None):
         # Allow the caller to supply specific imports, e.g. empty imports for
         # `peru clean`.
         if imports is None:
             imports = self.imports
 
-        target_trees = resolver.get_trees(runtime, imports.targets)
+        target_trees = yield from resolver.get_trees(runtime, imports.targets)
         imports_tree = merge_imports_tree(runtime.cache, imports, target_trees)
 
         last_imports_tree = self._get_last_imports()
@@ -50,10 +52,11 @@ class LocalModule:
         with open(self._last_imports_path(), 'w') as f:
             f.write(tree)
 
+    @asyncio.coroutine
     def do_build(self, runtime, rules):
         """Runs all the build rules, taking their export paths into account.
         Returns the final export path."""
-        self.apply_imports(runtime)
+        yield from self.apply_imports(runtime)
         export_path = self.root
         if self.default_rule:
             export_path = self.default_rule.do_build(export_path)
@@ -61,8 +64,9 @@ class LocalModule:
             export_path = rule.do_build(export_path)
         return export_path
 
+    @asyncio.coroutine
     def get_tree(self, runtime, rules):
-        export_path = self.do_build(runtime, rules)
+        export_path = yield from self.do_build(runtime, rules)
         # It's important that we exclude .peru from the imported files. Imports
         # could by copied into the root of the toplevel project, and that would
         # conflict with the .peru dir there. Also, it's just garbage that the

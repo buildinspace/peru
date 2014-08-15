@@ -19,8 +19,8 @@ But peru is all about fetching, and that lets us get a few things right:
 
 - **Reproducibility.** When you check out an old version of your code, you can
   get exactly the same dependencies as when you wrote that code.
-- **Speed.** Everything is cached, and we use git internally for heavy lifting.
-  Maybe someday we'll run clones in parallel.
+- **Speed.** Fetches run in parallel, everything is cached, and we use git
+  internally for heavy lifting.
 - **Dubious features.** Peru can automatically update your `peru.yaml` file
   with the latest versions of your dependencies. Peru can pick specific files
   out of a tree, or mix multiple trees into a single directory.
@@ -34,8 +34,8 @@ bisect`.  Peru leaves your source control the hell alone.
 
 Until we make spiffy packages, just clone this repo and use the `peru.sh`
 script. If you like, you can symlink that to something like `~/bin/peru`. The
-dependencies are just **python3** and **git**, though if you're going to fetch
-from **hg** or **svn** you'll need those too.
+dependencies are just **python3 (>=3.3)** and **git**, though if you're going
+to fetch from **hg** or **svn** you'll need those too.
 
 ## Getting Started
 

@@ -1,5 +1,6 @@
 #! /usr/bin/env python3
 
+import asyncio
 import os
 import sys
 import tempfile
@@ -44,8 +45,9 @@ commands_map = {}
 
 def command(*subcommand_list):
     def decorator(f):
-        commands_map[tuple(subcommand_list)] = f
-        return f
+        coro = asyncio.coroutine(f)
+        commands_map[tuple(subcommand_list)] = coro
+        return coro
     return decorator
 
 
@@ -72,7 +74,7 @@ class Main:
         matching_command = find_matching_command(self.args)
         if matching_command:
             self.runtime = Runtime(self.args, env)
-            matching_command(self)
+            asyncio.get_event_loop().run_until_complete(matching_command(self))
         else:
             if self.args["--version"]:
                 print(__version__)
@@ -82,12 +84,12 @@ class Main:
 
     @command("sync")
     def do_sync(self):
-        self.runtime.local_module.apply_imports(self.runtime)
+        yield from self.runtime.local_module.apply_imports(self.runtime)
 
     @command("build")
     def do_build(self):
         rules = resolver.get_rules(self.runtime, self.args["<rules>"])
-        self.runtime.local_module.do_build(self.runtime, rules)
+        yield from self.runtime.local_module.do_build(self.runtime, rules)
 
     @command('reup')
     def do_reup(self):
@@ -96,8 +98,8 @@ class Main:
         else:
             modules = resolver.get_modules(
                 self.runtime, self.args['<modules>'])
-        for module in modules:
-            module.reup(self.runtime)
+        futures = [module.reup(self.runtime) for module in modules]
+        yield from asyncio.gather(*futures)
 
     @command("override")
     def do_override(self):
@@ -121,7 +123,8 @@ class Main:
             dest = tempfile.mkdtemp(prefix='peru_copy_')
         else:
             dest = self.args['<dest>']
-        tree = resolver.get_tree(self.runtime, self.args['<target>'])
+        tree = yield from resolver.get_tree(
+            self.runtime, self.args['<target>'])
         self.runtime.cache.export_tree(tree, dest, force=self.runtime.force)
         if not self.args['<dest>']:
             print(dest)
@@ -129,7 +132,7 @@ class Main:
     @command('clean')
     def do_clean(self):
         # Apply empty imports.
-        self.runtime.local_module.apply_imports(
+        yield from self.runtime.local_module.apply_imports(
             self.runtime, parser.build_imports({}))
 
 

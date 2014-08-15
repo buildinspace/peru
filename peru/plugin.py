@@ -1,6 +1,8 @@
+import asyncio
+from asyncio import subprocess
 from collections import namedtuple
 import os
-import subprocess
+from subprocess import CalledProcessError
 
 import yaml
 
@@ -25,6 +27,7 @@ PluginMetadata = namedtuple(
     'PluginMetadata', ['required_fields', 'optional_fields'])
 
 
+@asyncio.coroutine
 def plugin_fetch(cwd, plugin_cache_root, dest, module_type, module_fields, *,
                  capture_output=False, stderr_to_stdout=False,
                  plugin_roots=()):
@@ -37,16 +40,19 @@ def plugin_fetch(cwd, plugin_cache_root, dest, module_type, module_fields, *,
         'PERU_PLUGIN_CACHE': _plugin_cache_path(
             plugin_cache_root,
             module_type)})
-    kwargs = {'stderr': subprocess.STDOUT} if stderr_to_stdout else {}
+    stderr = subprocess.STDOUT if stderr_to_stdout else None
+    stdout = subprocess.PIPE if capture_output else None
 
-    if capture_output:
-        return subprocess.check_output(
-            invocation.path, cwd=cwd, env=env, **kwargs).decode('utf8')
-    else:
-        subprocess.check_call(
-            invocation.path, cwd=cwd, env=env, **kwargs)
+    proc = yield from asyncio.create_subprocess_exec(
+        invocation.path, cwd=cwd, env=env, stdout=stdout, stderr=stderr)
+    output, _ = yield from proc.communicate()
+    if output is not None:
+        output = output.decode('utf8')
+    _throw_if_error(proc, invocation.path, output)
+    return output
 
 
+@asyncio.coroutine
 def plugin_get_reup_fields(cwd, plugin_cache_root, module_type, module_fields,
                            *, plugin_roots=()):
     invocation = _plugin_invocation(
@@ -58,8 +64,11 @@ def plugin_get_reup_fields(cwd, plugin_cache_root, module_type, module_fields,
             plugin_cache_root,
             module_type)})
 
-    output = subprocess.check_output(
-        invocation.path, cwd=cwd, env=env).decode('utf8')
+    proc = yield from asyncio.create_subprocess_exec(
+        invocation.path, stdout=subprocess.PIPE, cwd=cwd, env=env)
+    output, _ = yield from proc.communicate()
+    output = output.decode('utf8')
+    _throw_if_error(proc, invocation.path, output)
     fields = yaml.safe_load(output) or {}
 
     for key, value in fields.items():
@@ -71,6 +80,11 @@ def plugin_get_reup_fields(cwd, plugin_cache_root, module_type, module_fields,
                 'reup field value must be a string: {}'.format(value))
 
     return fields
+
+
+def _throw_if_error(proc, command, output):
+    if proc.returncode != 0:
+        raise CalledProcessError(proc, command, output)
 
 
 def _format_module_fields(module_fields):
