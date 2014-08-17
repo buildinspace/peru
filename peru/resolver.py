@@ -1,46 +1,10 @@
-import collections
 import os
 
-from . import cache
-from .compat import indent
 from .error import PrintableError
 
 
-def resolve_imports_to_treepaths(runtime, imports):
-    # We always want to resolve (and eventually apply) imports in the same
-    # order, so that any conflicts or other errors we run into will be
-    # deterministic. Sort the imports alphabetically by name, and return
-    # the resolved trees in the same order.
-    #
-    # NB: Resolving imports builds them if they haven't been built before.
-    treepaths = []
-    for target, path in sorted(imports.items()):
-        tree = get_tree(runtime, target)
-        treepath = TreePath(tree, path, target)
-        treepaths.append(treepath)
-    return tuple(treepaths)
-
-
-def merge_import_trees(runtime, imports, base_tree=None):
-    treepaths = resolve_imports_to_treepaths(runtime, imports)
-    unified_tree = base_tree
-    for import_tree, import_path, target in treepaths:
-        try:
-            unified_tree = runtime.cache.merge_trees(
-                unified_tree, import_tree, import_path)
-        except cache.MergeConflictError as e:
-            e.msg = "Merge conflict in import '{}' at '{}':\n\n{}".format(
-                target, import_path, indent(e.msg, "  "))
-            raise
-
-    return unified_tree
-
-
-def apply_imports(runtime, imports, path, last_imports_tree=None):
-    unified_imports_tree = merge_import_trees(runtime, imports)
-    runtime.cache.export_tree(unified_imports_tree, path,
-                              last_imports_tree, force=runtime.force)
-    return unified_imports_tree
+def get_trees(runtime, targets):
+    return {target: get_tree(runtime, target) for target in targets}
 
 
 def get_tree(runtime, target_str):
@@ -106,5 +70,3 @@ def get_modules(runtime, names):
             raise PrintableError("'{}' is not a module".format(name))
         modules.append(module)
     return modules
-
-TreePath = collections.namedtuple("TreePath", ["tree", "path", "target"])

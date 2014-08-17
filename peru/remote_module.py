@@ -1,5 +1,6 @@
 from .cache import compute_key
 from .edit_yaml import set_module_field_in_file
+from .merge import merge_imports_tree
 from .local_module import LocalModule
 from .plugin import plugin_fetch, plugin_get_reup_fields
 from . import resolver
@@ -15,30 +16,25 @@ class RemoteModule:
         self.plugin_fields = plugin_fields
         self.yaml_name = yaml_name  # used by reup to edit the markup
 
-    def cache_key(self, runtime):
-        # NB: Resolving imports builds them if they haven't been built before.
-        import_treepaths = resolver.resolve_imports_to_treepaths(
-            runtime, self.imports)
-        import_trees = [(tree, path) for tree, path, _ in import_treepaths]
-        digest = compute_key({
-            "import_trees": import_trees,
+    def get_tree(self, runtime):
+        # These two will eventually be done in parallel.
+        fetch_tree = self._get_fetch_tree(runtime)
+        target_trees = resolver.get_trees(runtime, self.imports.keys())
+        return merge_imports_tree(
+            runtime.cache, self.imports, target_trees, fetch_tree)
+
+    def _get_fetch_tree(self, runtime):
+        key = compute_key({
             "type": self.type,
             "plugin_fields": self.plugin_fields,
         })
-        return digest
-
-    def get_tree(self, runtime):
-        key = self.cache_key(runtime)
         if key in runtime.cache.keyval:
-            # tree is already in cache
             return runtime.cache.keyval[key]
         with runtime.tmp_dir() as tmp_dir:
             plugin_fetch(runtime.root, runtime.cache.plugins_root,
                          tmp_dir, self.type, self.plugin_fields,
                          plugin_roots=runtime.plugin_roots)
-            base_tree = runtime.cache.import_tree(tmp_dir)
-            tree = resolver.merge_import_trees(
-                runtime, self.imports, base_tree)
+            tree = runtime.cache.import_tree(tmp_dir)
         runtime.cache.keyval[key] = tree
         return tree
 

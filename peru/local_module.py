@@ -1,6 +1,7 @@
 import os
 
 from . import compat
+from .merge import merge_imports_tree
 from . import resolver
 
 
@@ -22,23 +23,32 @@ class LocalModule:
         compat.makedirs(self.peru_dir)
 
     def apply_imports(self, runtime, imports=None):
+        # Allow the caller to supply specific imports, e.g. empty imports for
+        # `peru clean`.
         if imports is None:
             imports = self.imports
 
-        last_imports_tree_path = os.path.join(self.peru_dir, 'lastimports')
+        target_trees = resolver.get_trees(runtime, imports.keys())
+        imports_tree = merge_imports_tree(runtime.cache, imports, target_trees)
+
+        last_imports_tree = self._get_last_imports()
+        runtime.cache.export_tree(imports_tree, self.root, last_imports_tree,
+                                  force=runtime.force)
+        self._set_last_imports(imports_tree)
+
+    def _last_imports_path(self):
+        return os.path.join(self.peru_dir, 'lastimports')
+
+    def _get_last_imports(self):
         last_imports_tree = None
-        if os.path.exists(last_imports_tree_path):
-            with open(last_imports_tree_path) as f:
+        if os.path.exists(self._last_imports_path()):
+            with open(self._last_imports_path()) as f:
                 last_imports_tree = f.read()
+        return last_imports_tree
 
-        unified_imports_tree = resolver.apply_imports(
-            runtime, imports, self.root, last_imports_tree)
-
-        if unified_imports_tree:
-            with open(last_imports_tree_path, 'w') as f:
-                f.write(unified_imports_tree)
-        elif os.path.exists(last_imports_tree_path):
-            os.remove(last_imports_tree_path)
+    def _set_last_imports(self, tree):
+        with open(self._last_imports_path(), 'w') as f:
+            f.write(tree)
 
     def do_build(self, runtime, rules):
         """Runs all the build rules, taking their export paths into account.

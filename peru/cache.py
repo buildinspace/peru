@@ -40,7 +40,7 @@ class Cache:
             os.makedirs(self.trees_path)
             self._git('init', '--bare')
         self._git('read-tree', '--empty')
-        self._empty_tree = self._git('write-tree')
+        self.empty_tree = self._git('write-tree')
 
     class GitError(RuntimeError):
         def __init__(self, command, output, errorcode):
@@ -96,7 +96,7 @@ class Cache:
         tree = self._git('write-tree')
         return tree
 
-    def merge_trees(self, base_tree, merge_tree, merge_path):
+    def merge_trees(self, base_tree, merge_tree, merge_path='.'):
         if base_tree:
             self._git("read-tree", base_tree)
         else:
@@ -130,8 +130,8 @@ class Cache:
 
     # TODO: Use temporary index files for everything in Cache.
     def export_tree(self, tree, dest, previous_tree=None, *, force=False):
-        tree = tree or self._empty_tree
-        previous_tree = previous_tree or self._empty_tree
+        tree = tree or self.empty_tree
+        previous_tree = previous_tree or self.empty_tree
 
         if not os.path.exists(dest):
             os.makedirs(dest)
