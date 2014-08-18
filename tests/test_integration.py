@@ -170,12 +170,12 @@ class IntegrationTest(unittest.TestCase):
                 build: cp foo copy2
 
             imports:
-                foo:copy1: ./
+                foo|copy1: ./
             """
         self.write_peru_yaml(template)
         self.do_integration_test(["sync"], {"foo": "bar2", "copy1": "bar2"})
         # Run it again with a different import to make sure we clean up.
-        template = template.replace("foo:copy1", "foo:copy2")
+        template = template.replace("foo|copy1", "foo|copy2")
         self.write_peru_yaml(template)
         self.do_integration_test(["sync"], {"foo": "bar2", "copy2": "bar2"})
 
@@ -199,7 +199,7 @@ class IntegrationTest(unittest.TestCase):
                   - special
 
             imports:
-                foo:filter: ./
+                foo|filter: ./
             ''')
         filtered_content = {name: '' for name in [
             'foo',
@@ -309,7 +309,7 @@ class IntegrationTest(unittest.TestCase):
             build: printf '!' >> builtfoo
 
         imports:
-            foo:bang: ./
+            foo|bang: ./
         '''
 
     def test_override(self):

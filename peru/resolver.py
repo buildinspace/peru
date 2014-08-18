@@ -71,7 +71,7 @@ def _get_override_tree(runtime, module, rules):
 
 
 def _parse_target(runtime, target_str):
-    module_name, *rule_names = target_str.split(":")
+    module_name, *rule_names = target_str.split('|')
     module = get_modules(runtime, [module_name])[0]
     rules = get_rules(runtime, rule_names)
     return module, rules
