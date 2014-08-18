@@ -137,7 +137,9 @@ class Cache:
 
         self._read_tree_and_error_on_modified(previous_tree, dest, force)
 
-        # Check out the new tree using read-tree's -u flag.
+        # Check out the new tree using read-tree's -u flag. This cleans up
+        # deleted files for us, and (without --reset) refuses to stomp on
+        # existing files.
         if force:
             self._git('read-tree', '--reset', '-u', tree, work_tree=dest)
         else:
@@ -146,6 +148,9 @@ class Cache:
             except self.GitError:
                 self._error_on_preexisting_files(previous_tree, tree, dest)
                 raise  # If it wasn't related to preexisting files, rethrow.
+
+        # Recreate any missing files.
+        self._git('checkout-index', '--all', work_tree=dest)
 
     def _read_tree_and_error_on_modified(self, tree, dest, force):
         self._read_tree(tree, dest)

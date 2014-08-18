@@ -45,6 +45,7 @@ class CacheTest(unittest.TestCase):
         # But it should succeed with the --force flag.
         self.cache.export_tree(self.content_tree, export_dir, force=True,
                                previous_tree=self.content_tree)
+        self.assertDictEqual(self.content, shared.read_dir(export_dir))
 
     def test_multiple_imports(self):
         new_content = {"fee/fi": "fo fum"}
@@ -134,6 +135,20 @@ class CacheTest(unittest.TestCase):
         with self.assertRaises(peru.cache.DirtyWorkingCopyError):
             self.cache.export_tree(new_tree, no_conflict_dirty_dir,
                                    previous_tree=self.content_tree)
+
+    def test_missing_files_in_previous_tree(self):
+        '''Export should allow missing files, and it should recreate them.'''
+        export_dir = shared.create_dir()
+        # Nothing in content_tree exists yet, so this export should be the same
+        # as if previous_tree wasn't specified.
+        self.cache.export_tree(self.content_tree, export_dir,
+                               previous_tree=self.content_tree)
+        self.assertDictEqual(self.content, shared.read_dir(export_dir))
+        # Make sure the same applies with just a single missing file.
+        os.remove(os.path.join(export_dir, 'a'))
+        self.cache.export_tree(self.content_tree, export_dir,
+                               previous_tree=self.content_tree)
+        self.assertDictEqual(self.content, shared.read_dir(export_dir))
 
     def test_merge_trees(self):
         merged_tree = self.cache.merge_trees(self.content_tree,
