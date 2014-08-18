@@ -15,7 +15,6 @@ from . import resolver
 __doc__ = """\
 Usage:
   peru sync [-fqv] [-p N]
-  peru build [-fqv] [-p N] [<rules>...]
   peru reup [-qv] [-p N] [<modules>...]
   peru override [list | add <module> <path> | delete <module>]
   peru copy [-fqv] [-p N] <target> [<dest>]
@@ -24,7 +23,6 @@ Usage:
 
 Commands:
   sync      apply imports to the working copy
-  build     run build rules in the working copy
   reup      get updated module fields from remotes
   override  replace a remote module with a local copy
   copy      make a copy of the outputs of a build target
@@ -86,11 +84,6 @@ class Main:
     @command("sync")
     def do_sync(self):
         yield from self.runtime.local_module.apply_imports(self.runtime)
-
-    @command("build")
-    def do_build(self):
-        rules = resolver.get_rules(self.runtime, self.args["<rules>"])
-        yield from self.runtime.local_module.do_build(self.runtime, rules)
 
     @command('reup')
     def do_reup(self):

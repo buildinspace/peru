@@ -219,48 +219,6 @@ class IntegrationTest(unittest.TestCase):
         with self.assertRaises(peru.rule.NoMatchingFilesError):
             self.do_integration_test(['sync'], {})
 
-    def test_local_build(self):
-        self.write_peru_yaml('''\
-            imports:
-                foo: subdir
-
-            build: printf hi >> lo
-
-            cp module foo:
-                path: {}
-
-            rule local_build:
-                build: printf fee >> fi
-
-            rule test_export:
-                export: subdir
-            ''')
-
-        # Calling build with no arguments should run just the default rule.
-        self.do_integration_test(['build'], {
-            'subdir/foo': 'bar',
-            'lo': 'hi',
-        })
-        # Calling build again should run the default rule again.
-        self.do_integration_test(['build'], {
-            'subdir/foo': 'bar',
-            'lo': 'hihi',
-        })
-        # Now call it with arguments, which should run the default rule a third
-        # time in addition to the rules given.
-        self.do_integration_test(['build', 'local_build', 'local_build'], {
-            'subdir/foo': 'bar',
-            'lo': 'hihihi',
-            'fi': 'feefee',
-        })
-        # Make sure export dirs are respected in subsequent rules.
-        self.do_integration_test(['build', 'test_export', 'local_build'], {
-            'subdir/foo': 'bar',
-            'subdir/fi': 'fee',
-            'lo': 'hihihihi',
-            'fi': 'feefee',
-        })
-
     def test_alternate_cache(self):
         self.write_peru_yaml("""\
             cp module foo:
@@ -380,6 +338,42 @@ class IntegrationTest(unittest.TestCase):
         run_peru_command(['override', 'add', 'foo', override_dir],
                          self.test_dir, self.peru_dir)
         self.do_integration_test(['sync'], {'foo': 'override'})
+
+    def test_rules_in_override(self):
+        def _write_peru_yaml(target):
+            self.write_peru_yaml('''\
+                imports:
+                    TARGET: ./
+
+                cp module foo:
+                    path: {}
+
+                rule test_build:
+                    build: |
+                        printf fee >> fi
+                        mkdir -p subdir
+                        printf fo >> subdir/fum
+
+                rule test_export:
+                    export: subdir
+                '''.replace('TARGET', target))
+
+        _write_peru_yaml('foo|test_build')
+        override_dir = shared.create_dir()
+        run_peru_command(['override', 'add', 'foo', override_dir],
+                         self.test_dir, self.peru_dir)
+
+        # Syncing against a build rule should build in the override.
+        self.do_integration_test(['sync'], {'fi': 'fee', 'subdir/fum': 'fo'})
+
+        # Another sync should run the build again.
+        self.do_integration_test(
+            ['sync'], {'fi': 'feefee', 'subdir/fum': 'fofo'})
+
+        # Make sure export dirs are respected in rules that come after.
+        _write_peru_yaml('foo|test_build|test_export|test_build')
+        self.do_integration_test(
+            ['sync'], {'fum': 'fofofo', 'fi': 'fee', 'subdir/fum': 'fo'})
 
     def test_copy(self):
         self.write_peru_yaml('''\

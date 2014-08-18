@@ -191,8 +191,6 @@ up to date, and you'll still be able to reach old versions in your history.
   - Replace the contents of a module with a local directory path, usually a
     clone you've made of the same repo. This lets you test changes to imported
     modules without needing to push your changes upstream or edit `peru.yaml`.
-- `build`
-  - We're not sure what this does yet.
 
 ## Module Types
 - `git` `hg` `svn`
