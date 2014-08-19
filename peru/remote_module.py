@@ -19,7 +19,7 @@ class RemoteModule:
     def get_tree(self, runtime):
         # These two will eventually be done in parallel.
         fetch_tree = self._get_fetch_tree(runtime)
-        target_trees = resolver.get_trees(runtime, self.imports.keys())
+        target_trees = resolver.get_trees(runtime, self.imports.targets)
         return merge_imports_tree(
             runtime.cache, self.imports, target_trees, fetch_tree)
 

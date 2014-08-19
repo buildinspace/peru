@@ -28,7 +28,7 @@ class LocalModule:
         if imports is None:
             imports = self.imports
 
-        target_trees = resolver.get_trees(runtime, imports.keys())
+        target_trees = resolver.get_trees(runtime, imports.targets)
         imports_tree = merge_imports_tree(runtime.cache, imports, target_trees)
 
         last_imports_tree = self._get_last_imports()

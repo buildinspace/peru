@@ -106,11 +106,67 @@ def _build_remote_module(name, type, blob, yaml_name):
     return module
 
 
+# Module imports can come from a dictionary or a list (of key-val pairs), and
+# the Imports struct is here to hide that from other code. `pairs` is a list of
+# target-path tuples, which could contain the same target or path more than
+# once. `targets` is a list of targets with no duplicates. Both should have a
+# deterministic order, which is the same as the original list order if the
+# imports came from a list (modulo removing duplicates from `targets`).
+Imports = collections.namedtuple('Imports', ['targets', 'pairs'])
+
+
+def build_imports(dict_or_list):
+    '''Imports can be a map:
+        imports:
+            a: path/
+            b: path/
+    Or a list (to allow duplicate keys):
+        imports
+            - a: path/
+            - b: path/
+    We need to parse both.'''
+    if isinstance(dict_or_list, dict):
+        return _imports_from_dict(dict_or_list)
+    elif isinstance(dict_or_list, list):
+        return _imports_from_list(dict_or_list)
+    elif dict_or_list is None:
+        return Imports((), ())
+    else:
+        raise ParserError(
+            'Imports must be a map or a list of key-value pairs.')
+
+
+def _imports_from_dict(imports_dict):
+    # We need to make sure the sort order is deterministic.
+    targets = tuple(sorted(imports_dict.keys()))
+    return Imports(
+        targets,
+        tuple((target, imports_dict[target]) for target in targets))
+
+
+def _imports_from_list(imports_list):
+    # We need to keep the given sort order, but discard duplicates from the
+    # list of targets.
+    targets = []
+    pairs = []
+    for pair in imports_list:
+        if not isinstance(pair, dict) or len(pair) != 1:
+            raise ParserError(
+                'Elements of an imports list must be key-value pairs.')
+        target, path = list(pair.items())[0]
+        # Build up the list of unique targets. Note that this is a string
+        # comparison. If it ever becomes possible to write the same target in
+        # more than one way (like with flexible whitespace), we will need to
+        # canonicalize these strings.
+        if target not in targets:
+            targets.append(target)
+        pairs.append((target, path))
+    return Imports(tuple(targets), tuple(pairs))
+
+
 def _extract_imports(blob):
-    imports = blob.pop('imports', {})
-    # The default above handles imports being missing, but not being empty.
-    # Cover that case too, so that we always get a dict.
-    return imports if imports is not None else {}
+    importsblob = blob.pop('imports', {})
+    return build_imports(importsblob)
 
 
 def _validate_name(name):

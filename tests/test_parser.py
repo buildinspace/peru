@@ -1,7 +1,7 @@
 from textwrap import dedent
 import unittest
 
-from peru.parser import parse_string, ParserError
+from peru.parser import build_imports, parse_string, ParserError
 from peru.remote_module import RemoteModule
 from peru.rule import Rule
 
@@ -13,7 +13,7 @@ class ParserTest(unittest.TestCase):
     def test_parse_empty_file(self):
         result = parse_string('')
         self.assertDictEqual(result.scope, {})
-        self.assertDictEqual(result.local_module.imports, {})
+        self.assertEqual(result.local_module.imports, build_imports({}))
         self.assertEqual(result.local_module.default_rule, None)
         self.assertEqual(result.local_module.root, '.')
         self.assertTupleEqual(result.plugin_paths, ())
@@ -78,9 +78,8 @@ class ParserTest(unittest.TestCase):
         self.assertIsInstance(module, RemoteModule)
         self.assertEqual(module.name, "foo")
         self.assertEqual(module.type, "sometype")
-        self.assertDictEqual(module.imports,
-                             {"wham": "bam/",
-                              "thank": "you/maam"})
+        self.assertEqual(module.imports, build_imports(
+            {'wham': 'bam/', 'thank': 'you/maam'}))
         self.assertDictEqual(module.plugin_fields,
                              {"url": "http://www.example.com/",
                               "rev": "abcdefg"})
@@ -106,7 +105,18 @@ class ParserTest(unittest.TestCase):
             """)
         result = parse_string(input)
         self.assertDictEqual(result.scope, {})
-        self.assertDictEqual(result.local_module.imports, {"foo": "bar/"})
+        self.assertEqual(result.local_module.imports, build_imports(
+            {'foo': 'bar/'}))
+
+    def test_parse_list_imports(self):
+        input = dedent('''\
+            imports:
+                - foo: bar/
+            ''')
+        result = parse_string(input)
+        self.assertDictEqual(result.scope, {})
+        self.assertEqual(result.local_module.imports, build_imports(
+            {'foo': 'bar/'}))
 
     def test_parse_empty_imports(self):
         input = dedent('''\
@@ -114,7 +124,20 @@ class ParserTest(unittest.TestCase):
             ''')
         result = parse_string(input)
         self.assertDictEqual(result.scope, {})
-        self.assertDictEqual(result.local_module.imports, {})
+        self.assertEqual(result.local_module.imports, build_imports({}))
+
+    def test_parse_wrong_type_imports_throw(self):
+        with self.assertRaises(ParserError):
+            parse_string('imports: 5')
+
+    def test_parse_bad_list_imports_throw(self):
+        input = dedent('''\
+            imports:
+                - a: foo
+                  b: bar
+        ''')
+        with self.assertRaises(ParserError):
+            parse_string(input)
 
     def test_bad_toplevel_field_throw(self):
         with self.assertRaises(ParserError):

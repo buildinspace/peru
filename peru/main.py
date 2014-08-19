@@ -7,6 +7,7 @@ import tempfile
 import docopt
 
 from .error import PrintableError
+from . import parser
 from .runtime import Runtime
 from . import resolver
 
@@ -128,7 +129,8 @@ class Main:
     @command('clean')
     def do_clean(self):
         # Apply empty imports.
-        self.runtime.local_module.apply_imports(self.runtime, {})
+        self.runtime.local_module.apply_imports(
+            self.runtime, parser.build_imports({}))
 
 
 def print_red(*args, **kwargs):
