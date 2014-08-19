@@ -8,6 +8,9 @@ from .plugin import plugin_fetch, plugin_get_reup_fields
 from . import resolver
 
 
+DEFAULT_PARALLEL_FETCH_LIMIT = 10
+
+
 class RemoteModule:
     def __init__(self, name, type, imports, default_rule, plugin_fields,
                  yaml_name):
@@ -17,7 +20,7 @@ class RemoteModule:
         self.default_rule = default_rule
         self.plugin_fields = plugin_fields
         self.yaml_name = yaml_name  # used by reup to edit the markup
-        self.fetch_lock = asyncio.Lock()
+        self.module_lock = asyncio.Lock()
 
     @asyncio.coroutine
     def get_tree(self, runtime):
@@ -35,24 +38,29 @@ class RemoteModule:
             "plugin_fields": self.plugin_fields,
         })
         # Use a lock to prevent the same module from being fetched more than
-        # once before it makes it into cache.
-        with (yield from self.fetch_lock):
+        # once before it makes it into cache. Use a semaphore to make sure that
+        # we don't run too many fetches at once. It's important to take the
+        # lock before the semaphore, so that semaphore slots aren't wasted
+        # waiting on the lock.
+        with (yield from self.module_lock):
             if key in runtime.cache.keyval:
                 return runtime.cache.keyval[key]
-            with runtime.tmp_dir() as tmp_dir:
-                yield from plugin_fetch(
-                    runtime.root, runtime.cache.plugins_root, tmp_dir,
-                    self.type, self.plugin_fields,
-                    plugin_roots=runtime.plugin_roots)
-                tree = runtime.cache.import_tree(tmp_dir)
+            with (yield from runtime.fetch_semaphore):
+                with runtime.tmp_dir() as tmp_dir:
+                    yield from plugin_fetch(
+                        runtime.root, runtime.cache.plugins_root, tmp_dir,
+                        self.type, self.plugin_fields,
+                        plugin_roots=runtime.plugin_roots)
+                    tree = runtime.cache.import_tree(tmp_dir)
         runtime.cache.keyval[key] = tree
         return tree
 
     @asyncio.coroutine
     def reup(self, runtime):
-        reup_fields = yield from plugin_get_reup_fields(
-            runtime.root, runtime.cache.plugins_root, self.type,
-            self.plugin_fields, plugin_roots=runtime.plugin_roots)
+        with (yield from runtime.fetch_semaphore):
+            reup_fields = yield from plugin_get_reup_fields(
+                runtime.root, runtime.cache.plugins_root, self.type,
+                self.plugin_fields, plugin_roots=runtime.plugin_roots)
         if not runtime.quiet:
             print('reup', self.name)
         for field, val in reup_fields.items():

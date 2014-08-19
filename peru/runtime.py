@@ -1,3 +1,4 @@
+import asyncio
 import os
 import tempfile
 
@@ -6,6 +7,7 @@ from . import compat
 from .error import PrintableError
 from .keyval import KeyVal
 from . import parser
+from . import remote_module
 
 
 class Runtime:
@@ -42,6 +44,11 @@ class Runtime:
                 "Have you tried using <blink>?")
         self.quiet = args['--quiet']
         self.verbose = args['--verbose']
+
+        # Use a semaphore (a lock that allows N holders at once) to limit the
+        # number of fetches that can run at once.
+        num_fetches = _get_parallel_fetch_limit(args)
+        self.fetch_semaphore = asyncio.BoundedSemaphore(num_fetches)
 
     def tmp_dir(self):
         dir = tempfile.TemporaryDirectory(dir=self._tmp_root)
@@ -83,3 +90,15 @@ def find_peru_file(start_dir, name):
             raise PrintableError("Can't find " + name)
         # Not found at this level. We must go...shallower.
         prefix = os.path.dirname(prefix)
+
+
+def _get_parallel_fetch_limit(args):
+    if args['--parallel'] is None:
+        return remote_module.DEFAULT_PARALLEL_FETCH_LIMIT
+    try:
+        parallel = int(args['--parallel'])
+        if parallel <= 0:
+            raise PrintableError('Argument to --parallel must be 1 or more.')
+        return parallel
+    except:
+        raise PrintableError('Argument to --parallel must be a number.')
