@@ -17,9 +17,8 @@ def tmp_file():
 
 
 def _tmp_root():
-    root = "/tmp/perutest"
+    root = '/tmp/peru/test'
     makedirs(root)
-    os.chmod(root, 0o777)
     return root
 
 

@@ -19,9 +19,10 @@ set -e
 cd $(dirname "$BASH_SOURCE")/..
 repo_root=`pwd`
 
-mkdir -p /tmp/perutest
-found_dir=`mktemp -d --tmpdir=/tmp/perutest found.XXXXXX`
-expected_dir=`mktemp -d --tmpdir=/tmp/perutest expected.XXXXXX`
+test_root=/tmp/peru/validate
+mkdir -p "$test_root"
+found_dir=$(mktemp -d "$test_root"/found.XXXXXX)
+expected_dir=$(mktemp -d "$test_root"/expected.XXXXXX)
 
 # Only copy files not ignored by git into the found directory. This avoids
 # getting confused by *.pyc files and the like.
