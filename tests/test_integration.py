@@ -221,7 +221,7 @@ class IntegrationTest(unittest.TestCase):
             self.do_integration_test(['sync'], {})
 
     def test_local_build(self):
-        self.write_peru_yaml("""\
+        self.write_peru_yaml('''\
             imports:
                 foo: subdir
 
@@ -232,24 +232,34 @@ class IntegrationTest(unittest.TestCase):
 
             rule local_build:
                 build: printf fee >> fi
-            """)
+
+            rule test_export:
+                export: subdir
+            ''')
 
         # Calling build with no arguments should run just the default rule.
-        self.do_integration_test(["build"], {
-            "subdir/foo": "bar",
-            "lo": "hi",
+        self.do_integration_test(['build'], {
+            'subdir/foo': 'bar',
+            'lo': 'hi',
         })
         # Calling build again should run the default rule again.
-        self.do_integration_test(["build"], {
-            "subdir/foo": "bar",
-            "lo": "hihi",
+        self.do_integration_test(['build'], {
+            'subdir/foo': 'bar',
+            'lo': 'hihi',
         })
         # Now call it with arguments, which should run the default rule a third
         # time in addition to the rules given.
-        self.do_integration_test(["build", "local_build", "local_build"], {
-            "subdir/foo": "bar",
-            "lo": "hihihi",
-            "fi": "feefee",
+        self.do_integration_test(['build', 'local_build', 'local_build'], {
+            'subdir/foo': 'bar',
+            'lo': 'hihihi',
+            'fi': 'feefee',
+        })
+        # Make sure export dirs are respected in subsequent rules.
+        self.do_integration_test(['build', 'test_export', 'local_build'], {
+            'subdir/foo': 'bar',
+            'subdir/fi': 'fee',
+            'lo': 'hihihihi',
+            'fi': 'feefee',
         })
 
     def test_local_plugins(self):
