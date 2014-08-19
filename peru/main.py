@@ -16,7 +16,7 @@ Usage:
   peru build [-fqv] [<rules>...]
   peru reup [-qv] [<modules>...]
   peru override [list | add <module> <path> | delete <module>]
-  peru export [-fqv] <target> [<dest>]
+  peru copy [-fqv] <target> [<dest>]
   peru clean [-f]
   peru (help | --help | --version)
 
@@ -25,16 +25,14 @@ Commands:
   build     run build rules in the working copy
   reup      get updated module fields from remotes
   override  replace a remote module with a local copy
-            (with no arguments, list active overrides)
-  export    copy the outputs of a build target to a
-            temp directory or supplied path
+  copy      make a copy of the outputs of a build target
   clean     delete imports from the working copy
 
 Options:
-  -f --force    sync even when the working copy is dirty
-  -h --help     show help
+  -f --force    overwrite existing files
   -q --quiet    don't print anything
   -v --verbose  print all the things
+  -h --help     show help
 """
 
 __version__ = "peru 0.1"
@@ -116,15 +114,15 @@ class Main:
         key = self.args['<module>']
         del self.runtime.overrides[key]
 
-    @command("export")
-    def do_export(self):
-        if not self.args["<dest>"]:
-            dest = tempfile.mkdtemp(prefix="peru_export_")
+    @command('copy')
+    def do_copy(self):
+        if not self.args['<dest>']:
+            dest = tempfile.mkdtemp(prefix='peru_copy_')
         else:
-            dest = self.args["<dest>"]
-        tree = resolver.get_tree(self.runtime, self.args["<target>"])
+            dest = self.args['<dest>']
+        tree = resolver.get_tree(self.runtime, self.args['<target>'])
         self.runtime.cache.export_tree(tree, dest, force=self.runtime.force)
-        if not self.args["<dest>"]:
+        if not self.args['<dest>']:
             print(dest)
 
     @command('clean')

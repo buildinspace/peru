@@ -380,19 +380,19 @@ class IntegrationTest(unittest.TestCase):
         # Confirm that syncing works.
         self.do_integration_test(['sync'], {'foo': 'override'}, cwd=subdir)
 
-    def test_export(self):
-        self.write_peru_yaml("""\
+    def test_copy(self):
+        self.write_peru_yaml('''\
             cp module foo:
                 path: {}
-            """)
-        # Do a simple export and check the results.
-        self.do_integration_test(["export", "foo", "."], {"foo": "bar"})
-        # Running the same export again should fail, because of conflicts.
+            ''')
+        # Do a simple copy and check the results.
+        self.do_integration_test(['copy', 'foo', '.'], {'foo': 'bar'})
+        # Running the same copy again should fail, because of conflicts.
         with self.assertRaises(peru.cache.DirtyWorkingCopyError):
-            self.do_integration_test(["export", "foo", "."], {"foo": "bar"})
+            self.do_integration_test(['copy', 'foo', '.'], {'foo': 'bar'})
         # Passing the --force flag should pave over conflicts.
-        self.do_integration_test(["export", "--force", "foo", "."],
-                                 {"foo": "bar"})
+        self.do_integration_test(['copy', '--force', 'foo', '.'],
+                                 {'foo': 'bar'})
 
     def test_clean(self):
         self.write_peru_yaml('''\
