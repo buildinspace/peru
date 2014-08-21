@@ -83,7 +83,7 @@ class Cache:
         env["GIT_CONFIG_NOSYSTEM"] = "true"
         return env
 
-    def import_tree(self, src, files=None):
+    def import_tree(self, src, files=None, excludes=None):
         if not os.path.exists(src):
             raise RuntimeError('import tree called on nonexistent path ' + src)
         self._git('read-tree', '--empty')  # clear the index for safety
@@ -92,6 +92,7 @@ class Cache:
             self._git('add', '--force', '--', *files, work_tree=src)
         else:
             self._git('add', '--all', '--force', work_tree=src)
+        self._remove_matching_files_from_index(src, excludes)
         tree = self._git('write-tree')
         return tree
 
@@ -202,6 +203,13 @@ class Cache:
         sha1 = ls_lines[0].split()[2]
         file_bytes = self._git('cat-file', '-p', sha1, text=False)
         return file_bytes
+
+    def _remove_matching_files_from_index(self, workdir, paths):
+        if not paths:
+            return
+        ls_files_output = self._git('ls-files', '--full-name', '-z', *paths)
+        self._git('update-index', '--force-remove', '-z', '--stdin',
+                  work_tree=workdir, input=ls_files_output)
 
 
 class DirtyWorkingCopyError(PrintableError):

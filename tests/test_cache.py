@@ -171,3 +171,32 @@ class CacheTest(unittest.TestCase):
             b'foo', self.cache.read_file(self.content_tree, 'a'))
         self.assertEqual(
             b'bar', self.cache.read_file(self.content_tree, 'b/c'))
+
+    # A helper method for several tests below below.
+    def do_excludes_and_files_test(self, excludes, files, expected):
+        tree = self.cache.import_tree(self.content_dir, excludes=excludes,
+                                      files=files)
+        out_dir = shared.create_dir()
+        self.cache.export_tree(tree, out_dir)
+        actual = shared.read_dir(out_dir)
+        self.assertDictEqual(expected, actual)
+
+    def test_import_with_specific_file(self):
+        self.do_excludes_and_files_test(
+            excludes=[], files=['a'], expected={'a': 'foo'})
+
+    def test_import_with_specific_dir(self):
+        self.do_excludes_and_files_test(
+            excludes=[], files=['b'], expected={'b/c': 'bar', 'b/d': 'baz'})
+
+    def test_import_with_excluded_file(self):
+        self.do_excludes_and_files_test(
+            excludes=['a'], files=[], expected={'b/c': 'bar', 'b/d': 'baz'})
+
+    def test_import_with_excluded_dir(self):
+        self.do_excludes_and_files_test(
+            excludes=['b'], files=[], expected={'a': 'foo'})
+
+    def test_import_with_excludes_and_files(self):
+        self.do_excludes_and_files_test(
+            excludes=['b/c'], files=['b'], expected={'b/d': 'baz'})
