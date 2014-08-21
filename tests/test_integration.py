@@ -390,6 +390,19 @@ class IntegrationTest(unittest.TestCase):
         # Confirm that syncing works.
         self.do_integration_test(['sync'], {'foo': 'override'}, cwd=subdir)
 
+    def test_override_excludes_dotperu(self):
+        self.write_peru_yaml('''\
+            empty module foo:
+
+            imports:
+                foo: ./
+            ''')
+        override_dir = shared.create_dir(
+            {'foo': 'override', '.peru/bar': 'baz'})
+        run_peru_command(['override', 'add', 'foo', override_dir],
+                         self.test_dir, self.peru_dir)
+        self.do_integration_test(['sync'], {'foo': 'override'})
+
     def test_copy(self):
         self.write_peru_yaml('''\
             cp module foo:

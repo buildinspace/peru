@@ -66,8 +66,7 @@ def _get_override_tree(runtime, module, rules):
             "override path for module '{}' is not a directory: {}".format(
                 module.name, override_path))
     override_module = module.get_local_override(override_path)
-    export_path = override_module.do_build(runtime, rules)
-    return runtime.cache.import_tree(export_path)
+    return override_module.get_tree(runtime, rules)
 
 
 def _parse_target(runtime, target_str):

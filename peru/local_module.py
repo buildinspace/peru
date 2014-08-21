@@ -50,3 +50,12 @@ class LocalModule:
         for rule in rules:
             export_path = rule.do_build(export_path)
         return export_path
+
+    def get_tree(self, runtime, rules):
+        export_path = self.do_build(runtime, rules)
+        # It's important that we exclude .peru from the imported files. Imports
+        # could by copied into the root of the toplevel project, and that would
+        # conflict with the .peru dir there. Also, it's just garbage that the
+        # user doesn't want. (But it's important to keep track of lastimports
+        # in local overrides. And possibly other stuff in the future.)
+        return runtime.cache.import_tree(export_path, excludes=['.peru'])
