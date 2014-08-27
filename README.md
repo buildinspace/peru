@@ -209,8 +209,6 @@ up to date, and you'll still be able to reach old versions in your history.
   the caching magic itself, though plugins can also do their own caching as
   appropriate.  For example, the git and hg plugins keep track of repos they
   clone. Peru itself doesn't need to know how to do that.
-- You can supply a path or list of paths to the `plugins:` field to load your
-  own plugins.
 - Plugins are defined with a complicated, undocumented directory layout that
   changes all the time for no reason.
 

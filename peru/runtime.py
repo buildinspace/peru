@@ -25,8 +25,9 @@ class Runtime:
             self.peru_file, peru_dir=self.peru_dir)
         self.scope = parse_result.scope
         self.local_module = parse_result.local_module
-        self.plugin_roots = tuple(os.path.join(self.root, path)
-                                  for path in parse_result.plugin_paths)
+
+        # TODO: Define system and user plugin roots. Maybe an env var too.
+        self.plugin_roots = ()
 
         cache_dir = env.get('PERU_CACHE', os.path.join(self.peru_dir, 'cache'))
         self.cache = cache.Cache(cache_dir)

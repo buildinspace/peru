@@ -16,38 +16,11 @@ class ParserTest(unittest.TestCase):
         self.assertEqual(result.local_module.imports, build_imports({}))
         self.assertEqual(result.local_module.default_rule, None)
         self.assertEqual(result.local_module.root, '.')
-        self.assertTupleEqual(result.plugin_paths, ())
 
     def test_parse_with_project_root(self):
         project_root = shared.create_dir()
         result = parse_string('', project_root=project_root)
         self.assertEqual(result.local_module.root, project_root)
-
-    def test_parse_with_plugin_paths(self):
-        result = parse_string(dedent('''\
-            plugins: foo
-            '''))
-        self.assertTupleEqual(('foo',), result.plugin_paths)
-
-    def test_parse_with_list_of_plugin_paths(self):
-        result = parse_string(dedent('''\
-            plugins:
-              - foo
-              - bar
-            '''))
-        self.assertTupleEqual(('foo', 'bar'), result.plugin_paths)
-
-    def test_parse_with_bad_plugin_paths(self):
-        wrong_type = dedent('''\
-            plugins: 5
-            ''')
-        with self.assertRaises(ParserError):
-            parse_string(wrong_type)
-        empty_val = dedent('''\
-            plugins:
-            ''')
-        with self.assertRaises(ParserError):
-            parse_string(empty_val)
 
     def test_parse_rule(self):
         input = dedent("""\

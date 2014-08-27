@@ -1,6 +1,5 @@
 import io
 import os
-import shutil
 import sys
 from textwrap import dedent
 import unittest
@@ -261,27 +260,6 @@ class IntegrationTest(unittest.TestCase):
             'lo': 'hihihihi',
             'fi': 'feefee',
         })
-
-    def test_local_plugins(self):
-        cp_plugin_path = os.path.join(
-            PERU_MODULE_ROOT, 'resources', 'plugins', 'cp')
-        shutil.copytree(cp_plugin_path,
-                        os.path.join(self.test_dir, 'myplugins', 'newfangled'))
-        # Grab the contents now so that we can match it later.
-        # TODO: Rethink how these tests are structured.
-        expected_content = shared.read_dir(self.test_dir)
-        expected_content['foo'] = 'bar'
-
-        self.write_peru_yaml('''\
-            imports:
-                foo: ./
-
-            plugins: myplugins/
-
-            newfangled module foo:
-                path: {}
-            ''')
-        self.do_integration_test(['sync'], expected_content)
 
     def test_alternate_cache(self):
         self.write_peru_yaml("""\

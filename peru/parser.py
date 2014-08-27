@@ -14,7 +14,7 @@ class ParserError(PrintableError):
 
 
 ParseResult = collections.namedtuple(
-    "ParseResult", ["scope", "local_module", "plugin_paths"])
+    "ParseResult", ["scope", "local_module"])
 
 
 def parse_file(file_path, **local_module_kwargs):
@@ -35,11 +35,10 @@ def parse_string(yaml_str, project_root='.', **local_module_kwargs):
 
 def _parse_toplevel(blob, **local_module_kwargs):
     scope = {}
-    plugin_paths = _extract_maybe_list_field(blob, 'plugins')
     _extract_named_rules(blob, scope)
     _extract_remote_modules(blob, scope)
     local_module = _build_local_module(blob, **local_module_kwargs)
-    return ParseResult(scope, local_module, plugin_paths)
+    return ParseResult(scope, local_module)
 
 
 def _build_local_module(blob, **local_module_kwargs):
