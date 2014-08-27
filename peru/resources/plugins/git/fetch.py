@@ -56,10 +56,8 @@ def checkout_subrepos(cache_path, clone_path, rev, work_tree):
         checkout_tree(cache_path, sub_full_path, sub_url, sub_rev)
 
 
-# Referenced by clone_cached.
-cache_path = os.environ['PERU_PLUGIN_CACHE']
 checkout_tree(
-    cache_path,
+    os.environ['PERU_PLUGIN_CACHE'],
     os.environ['PERU_FETCH_DEST'],
     os.environ['PERU_MODULE_URL'],
     os.environ.get('PERU_MODULE_REV') or 'master')
