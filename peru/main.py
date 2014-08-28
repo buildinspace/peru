@@ -14,10 +14,10 @@ from . import resolver
 
 __doc__ = """\
 Usage:
-  peru sync [-fqv] [-p N]
-  peru reup [-qv] [-p N] [<modules>...]
+  peru sync [-fqv] [-j N]
+  peru reup [-qv] [-j N] [<modules>...]
   peru override [list | add <module> <path> | delete <module>]
-  peru copy [-fqv] [-p N] <target> [<dest>]
+  peru copy [-fqv] [-j N] <target> [<dest>]
   peru clean [-f]
   peru (help | --help | --version)
 
@@ -29,11 +29,11 @@ Commands:
   clean     delete imports from the working copy
 
 Options:
-  -f --force         recklessly overwrite files
-  -h --help          show help
-  -p N --parallel N  max number of parallel fetches
-  -q --quiet         don't print anything
-  -v --verbose       print all the things
+  -f --force     recklessly overwrite files
+  -h --help      show help
+  -j N --jobs N  max number of parallel fetches
+  -q --quiet     don't print anything
+  -v --verbose   print all the things
 """
 
 __version__ = "peru 0.1"

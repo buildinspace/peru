@@ -101,12 +101,12 @@ def find_peru_file(start_dir, name):
 
 
 def _get_parallel_fetch_limit(args):
-    if args['--parallel'] is None:
+    if args['--jobs'] is None:
         return plugin.DEFAULT_PARALLEL_FETCH_LIMIT
     try:
-        parallel = int(args['--parallel'])
+        parallel = int(args['--jobs'])
         if parallel <= 0:
-            raise PrintableError('Argument to --parallel must be 1 or more.')
+            raise PrintableError('Argument to --jobs must be 1 or more.')
         return parallel
     except:
-        raise PrintableError('Argument to --parallel must be a number.')
+        raise PrintableError('Argument to --jobs must be a number.')
