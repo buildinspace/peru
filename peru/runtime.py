@@ -27,7 +27,7 @@ class Runtime:
         self.local_module = parse_result.local_module
 
         # TODO: Define system and user plugin roots. Maybe an env var too.
-        self.plugin_roots = ()
+        self.plugin_paths = ()
 
         cache_dir = env.get('PERU_CACHE', os.path.join(self.peru_dir, 'cache'))
         self.cache = cache.Cache(cache_dir)

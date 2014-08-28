@@ -231,7 +231,7 @@ class PluginsTest(unittest.TestCase):
             self.do_plugin_test("rsync", bad_fields, self.content,
                                 hide_stderr=True)
 
-    def test_plugin_roots(self):
+    def test_plugin_paths(self):
         plugins_dir = shared.create_dir({
             'footype/fetch.py':
                 '#! /usr/bin/env python3\nprint("hey there!")\n',
@@ -242,10 +242,10 @@ class PluginsTest(unittest.TestCase):
         os.chmod(os.path.join(plugins_dir, 'footype', 'reup.py'), 0o755)
         fetch_dir = shared.create_dir()
         output = plugin_fetch('.', self.cache_root, fetch_dir, 'footype', {},
-                              capture_output=True, plugin_roots=(plugins_dir,))
+                              capture_output=True, plugin_paths=(plugins_dir,))
         self.assertEqual('hey there!\n', output)
         output = plugin_get_reup_fields(
-            '.', self.cache_root, 'footype', {}, plugin_roots=(plugins_dir,))
+            '.', self.cache_root, 'footype', {}, plugin_paths=(plugins_dir,))
         self.assertDictEqual({'name': 'val'}, output)
 
     def test_no_such_plugin(self):
@@ -257,4 +257,4 @@ class PluginsTest(unittest.TestCase):
         path2 = shared.create_dir({'footype/junk': 'junk'})
         with self.assertRaises(plugin.PluginCandidateError):
             plugin_fetch('.', self.cache_root, '.', 'footype', {},
-                         plugin_roots=(path1, path2))
+                         plugin_paths=(path1, path2))

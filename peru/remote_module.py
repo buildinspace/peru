@@ -50,7 +50,7 @@ class RemoteModule:
                     yield from plugin_fetch(
                         runtime.root, runtime.cache.plugins_root, tmp_dir,
                         self.type, self.plugin_fields,
-                        plugin_roots=runtime.plugin_roots)
+                        plugin_paths=runtime.plugin_paths)
                     tree = runtime.cache.import_tree(tmp_dir)
         runtime.cache.keyval[key] = tree
         return tree
@@ -60,7 +60,7 @@ class RemoteModule:
         with (yield from runtime.fetch_semaphore):
             reup_fields = yield from plugin_get_reup_fields(
                 runtime.root, runtime.cache.plugins_root, self.type,
-                self.plugin_fields, plugin_roots=runtime.plugin_roots)
+                self.plugin_fields, plugin_paths=runtime.plugin_paths)
         if not runtime.quiet:
             print('reup', self.name)
         for field, val in reup_fields.items():
