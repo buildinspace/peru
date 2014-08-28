@@ -17,7 +17,6 @@ class RemoteModule:
         self.default_rule = default_rule
         self.plugin_fields = plugin_fields
         self.yaml_name = yaml_name  # used by reup to edit the markup
-        self.module_lock = asyncio.Lock()
 
     @asyncio.coroutine
     def get_tree(self, runtime):
@@ -39,7 +38,8 @@ class RemoteModule:
         # we don't run too many fetches at once. It's important to take the
         # lock before the semaphore, so that semaphore slots aren't wasted
         # waiting on the lock.
-        with (yield from self.module_lock):
+        cache_key_lock = runtime.module_cache_locks[key]
+        with (yield from cache_key_lock):
             if key in runtime.cache.keyval:
                 return runtime.cache.keyval[key]
             with runtime.tmp_dir() as tmp_dir:

@@ -1,4 +1,5 @@
 import asyncio
+import collections
 import os
 import tempfile
 
@@ -47,9 +48,12 @@ class Runtime:
         self.verbose = args['--verbose']
 
         # Use a semaphore (a lock that allows N holders at once) to limit the
-        # number of fetches that can run at once.
+        # number of fetches that can run in parallel.
         num_fetches = _get_parallel_fetch_limit(args)
         self.fetch_semaphore = asyncio.BoundedSemaphore(num_fetches)
+
+        # Use locks to make sure the same cache keys don't get double fetched.
+        self.module_cache_locks = collections.defaultdict(asyncio.Lock)
 
     def tmp_dir(self):
         dir = tempfile.TemporaryDirectory(dir=self._tmp_root)
