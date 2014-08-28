@@ -8,9 +8,6 @@ from .plugin import plugin_fetch, plugin_get_reup_fields
 from . import resolver
 
 
-DEFAULT_PARALLEL_FETCH_LIMIT = 10
-
-
 class RemoteModule:
     def __init__(self, name, type, imports, default_rule, plugin_fields,
                  yaml_name):
@@ -45,20 +42,18 @@ class RemoteModule:
         with (yield from self.module_lock):
             if key in runtime.cache.keyval:
                 return runtime.cache.keyval[key]
-            with (yield from runtime.fetch_semaphore):
-                with runtime.tmp_dir() as tmp_dir:
-                    yield from plugin_fetch(
-                        runtime.get_plugin_context(), self.type,
-                        self.plugin_fields, tmp_dir)
-                    tree = runtime.cache.import_tree(tmp_dir)
+            with runtime.tmp_dir() as tmp_dir:
+                yield from plugin_fetch(
+                    runtime.get_plugin_context(), self.type,
+                    self.plugin_fields, tmp_dir)
+                tree = runtime.cache.import_tree(tmp_dir)
         runtime.cache.keyval[key] = tree
         return tree
 
     @asyncio.coroutine
     def reup(self, runtime):
-        with (yield from runtime.fetch_semaphore):
-            reup_fields = yield from plugin_get_reup_fields(
-                runtime.get_plugin_context(), self.type, self.plugin_fields)
+        reup_fields = yield from plugin_get_reup_fields(
+            runtime.get_plugin_context(), self.type, self.plugin_fields)
         if not runtime.quiet:
             print('reup', self.name)
         for field, val in reup_fields.items():

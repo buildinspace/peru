@@ -28,7 +28,9 @@ class PluginsTest(unittest.TestCase):
         self.plugin_context = plugin.PluginContext(
             cwd='.',
             plugin_cache_root=self.cache_root,
-            plugin_paths=())
+            plugin_paths=(),
+            parallelism_semaphore=asyncio.BoundedSemaphore(
+                plugin.DEFAULT_PARALLEL_FETCH_LIMIT))
 
     def do_plugin_test(self, type, plugin_fields, expected_content, *,
                        hide_stderr=False):

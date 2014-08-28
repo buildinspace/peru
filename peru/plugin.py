@@ -9,6 +9,7 @@ import yaml
 from .compat import makedirs
 from .error import PrintableError
 
+DEFAULT_PARALLEL_FETCH_LIMIT = 10
 
 # In Python versions prior to 3.4, __file__ returns a relative path. This path
 # is fixed at load time, so if the program later cd's (as we do in tests, at
@@ -23,7 +24,7 @@ PluginDefinition = namedtuple(
 
 PluginContext = namedtuple(
     'PluginContext',
-    ['cwd', 'plugin_cache_root', 'plugin_paths'])
+    ['cwd', 'plugin_cache_root', 'plugin_paths', 'parallelism_semaphore'])
 
 
 @asyncio.coroutine
@@ -41,10 +42,11 @@ def plugin_fetch(plugin_context, module_type, module_fields, dest, *,
     stderr = subprocess.STDOUT if stderr_to_stdout else None
     stdout = subprocess.PIPE if capture_output else None
 
-    proc = yield from asyncio.create_subprocess_exec(
-        definition.executable_path, cwd=plugin_context.cwd, env=env,
-        stdout=stdout, stderr=stderr)
-    output, _ = yield from proc.communicate()
+    with (yield from plugin_context.parallelism_semaphore):
+        proc = yield from asyncio.create_subprocess_exec(
+            definition.executable_path, cwd=plugin_context.cwd, env=env,
+            stdout=stdout, stderr=stderr)
+        output, _ = yield from proc.communicate()
     if output is not None:
         output = output.decode('utf8')
     _throw_if_error(proc, definition.executable_path, output)
@@ -62,10 +64,11 @@ def plugin_get_reup_fields(plugin_context, module_type, module_fields):
             plugin_context.plugin_cache_root,
             module_type)})
 
-    proc = yield from asyncio.create_subprocess_exec(
-        definition.executable_path, stdout=subprocess.PIPE,
-        cwd=plugin_context.cwd, env=env)
-    output, _ = yield from proc.communicate()
+    with (yield from plugin_context.parallelism_semaphore):
+        proc = yield from asyncio.create_subprocess_exec(
+            definition.executable_path, stdout=subprocess.PIPE,
+            cwd=plugin_context.cwd, env=env)
+        output, _ = yield from proc.communicate()
     output = output.decode('utf8')
     _throw_if_error(proc, definition.executable_path, output)
     fields = yaml.safe_load(output) or {}

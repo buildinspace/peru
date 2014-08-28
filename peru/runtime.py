@@ -7,8 +7,7 @@ from . import compat
 from .error import PrintableError
 from .keyval import KeyVal
 from . import parser
-from .plugin import PluginContext
-from . import remote_module
+from . import plugin
 
 
 class Runtime:
@@ -77,10 +76,11 @@ class Runtime:
         return path
 
     def get_plugin_context(self):
-        return PluginContext(
+        return plugin.PluginContext(
             cwd=self.root,
             plugin_cache_root=self.cache.plugins_root,
-            plugin_paths=self.plugin_paths)
+            plugin_paths=self.plugin_paths,
+            parallelism_semaphore=self.fetch_semaphore)
 
 
 def find_peru_file(start_dir, name):
@@ -102,7 +102,7 @@ def find_peru_file(start_dir, name):
 
 def _get_parallel_fetch_limit(args):
     if args['--parallel'] is None:
-        return remote_module.DEFAULT_PARALLEL_FETCH_LIMIT
+        return plugin.DEFAULT_PARALLEL_FETCH_LIMIT
     try:
         parallel = int(args['--parallel'])
         if parallel <= 0:
