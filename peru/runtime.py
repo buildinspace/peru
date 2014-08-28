@@ -7,6 +7,7 @@ from . import compat
 from .error import PrintableError
 from .keyval import KeyVal
 from . import parser
+from .plugin import PluginContext
 from . import remote_module
 
 
@@ -74,6 +75,12 @@ class Runtime:
             # set_override.
             path = os.path.relpath(os.path.join(self.root, path))
         return path
+
+    def get_plugin_context(self):
+        return PluginContext(
+            cwd=self.root,
+            plugin_cache_root=self.cache.plugins_root,
+            plugin_paths=self.plugin_paths)
 
 
 def find_peru_file(start_dir, name):

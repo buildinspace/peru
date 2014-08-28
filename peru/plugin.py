@@ -21,26 +21,29 @@ PluginDefinition = namedtuple(
     'PluginDefinition',
     ['executable_path', 'fields', 'required_fields', 'optional_fields'])
 
+PluginContext = namedtuple(
+    'PluginContext',
+    ['cwd', 'plugin_cache_root', 'plugin_paths'])
+
 
 @asyncio.coroutine
-def plugin_fetch(cwd, plugin_cache_root, dest, module_type, module_fields, *,
-                 capture_output=False, stderr_to_stdout=False,
-                 plugin_paths=()):
+def plugin_fetch(plugin_context, module_type, module_fields, dest, *,
+                 capture_output=False, stderr_to_stdout=False):
     definition = _get_plugin_definition(
-        module_type, module_fields, 'fetch', plugin_paths)
+        module_type, module_fields, 'fetch', plugin_context.plugin_paths)
 
     env = _plugin_env(definition, module_fields)
     env.update({
         'PERU_FETCH_DEST': dest,
         'PERU_PLUGIN_CACHE': _plugin_cache_path(
-            plugin_cache_root,
+            plugin_context.plugin_cache_root,
             module_type)})
     stderr = subprocess.STDOUT if stderr_to_stdout else None
     stdout = subprocess.PIPE if capture_output else None
 
     proc = yield from asyncio.create_subprocess_exec(
-        definition.executable_path, cwd=cwd, env=env, stdout=stdout,
-        stderr=stderr)
+        definition.executable_path, cwd=plugin_context.cwd, env=env,
+        stdout=stdout, stderr=stderr)
     output, _ = yield from proc.communicate()
     if output is not None:
         output = output.decode('utf8')
@@ -49,19 +52,19 @@ def plugin_fetch(cwd, plugin_cache_root, dest, module_type, module_fields, *,
 
 
 @asyncio.coroutine
-def plugin_get_reup_fields(cwd, plugin_cache_root, module_type, module_fields,
-                           *, plugin_paths=()):
+def plugin_get_reup_fields(plugin_context, module_type, module_fields):
     definition = _get_plugin_definition(
-        module_type, module_fields, 'reup', plugin_paths)
+        module_type, module_fields, 'reup', plugin_context.plugin_paths)
 
     env = _plugin_env(definition, module_fields)
     env.update({
         'PERU_PLUGIN_CACHE': _plugin_cache_path(
-            plugin_cache_root,
+            plugin_context.plugin_cache_root,
             module_type)})
 
     proc = yield from asyncio.create_subprocess_exec(
-        definition.executable_path, stdout=subprocess.PIPE, cwd=cwd, env=env)
+        definition.executable_path, stdout=subprocess.PIPE,
+        cwd=plugin_context.cwd, env=env)
     output, _ = yield from proc.communicate()
     output = output.decode('utf8')
     _throw_if_error(proc, definition.executable_path, output)
