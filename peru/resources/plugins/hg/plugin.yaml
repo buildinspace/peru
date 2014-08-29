@@ -3,3 +3,5 @@ required fields:
 optional fields:
     - rev
     - reup
+cache fields:
+    - url

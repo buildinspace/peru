@@ -1,4 +1,5 @@
 import asyncio
+from collections import defaultdict
 import hashlib
 import os
 import subprocess
@@ -30,7 +31,8 @@ class PluginsTest(unittest.TestCase):
             plugin_cache_root=self.cache_root,
             plugin_paths=(),
             parallelism_semaphore=asyncio.BoundedSemaphore(
-                plugin.DEFAULT_PARALLEL_FETCH_LIMIT))
+                plugin.DEFAULT_PARALLEL_FETCH_LIMIT),
+            plugin_cache_locks=defaultdict(asyncio.Lock))
 
     def do_plugin_test(self, type, plugin_fields, expected_content, *,
                        hide_stderr=False):

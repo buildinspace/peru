@@ -1,11 +1,13 @@
 import asyncio
 from asyncio import subprocess
 from collections import namedtuple
+import contextlib
 import os
 from subprocess import CalledProcessError
 
 import yaml
 
+from . import cache
 from .compat import makedirs
 from .error import PrintableError
 
@@ -20,11 +22,13 @@ PLUGINS_DIR = os.path.abspath(
 
 PluginDefinition = namedtuple(
     'PluginDefinition',
-    ['executable_path', 'fields', 'required_fields', 'optional_fields'])
+    ['type', 'executable_path', 'fields', 'required_fields', 'optional_fields',
+     'cache_fields'])
 
 PluginContext = namedtuple(
     'PluginContext',
-    ['cwd', 'plugin_cache_root', 'plugin_paths', 'parallelism_semaphore'])
+    ['cwd', 'plugin_cache_root', 'plugin_paths', 'parallelism_semaphore',
+     'plugin_cache_locks'])
 
 
 @asyncio.coroutine
@@ -37,16 +41,28 @@ def plugin_fetch(plugin_context, module_type, module_fields, dest, *,
     env.update({
         'PERU_FETCH_DEST': dest,
         'PERU_PLUGIN_CACHE': _plugin_cache_path(
-            plugin_context.plugin_cache_root,
-            module_type)})
+            plugin_context, definition, module_fields)})
     stderr = subprocess.STDOUT if stderr_to_stdout else None
     stdout = subprocess.PIPE if capture_output else None
 
-    with (yield from plugin_context.parallelism_semaphore):
-        proc = yield from asyncio.create_subprocess_exec(
-            definition.executable_path, cwd=plugin_context.cwd, env=env,
-            stdout=stdout, stderr=stderr)
-        output, _ = yield from proc.communicate()
+    # Use a lock to protect the plugin cache. It would be unsafe for two jobs
+    # to read/write to the same plugin cache dir at the same time. The lock
+    # (and the cache dir) are both keyed off the module's "cache fields" as
+    # defined by plugin.yaml. For plugins that don't define cacheable fields,
+    # there is no cache dir (it's set to /dev/null) and the cache lock is a
+    # no-op.
+    cache_lock = _plugin_cache_lock(plugin_context, definition, module_fields)
+    with (yield from cache_lock):
+        # Use a semaphore to limit the number of jobs that can run in parallel.
+        # Most plugin fetches hit the network, and for performance reasons we
+        # don't want to fire off too many network requests at once. See
+        # DEFAULT_PARALLEL_FETCH_LIMIT. This also lets the user control
+        # parallelism with the --jobs flag.
+        with (yield from plugin_context.parallelism_semaphore):
+            proc = yield from asyncio.create_subprocess_exec(
+                definition.executable_path, cwd=plugin_context.cwd, env=env,
+                stdout=stdout, stderr=stderr)
+            output, _ = yield from proc.communicate()
     if output is not None:
         output = output.decode('utf8')
     _throw_if_error(proc, definition.executable_path, output)
@@ -61,14 +77,17 @@ def plugin_get_reup_fields(plugin_context, module_type, module_fields):
     env = _plugin_env(definition, module_fields)
     env.update({
         'PERU_PLUGIN_CACHE': _plugin_cache_path(
-            plugin_context.plugin_cache_root,
-            module_type)})
+            plugin_context, definition, module_fields)})
 
-    with (yield from plugin_context.parallelism_semaphore):
-        proc = yield from asyncio.create_subprocess_exec(
-            definition.executable_path, stdout=subprocess.PIPE,
-            cwd=plugin_context.cwd, env=env)
-        output, _ = yield from proc.communicate()
+    # See comment about the cache lock in plugin_fetch.
+    cache_lock = _plugin_cache_lock(plugin_context, definition, module_fields)
+    with (yield from cache_lock):
+        # See comment about the parallelism semaphore in plugin_fetch.
+        with (yield from plugin_context.parallelism_semaphore):
+            proc = yield from asyncio.create_subprocess_exec(
+                definition.executable_path, stdout=subprocess.PIPE,
+                cwd=plugin_context.cwd, env=env)
+            output, _ = yield from proc.communicate()
     output = output.decode('utf8')
     _throw_if_error(proc, definition.executable_path, output)
     fields = yaml.safe_load(output) or {}
@@ -114,10 +133,37 @@ def _plugin_env(definition, module_fields):
     return env
 
 
-def _plugin_cache_path(plugin_cache_root, module_type):
-    plugin_cache = os.path.join(plugin_cache_root, module_type)
+@asyncio.coroutine
+def _noop_lock():
+    return contextlib.ExitStack()  # a no-op context manager
+
+
+def _plugin_cache_lock(plugin_context, definition, module_fields):
+    if not definition.cache_fields:
+        # This plugin is not cacheable.
+        return _noop_lock()
+    key = _plugin_cache_key(definition, module_fields)
+    return plugin_context.plugin_cache_locks[key]
+
+
+def _plugin_cache_path(plugin_context, definition, module_fields):
+    if not definition.cache_fields:
+        # This plugin is not cacheable.
+        return os.devnull
+    key = _plugin_cache_key(definition, module_fields)
+    plugin_cache = os.path.join(
+        plugin_context.plugin_cache_root, definition.type, key)
     makedirs(plugin_cache)
     return plugin_cache
+
+
+def _plugin_cache_key(definition, module_fields):
+    assert definition.cache_fields, "Can't compute key for uncacheable type."
+    return cache.compute_key({
+        'type': definition.type,
+        'cacheable_fields': {field: module_fields.get(field, None)
+                             for field in definition.cache_fields},
+    })
 
 
 def _get_plugin_definition(module_type, module_fields, command, plugin_paths):
@@ -129,7 +175,9 @@ def _get_plugin_definition(module_type, module_fields, command, plugin_paths):
         metadoc = yaml.safe_load(metafile) or {}
     required_fields = frozenset(metadoc.pop('required fields', []))
     optional_fields = frozenset(metadoc.pop('optional fields', []))
+    cache_fields = frozenset(metadoc.pop('cache fields', []))
     fields = required_fields | optional_fields
+    # TODO: All of these checks need to be tested.
     if metadoc:
         raise RuntimeError('Unknown metadata in {} plugin: {}'.format(
             module_type, metadoc))
@@ -137,9 +185,15 @@ def _get_plugin_definition(module_type, module_fields, command, plugin_paths):
     if overlap:
         raise RuntimeError('Fields in {} are both required and optional: {}'
                            .format(module_type, overlap))
+    invalid = cache_fields - fields
+    if invalid:
+        raise RuntimeError(
+            '"cache fields" must also be either required or optional: ' +
+            str(invalid))
 
     definition = PluginDefinition(
-        executable_path, fields, required_fields, optional_fields)
+        module_type, executable_path, fields, required_fields, optional_fields,
+        cache_fields)
     _validate_plugin_definition(definition, module_fields)
     return definition
 

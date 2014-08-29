@@ -4,7 +4,6 @@ import os
 import shutil
 import subprocess
 import textwrap
-import urllib.parse
 
 
 def hg(*args, hg_dir=None):
@@ -32,22 +31,18 @@ def hg(*args, hg_dir=None):
 
 
 def clone_if_needed(url, cache_path, verbose=False):
-    repo_path = repo_cache_path(url, cache_path)
-    if not os.path.exists(repo_path):
-        os.makedirs(repo_path)
+    if not os.path.exists(os.path.join(cache_path, '.hg')):
         try:
             if verbose:
                 print('hg clone', url)
-            hg('clone', '--noupdate', url, repo_path)
+            hg('clone', '--noupdate', url, cache_path)
         except:
             # Delete the whole thing if the clone failed to avoid confusing the
             # cache.
-            shutil.rmtree(repo_path)
+            shutil.rmtree(cache_path)
             raise
-
-        configure(repo_path)
-
-    return repo_path
+        configure(cache_path)
+    return cache_path
 
 
 def configure(repo_path):
@@ -73,9 +68,3 @@ def already_has_rev(repo, rev):
     # 2) It's not clear at a glance whether something is a branch or a hash.
     # Keep it simple.
     return output.split()[0] == rev
-
-
-def repo_cache_path(url, cache_root):
-    escaped = urllib.parse.quote(url, safe='')
-
-    return os.path.join(cache_root, escaped)

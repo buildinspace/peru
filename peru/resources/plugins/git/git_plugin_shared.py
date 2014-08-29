@@ -5,6 +5,12 @@ import shutil
 import subprocess
 import urllib.parse
 
+# Because peru gives each plugin a unique cache dir based on its cacheable
+# fields (in this case, url) we could clone directly into cache_root. However,
+# because the git plugin needs to handle subrepos as well, it still has to
+# separate things out by repo url.
+CACHE_ROOT = os.environ['PERU_PLUGIN_CACHE']
+
 
 def git(*args, git_dir=None):
     # Avoid forgetting this arg.
@@ -32,13 +38,13 @@ def git(*args, git_dir=None):
     return output
 
 
-def has_clone(url, cache_path):
-    return os.path.exists(repo_cache_path(url, cache_path))
+def has_clone(url):
+    return os.path.exists(repo_cache_path(url))
 
 
-def clone_if_needed(url, cache_path):
-    repo_path = repo_cache_path(url, cache_path)
-    if not has_clone(url, cache_path):
+def clone_if_needed(url):
+    repo_path = repo_cache_path(url)
+    if not has_clone(url):
         try:
             git('clone', '--mirror', url, repo_path)
         except:
@@ -49,7 +55,6 @@ def clone_if_needed(url, cache_path):
     return repo_path
 
 
-def repo_cache_path(url, cache_root):
+def repo_cache_path(url):
     escaped = urllib.parse.quote(url, safe='')
-
-    return os.path.join(cache_root, escaped)
+    return os.path.join(CACHE_ROOT, escaped)

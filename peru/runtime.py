@@ -55,6 +55,10 @@ class Runtime:
         # Use locks to make sure the same cache keys don't get double fetched.
         self.module_cache_locks = collections.defaultdict(asyncio.Lock)
 
+        # Use a different set of locks to make sure that plugin cache dirs are
+        # only used by one job at a time.
+        self.plugin_cache_locks = collections.defaultdict(asyncio.Lock)
+
     def tmp_dir(self):
         dir = tempfile.TemporaryDirectory(dir=self._tmp_root)
         return dir
@@ -84,7 +88,8 @@ class Runtime:
             cwd=self.root,
             plugin_cache_root=self.cache.plugins_root,
             plugin_paths=self.plugin_paths,
-            parallelism_semaphore=self.fetch_semaphore)
+            parallelism_semaphore=self.fetch_semaphore,
+            plugin_cache_locks=self.plugin_cache_locks)
 
 
 def find_peru_file(start_dir, name):

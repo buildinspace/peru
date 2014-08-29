@@ -85,10 +85,6 @@ class IntegrationTest(unittest.TestCase):
                 foo: subdir
             """)
         self.do_integration_test(["sync"], {"subdir/foo": "bar"})
-        self.assertTrue(
-            os.path.exists(os.path.join(
-                self.peru_dir, "cache", "plugins", "cp")),
-            msg="Plugin cache should be written to the right place.")
 
         # Running it again should be a no-op.
         self.do_integration_test(["sync"], {"subdir/foo": "bar"})

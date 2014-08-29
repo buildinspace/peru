@@ -33,11 +33,10 @@ class RemoteModule:
             "type": self.type,
             "plugin_fields": self.plugin_fields,
         })
-        # Use a lock to prevent the same module from being fetched more than
-        # once before it makes it into cache. Use a semaphore to make sure that
-        # we don't run too many fetches at once. It's important to take the
-        # lock before the semaphore, so that semaphore slots aren't wasted
-        # waiting on the lock.
+        # Use a lock to prevent the same module from being double fetched. The
+        # lock is taken on the cache key, not the module itself, so two
+        # different modules with identical fields will take the same lock and
+        # avoid double fetching.
         cache_key_lock = runtime.module_cache_locks[key]
         with (yield from cache_key_lock):
             if key in runtime.cache.keyval:
