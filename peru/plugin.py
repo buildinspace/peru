@@ -34,17 +34,42 @@ PluginContext = namedtuple(
 @asyncio.coroutine
 def plugin_fetch(plugin_context, module_type, module_fields, dest, *,
                  capture_output=False, stderr_to_stdout=False):
-    definition = _get_plugin_definition(
-        module_type, module_fields, 'fetch', plugin_context.plugin_paths)
-
-    env = _plugin_env(definition, module_fields)
-    env.update({
-        'PERU_FETCH_DEST': dest,
-        'PERU_PLUGIN_CACHE': _plugin_cache_path(
-            plugin_context, definition, module_fields)})
+    env = {'PERU_FETCH_DEST': dest}
     stderr = subprocess.STDOUT if stderr_to_stdout else None
     stdout = subprocess.PIPE if capture_output else None
+    output = yield from _plugin_job(plugin_context, module_type, module_fields,
+                                    'fetch', env, stdout, stderr)
+    return output
 
+
+@asyncio.coroutine
+def plugin_get_reup_fields(plugin_context, module_type, module_fields):
+    output = yield from _plugin_job(
+        plugin_context, module_type, module_fields, 'reup', env={},
+        stdout=subprocess.PIPE, stderr=None)
+    fields = yaml.safe_load(output) or {}
+
+    for key, value in fields.items():
+        if not isinstance(key, str):
+            raise PluginModuleFieldError(
+                'reup field name must be a string: {}'.format(key))
+        if not isinstance(value, str):
+            raise PluginModuleFieldError(
+                'reup field value must be a string: {}'.format(value))
+
+    return fields
+
+
+@asyncio.coroutine
+def _plugin_job(plugin_context, module_type, module_fields, command, env,
+                stdout, stderr):
+    definition = _get_plugin_definition(module_type, module_fields, command,
+                                        plugin_context.plugin_paths)
+    complete_env = _plugin_env(definition, module_fields)
+    complete_env.update({
+        'PERU_PLUGIN_CACHE': _plugin_cache_path(
+            plugin_context, definition, module_fields)})
+    complete_env.update(env)
     # Use a lock to protect the plugin cache. It would be unsafe for two jobs
     # to read/write to the same plugin cache dir at the same time. The lock
     # (and the cache dir) are both keyed off the module's "cache fields" as
@@ -60,47 +85,13 @@ def plugin_fetch(plugin_context, module_type, module_fields, dest, *,
         # parallelism with the --jobs flag.
         with (yield from plugin_context.parallelism_semaphore):
             proc = yield from asyncio.create_subprocess_exec(
-                definition.executable_path, cwd=plugin_context.cwd, env=env,
-                stdout=stdout, stderr=stderr)
+                definition.executable_path, cwd=plugin_context.cwd,
+                env=complete_env, stdout=stdout, stderr=stderr)
             output, _ = yield from proc.communicate()
     if output is not None:
         output = output.decode('utf8')
     _throw_if_error(proc, definition.executable_path, output)
     return output
-
-
-@asyncio.coroutine
-def plugin_get_reup_fields(plugin_context, module_type, module_fields):
-    definition = _get_plugin_definition(
-        module_type, module_fields, 'reup', plugin_context.plugin_paths)
-
-    env = _plugin_env(definition, module_fields)
-    env.update({
-        'PERU_PLUGIN_CACHE': _plugin_cache_path(
-            plugin_context, definition, module_fields)})
-
-    # See comment about the cache lock in plugin_fetch.
-    cache_lock = _plugin_cache_lock(plugin_context, definition, module_fields)
-    with (yield from cache_lock):
-        # See comment about the parallelism semaphore in plugin_fetch.
-        with (yield from plugin_context.parallelism_semaphore):
-            proc = yield from asyncio.create_subprocess_exec(
-                definition.executable_path, stdout=subprocess.PIPE,
-                cwd=plugin_context.cwd, env=env)
-            output, _ = yield from proc.communicate()
-    output = output.decode('utf8')
-    _throw_if_error(proc, definition.executable_path, output)
-    fields = yaml.safe_load(output) or {}
-
-    for key, value in fields.items():
-        if not isinstance(key, str):
-            raise PluginModuleFieldError(
-                'reup field name must be a string: {}'.format(key))
-        if not isinstance(value, str):
-            raise PluginModuleFieldError(
-                'reup field value must be a string: {}'.format(value))
-
-    return fields
 
 
 def _throw_if_error(proc, command, output):
