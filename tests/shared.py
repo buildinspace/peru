@@ -39,15 +39,27 @@ def write_files(dir, path_contents_map):
             f.write(contents)
 
 
-def read_dir(dir):
+def read_dir(startdir, excludes=()):
     contents = {}
-    for subdir, _, files in os.walk(dir):
+    for subpath, dirs, files in os.walk(startdir):
+        # Read the contents of files, excepting excludes.
         for file in files:
-            path = os.path.normpath(os.path.join(subdir, file))
-            with open(path) as f:
-                content = f.read()
-            relpath = os.path.relpath(path, dir)
+            filepath = os.path.join(subpath, file)
+            relpath = os.path.relpath(filepath, startdir)
+            if relpath in excludes:
+                continue
+            with open(filepath) as f:
+                try:
+                    content = f.read()
+                except UnicodeDecodeError:
+                    raise RuntimeError(filepath + ' is not utf8.') from None
             contents[relpath] = content
+        # Avoid recursing into excluded subdirectories.
+        for dir in dirs.copy():  # copy, because we're going to modify it
+            dirpath = os.path.join(subpath, dir)
+            relpath = os.path.relpath(dirpath, startdir)
+            if relpath in excludes:
+                dirs.remove(dir)
     return contents
 
 

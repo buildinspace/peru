@@ -16,13 +16,7 @@ PERU_MODULE_ROOT = os.path.abspath(
     os.path.join(os.path.dirname(peru.__file__)))
 
 
-def run_peru_command(args, test_dir, peru_dir, *, env_vars=None,
-                     capture_stdout=False):
-    # Specifying PERU_DIR keeps peru files from cluttering the expected
-    # outputs.
-    env = env_vars.copy() if env_vars else {}
-    if peru_dir:
-        env["PERU_DIR"] = peru_dir
+def run_peru_command(args, test_dir, *, env_vars=None, capture_stdout=False):
     old_cwd = os.getcwd()
     old_stdout = sys.stdout
     os.chdir(test_dir)
@@ -34,7 +28,7 @@ def run_peru_command(args, test_dir, peru_dir, *, env_vars=None,
         # the Main class. This lets us check that the right types of exceptions
         # make it up to the top, so we don't need to check specific outputs
         # strings.
-        peru.main.Main().run(args, env)
+        peru.main.Main().run(args, env_vars or {})
     finally:
         os.chdir(old_cwd)
         sys.stdout = old_stdout
@@ -48,8 +42,8 @@ class IntegrationTest(unittest.TestCase):
         self.module_dir = shared.create_dir({
             "foo": "bar",
         })
-        self.peru_dir = shared.create_dir()
         self.test_dir = shared.create_dir()
+        self.peru_dir = os.path.join(self.test_dir, '.peru')
 
     def tearDown(self):
         # Make sure that everything in the tmp dirs has been cleaned up.
@@ -64,17 +58,17 @@ class IntegrationTest(unittest.TestCase):
                                  msg="cache tmp dir is not clean")
 
     def write_peru_yaml(self, template):
-        self.peru_yaml = dedent(template.format(self.module_dir))
-        shared.write_files(self.test_dir, {'peru.yaml': self.peru_yaml})
+        peru_yaml = dedent(template.format(self.module_dir))
+        shared.write_files(self.test_dir, {'peru.yaml': peru_yaml})
 
     def do_integration_test(self, args, expected, cwd=None, **kwargs):
         if not cwd:
             cwd = self.test_dir
-        run_peru_command(args, cwd, self.peru_dir, **kwargs)
-        expected_with_yaml = expected.copy()
-        expected_with_yaml["peru.yaml"] = self.peru_yaml
-        self.assertDictEqual(expected_with_yaml,
-                             shared.read_dir(self.test_dir))
+        run_peru_command(args, cwd, **kwargs)
+        self.assertDictEqual(
+            expected,
+            shared.read_dir(
+                self.test_dir, excludes=['peru.yaml', '.peru']))
 
     def test_basic_sync(self):
         self.write_peru_yaml("""\
@@ -95,7 +89,7 @@ class IntegrationTest(unittest.TestCase):
             self.do_integration_test(["sync"], {"subdir/foo": "bar"})
 
     def test_sync_from_subdir(self):
-        self.peru_yaml = dedent('''\
+        peru_yaml = dedent('''\
             # Use a relative module path, to make sure it gets resolved
             # relative to the project root and not the dir where peru was
             # called.
@@ -105,10 +99,10 @@ class IntegrationTest(unittest.TestCase):
             imports:
                 relative_foo: subdir
             '''.format(os.path.relpath(self.module_dir, start=self.test_dir)))
-        shared.write_files(self.test_dir, {'peru.yaml': self.peru_yaml})
+        shared.write_files(self.test_dir, {'peru.yaml': peru_yaml})
         subdir = os.path.join(self.test_dir, 'a', 'b')
         peru.compat.makedirs(subdir)
-        run_peru_command(['sync'], subdir, peru_dir=None)
+        run_peru_command(['sync'], subdir)
         self.assertTrue(os.path.isdir(os.path.join(self.test_dir, '.peru')),
                         msg=".peru dir didn't end up in the right place")
         actual_content = shared.read_dir(os.path.join(self.test_dir, 'subdir'))
@@ -259,22 +253,21 @@ class IntegrationTest(unittest.TestCase):
         override_dir = shared.create_dir({'foo': 'override'})
         # Set the override.
         run_peru_command(['override', 'add', 'foo', override_dir],
-                         self.test_dir, self.peru_dir)
+                         self.test_dir)
         # Confirm that the override is configured.
-        output = run_peru_command(['override'], self.test_dir, self.peru_dir,
+        output = run_peru_command(['override'], self.test_dir,
                                   capture_stdout=True)
         self.assertEqual(output, 'foo: {}\n'.format(override_dir))
         # Make sure 'override list' gives the same output as 'override'.
         output = run_peru_command(['override', 'list'], self.test_dir,
-                                  self.peru_dir, capture_stdout=True)
+                                  capture_stdout=True)
         self.assertEqual(output, 'foo: {}\n'.format(override_dir))
         # Run the sync and confirm that the override worked.
         self.do_integration_test(['sync'], {'builtfoo': 'override!', 'x': 'x'})
         # Delete the override.
-        run_peru_command(['override', 'delete', 'foo'], self.test_dir,
-                         self.peru_dir)
+        run_peru_command(['override', 'delete', 'foo'], self.test_dir)
         # Confirm that the override was deleted.
-        output = run_peru_command(['override'], self.test_dir, self.peru_dir,
+        output = run_peru_command(['override'], self.test_dir,
                                   capture_stdout=True)
         self.assertEqual(output, '')
         # Rerun the sync and confirm the original content is back.
@@ -287,7 +280,7 @@ class IntegrationTest(unittest.TestCase):
         # Now, add an override, and confirm that the new sync works.
         override_dir = shared.create_dir({'foo': 'override'})
         run_peru_command(['override', 'add', 'foo', override_dir],
-                         self.test_dir, self.peru_dir)
+                         self.test_dir)
         self.do_integration_test(['sync'], {'builtfoo': 'override!', 'x': 'x'})
 
     def test_relative_override_from_subdir(self):
@@ -308,7 +301,7 @@ class IntegrationTest(unittest.TestCase):
         # stored path properly.
         relative_path = os.path.relpath(override_dir, start=subdir)
         run_peru_command(['override', 'add', 'foo', relative_path],
-                         subdir, self.peru_dir)
+                         subdir)
         # Confirm that the right path is stored on disk.
         expected_stored_path = os.path.relpath(
             override_dir, start=self.test_dir)
@@ -316,7 +309,7 @@ class IntegrationTest(unittest.TestCase):
             actual_stored_path = f.read()
         self.assertEqual(expected_stored_path, actual_stored_path)
         # Confirm that `peru override` prints output that respects the cwd.
-        output = run_peru_command(['override'], subdir, self.peru_dir,
+        output = run_peru_command(['override'], subdir,
                                   capture_stdout=True)
         self.assertEqual("foo: {}\n".format(relative_path), output)
         # Confirm that syncing works.
@@ -332,7 +325,7 @@ class IntegrationTest(unittest.TestCase):
         override_dir = shared.create_dir(
             {'foo': 'override', '.peru/bar': 'baz'})
         run_peru_command(['override', 'add', 'foo', override_dir],
-                         self.test_dir, self.peru_dir)
+                         self.test_dir)
         self.do_integration_test(['sync'], {'foo': 'override'})
 
     def test_rules_in_override(self):
@@ -357,7 +350,7 @@ class IntegrationTest(unittest.TestCase):
         _write_peru_yaml('foo|test_build')
         override_dir = shared.create_dir()
         run_peru_command(['override', 'add', 'foo', override_dir],
-                         self.test_dir, self.peru_dir)
+                         self.test_dir)
 
         # Syncing against a build rule should build in the override.
         self.do_integration_test(['sync'], {'fi': 'fee', 'subdir/fum': 'fo'})
@@ -401,15 +394,15 @@ class IntegrationTest(unittest.TestCase):
 
     def test_help(self):
         flag_output = run_peru_command(['--help'], self.test_dir,
-                                       self.peru_dir, capture_stdout=True)
+                                       capture_stdout=True)
         self.assertEqual(peru.main.__doc__, flag_output)
         command_output = run_peru_command(['help'], self.test_dir,
-                                          self.peru_dir, capture_stdout=True)
+                                          capture_stdout=True)
         self.assertEqual(peru.main.__doc__, command_output)
 
     def test_version(self):
         version_output = run_peru_command(["--version"], self.test_dir,
-                                          self.peru_dir, capture_stdout=True)
+                                          capture_stdout=True)
         self.assertEqual(peru.main.__version__, version_output.strip())
 
 
@@ -434,12 +427,13 @@ class ReupIntegrationTest(unittest.TestCase):
         self.bar_otherbranch = self.bar_repo.run("git rev-parse otherbranch")
         self.start_yaml = template.format(self.foo_dir, self.bar_dir)
         self.test_dir = shared.create_dir({"peru.yaml": self.start_yaml})
-        self.peru_dir = shared.create_dir()
 
     def do_integration_test(self, args, expected_yaml, **kwargs):
-        run_peru_command(args, self.test_dir, self.peru_dir, **kwargs)
-        self.assertDictEqual({"peru.yaml": expected_yaml},
-                             shared.read_dir(self.test_dir))
+        run_peru_command(args, self.test_dir, **kwargs)
+        self.assertDictEqual(
+            {"peru.yaml": expected_yaml},
+            shared.read_dir(
+                self.test_dir, excludes=['.peru']))
 
     def test_single_reup(self):
         expected = dedent("""\
