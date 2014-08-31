@@ -1,6 +1,4 @@
-import io
 import os
-import sys
 from textwrap import dedent
 import unittest
 
@@ -11,29 +9,10 @@ import peru.main
 import peru.rule
 
 import shared
+from shared import run_peru_command
 
 PERU_MODULE_ROOT = os.path.abspath(
     os.path.join(os.path.dirname(peru.__file__)))
-
-
-def run_peru_command(args, test_dir, *, env_vars=None, capture_stdout=False):
-    old_cwd = os.getcwd()
-    old_stdout = sys.stdout
-    os.chdir(test_dir)
-    if capture_stdout:
-        capture_stream = io.StringIO()
-        sys.stdout = capture_stream
-    try:
-        # Rather than invoking peru as a subprocess, just call directly into
-        # the Main class. This lets us check that the right types of exceptions
-        # make it up to the top, so we don't need to check specific outputs
-        # strings.
-        peru.main.Main().run(args, env_vars or {})
-    finally:
-        os.chdir(old_cwd)
-        sys.stdout = old_stdout
-    if capture_stdout:
-        return capture_stream.getvalue()
 
 
 class IntegrationTest(unittest.TestCase):
@@ -255,20 +234,17 @@ class IntegrationTest(unittest.TestCase):
         run_peru_command(['override', 'add', 'foo', override_dir],
                          self.test_dir)
         # Confirm that the override is configured.
-        output = run_peru_command(['override'], self.test_dir,
-                                  capture_stdout=True)
+        output = run_peru_command(['override'], self.test_dir)
         self.assertEqual(output, 'foo: {}\n'.format(override_dir))
         # Make sure 'override list' gives the same output as 'override'.
-        output = run_peru_command(['override', 'list'], self.test_dir,
-                                  capture_stdout=True)
+        output = run_peru_command(['override', 'list'], self.test_dir)
         self.assertEqual(output, 'foo: {}\n'.format(override_dir))
         # Run the sync and confirm that the override worked.
         self.do_integration_test(['sync'], {'builtfoo': 'override!', 'x': 'x'})
         # Delete the override.
         run_peru_command(['override', 'delete', 'foo'], self.test_dir)
         # Confirm that the override was deleted.
-        output = run_peru_command(['override'], self.test_dir,
-                                  capture_stdout=True)
+        output = run_peru_command(['override'], self.test_dir)
         self.assertEqual(output, '')
         # Rerun the sync and confirm the original content is back.
         self.do_integration_test(['sync'], {'builtfoo': 'bar!', 'x': 'x'})
@@ -309,8 +285,7 @@ class IntegrationTest(unittest.TestCase):
             actual_stored_path = f.read()
         self.assertEqual(expected_stored_path, actual_stored_path)
         # Confirm that `peru override` prints output that respects the cwd.
-        output = run_peru_command(['override'], subdir,
-                                  capture_stdout=True)
+        output = run_peru_command(['override'], subdir)
         self.assertEqual("foo: {}\n".format(relative_path), output)
         # Confirm that syncing works.
         self.do_integration_test(['sync'], {'foo': 'override'}, cwd=subdir)
@@ -393,16 +368,13 @@ class IntegrationTest(unittest.TestCase):
         self.do_integration_test(['clean', '--force'], {})
 
     def test_help(self):
-        flag_output = run_peru_command(['--help'], self.test_dir,
-                                       capture_stdout=True)
+        flag_output = run_peru_command(['--help'], self.test_dir)
         self.assertEqual(peru.main.__doc__, flag_output)
-        command_output = run_peru_command(['help'], self.test_dir,
-                                          capture_stdout=True)
+        command_output = run_peru_command(['help'], self.test_dir)
         self.assertEqual(peru.main.__doc__, command_output)
 
     def test_version(self):
-        version_output = run_peru_command(["--version"], self.test_dir,
-                                          capture_stdout=True)
+        version_output = run_peru_command(["--version"], self.test_dir)
         self.assertEqual(peru.main.__version__, version_output.strip())
 
 

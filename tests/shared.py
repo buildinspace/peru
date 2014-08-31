@@ -1,9 +1,12 @@
+import io
 import os
 import subprocess
+import sys
 import tempfile
 import textwrap
 
 from peru.compat import makedirs
+import peru.main
 
 
 def tmp_dir():
@@ -61,6 +64,24 @@ def read_dir(startdir, excludes=()):
             if relpath in excludes:
                 dirs.remove(dir)
     return contents
+
+
+def run_peru_command(args, test_dir, *, env_vars=None):
+    old_cwd = os.getcwd()
+    old_stdout = sys.stdout
+    os.chdir(test_dir)
+    capture_stream = io.StringIO()
+    sys.stdout = capture_stream
+    try:
+        # Rather than invoking peru as a subprocess, just call directly into
+        # the Main class. This lets us check that the right types of exceptions
+        # make it up to the top, so we don't need to check specific outputs
+        # strings.
+        peru.main.Main().run(args, env_vars or {})
+    finally:
+        os.chdir(old_cwd)
+        sys.stdout = old_stdout
+    return capture_stream.getvalue()
 
 
 class Repo:
