@@ -7,7 +7,7 @@ import unittest
 
 import peru.plugin as plugin
 import shared
-from shared import Repo, GitRepo, HgRepo
+from shared import Repo, GitRepo, HgRepo, assert_contents
 
 
 def plugin_fetch(*args, **kwargs):
@@ -40,8 +40,7 @@ class PluginsTest(unittest.TestCase):
         output = plugin_fetch(
             self.plugin_context, type, plugin_fields, fetch_dir,
             capture_output=True, stderr_to_stdout=hide_stderr)
-        self.assertDictEqual(shared.read_dir(fetch_dir), expected_content,
-                             msg="Fetched content did not match expected.")
+        assert_contents(fetch_dir, expected_content)
         return output
 
     def test_git_plugin(self):

@@ -9,7 +9,7 @@ import peru.main
 import peru.rule
 
 import shared
-from shared import run_peru_command
+from shared import run_peru_command, assert_contents
 
 PERU_MODULE_ROOT = os.path.abspath(
     os.path.join(os.path.dirname(peru.__file__)))
@@ -44,10 +44,8 @@ class SyncTest(unittest.TestCase):
         if not cwd:
             cwd = self.test_dir
         run_peru_command(args, cwd, **kwargs)
-        self.assertDictEqual(
-            expected,
-            shared.read_dir(
-                self.test_dir, excludes=['peru.yaml', '.peru']))
+        assert_contents(self.test_dir, expected,
+                        excludes=['peru.yaml', '.peru'])
 
     def test_basic_sync(self):
         self.write_peru_yaml("""\
@@ -84,8 +82,7 @@ class SyncTest(unittest.TestCase):
         run_peru_command(['sync'], subdir)
         self.assertTrue(os.path.isdir(os.path.join(self.test_dir, '.peru')),
                         msg=".peru dir didn't end up in the right place")
-        actual_content = shared.read_dir(os.path.join(self.test_dir, 'subdir'))
-        self.assertDictEqual({'foo': 'bar'}, actual_content)
+        assert_contents(os.path.join(self.test_dir, 'subdir'), {'foo': 'bar'})
 
     def test_conflicting_imports(self):
         self.write_peru_yaml("""\

@@ -4,7 +4,7 @@ from peru.cache import Cache
 from peru.merge import merge_imports_tree
 from peru.parser import build_imports
 
-from shared import create_dir, read_dir
+from shared import create_dir, assert_contents
 
 
 class MergeTest(unittest.TestCase):
@@ -28,7 +28,7 @@ class MergeTest(unittest.TestCase):
         merged_dir = create_dir()
         self.cache.export_tree(merged_tree, merged_dir)
         expected_content = {'path1/a': 'a', 'path2/a': 'a'}
-        self.assertDictEqual(expected_content, read_dir(merged_dir))
+        assert_contents(merged_dir, expected_content)
 
     def test_merge_from_list(self):
         # This represents a list of key-value pairs in YAML, for example:
@@ -44,4 +44,4 @@ class MergeTest(unittest.TestCase):
         merged_dir = create_dir()
         self.cache.export_tree(merged_tree, merged_dir)
         expected_content = {'path1/a': 'a', 'path2/a': 'a'}
-        self.assertDictEqual(expected_content, read_dir(merged_dir))
+        assert_contents(merged_dir, expected_content)

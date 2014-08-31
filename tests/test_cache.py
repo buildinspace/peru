@@ -3,6 +3,7 @@ import unittest
 
 import peru.cache
 import shared
+from shared import assert_contents
 
 
 class CacheTest(unittest.TestCase):
@@ -19,7 +20,7 @@ class CacheTest(unittest.TestCase):
     def test_basic_export(self):
         export_dir = shared.create_dir()
         self.cache.export_tree(self.content_tree, export_dir)
-        self.assertDictEqual(self.content, shared.read_dir(export_dir))
+        assert_contents(export_dir, self.content)
 
     def test_export_force_with_preexisting_files(self):
         # Create a working tree with a conflicting file.
@@ -28,10 +29,10 @@ class CacheTest(unittest.TestCase):
         # Export should fail by default.
         with self.assertRaises(peru.cache.DirtyWorkingCopyError):
             self.cache.export_tree(self.content_tree, export_dir)
-        self.assertDictEqual(dirty_content, shared.read_dir(export_dir))
+        assert_contents(export_dir, dirty_content)
         # But it should suceed with the force flag.
         self.cache.export_tree(self.content_tree, export_dir, force=True)
-        self.assertDictEqual(self.content, shared.read_dir(export_dir))
+        assert_contents(export_dir, self.content)
 
     def test_export_force_with_changed_files(self):
         export_dir = shared.create_dir()
@@ -45,14 +46,14 @@ class CacheTest(unittest.TestCase):
         # But it should succeed with the --force flag.
         self.cache.export_tree(self.content_tree, export_dir, force=True,
                                previous_tree=self.content_tree)
-        self.assertDictEqual(self.content, shared.read_dir(export_dir))
+        assert_contents(export_dir, self.content)
 
     def test_multiple_imports(self):
         new_content = {"fee/fi": "fo fum"}
         new_tree = self.cache.import_tree(shared.create_dir(new_content))
         export_dir = shared.create_dir()
         self.cache.export_tree(new_tree, export_dir)
-        self.assertDictEqual(new_content, shared.read_dir(export_dir))
+        assert_contents(export_dir, new_content)
 
     def test_import_with_gitignore(self):
         # Make sure our git imports don't get confused by .gitignore files.
@@ -60,7 +61,7 @@ class CacheTest(unittest.TestCase):
         new_tree = self.cache.import_tree(shared.create_dir(new_content))
         export_dir = shared.create_dir()
         self.cache.export_tree(new_tree, export_dir)
-        self.assertDictEqual(new_content, shared.read_dir(export_dir))
+        assert_contents(export_dir, new_content)
 
     def test_import_with_files(self):
         all_content = {'foo': '',
@@ -72,8 +73,7 @@ class CacheTest(unittest.TestCase):
                             'baz/bing': ''}
         out_dir = shared.create_dir()
         self.cache.export_tree(tree, out_dir)
-        actual_content = shared.read_dir(out_dir)
-        self.assertDictEqual(expected_content, actual_content)
+        assert_contents(out_dir, expected_content)
 
     def test_export_with_existing_files(self):
         # Create a dir with an existing file that doesn't conflict.
@@ -82,7 +82,7 @@ class CacheTest(unittest.TestCase):
         self.cache.export_tree(self.content_tree, export_dir)
         expected_content = self.content.copy()
         expected_content.update(more_content)
-        self.assertDictEqual(expected_content, shared.read_dir(export_dir))
+        assert_contents(export_dir, expected_content)
 
         # But if we try to export twice, the export_dir will now have
         # conflicting files, and export_tree() should throw.
@@ -111,7 +111,7 @@ class CacheTest(unittest.TestCase):
         # different content.
         self.cache.export_tree(new_tree, export_dir,
                                previous_tree=self.content_tree)
-        self.assertDictEqual(new_content, shared.read_dir(export_dir))
+        assert_contents(export_dir, new_content)
 
         # Now do the same thing again, but use a dirty working copy. This
         # should cause an error.
@@ -125,7 +125,7 @@ class CacheTest(unittest.TestCase):
         os.remove(os.path.join(dirty_dir, 'a'))
         self.cache.export_tree(new_tree, dirty_dir,
                                previous_tree=self.content_tree)
-        self.assertDictEqual(new_content, shared.read_dir(dirty_dir))
+        assert_contents(dirty_dir, new_content)
 
         # Make sure we get an error even if the dirty file is unchanged between
         # the previous tree and the new one.
@@ -143,12 +143,12 @@ class CacheTest(unittest.TestCase):
         # as if previous_tree wasn't specified.
         self.cache.export_tree(self.content_tree, export_dir,
                                previous_tree=self.content_tree)
-        self.assertDictEqual(self.content, shared.read_dir(export_dir))
+        assert_contents(export_dir, self.content)
         # Make sure the same applies with just a single missing file.
         os.remove(os.path.join(export_dir, 'a'))
         self.cache.export_tree(self.content_tree, export_dir,
                                previous_tree=self.content_tree)
-        self.assertDictEqual(self.content, shared.read_dir(export_dir))
+        assert_contents(export_dir, self.content)
 
     def test_merge_trees(self):
         merged_tree = self.cache.merge_trees(self.content_tree,
@@ -159,8 +159,7 @@ class CacheTest(unittest.TestCase):
             expected_content[os.path.join("subdir", path)] = content
         export_dir = shared.create_dir()
         self.cache.export_tree(merged_tree, export_dir)
-        exported_content = shared.read_dir(export_dir)
-        self.assertDictEqual(exported_content, expected_content)
+        assert_contents(export_dir, expected_content)
 
         with self.assertRaises(peru.cache.MergeConflictError):
             # subdir/ is already populated, so this merge should throw.
@@ -178,8 +177,7 @@ class CacheTest(unittest.TestCase):
                                       files=files)
         out_dir = shared.create_dir()
         self.cache.export_tree(tree, out_dir)
-        actual = shared.read_dir(out_dir)
-        self.assertDictEqual(expected, actual)
+        assert_contents(out_dir, expected)
 
     def test_import_with_specific_file(self):
         self.do_excludes_and_files_test(

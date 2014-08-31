@@ -1,3 +1,4 @@
+import difflib
 import io
 import os
 import subprocess
@@ -55,7 +56,7 @@ def read_dir(startdir, excludes=()):
                 try:
                     content = f.read()
                 except UnicodeDecodeError:
-                    raise RuntimeError(filepath + ' is not utf8.') from None
+                    content = '<BINARY>'
             contents[relpath] = content
         # Avoid recursing into excluded subdirectories.
         for dir in dirs.copy():  # copy, because we're going to modify it
@@ -64,6 +65,30 @@ def read_dir(startdir, excludes=()):
             if relpath in excludes:
                 dirs.remove(dir)
     return contents
+
+
+def _format_contents(contents):
+    return ['{}: {}\n'.format(file, repr(contents[file]))
+            for file in sorted(contents.keys())]
+
+
+def assert_contents(dir, expected_contents, excludes=()):
+    # Ignore peru.yaml and .peru by default.
+    actual_contents = read_dir(dir, excludes)
+    if expected_contents == actual_contents:
+        return
+    # Make sure we didn't exclude files we were checking for.
+    full_contents = read_dir(dir)
+    excluded_files = full_contents.keys() - actual_contents.keys()
+    excluded_missing = expected_contents.keys() & excluded_files
+    if excluded_missing:
+        raise AssertionError('EXPECTED FILES WERE EXCLUDED FROM THE TEST: ' +
+                             ', '.join(excluded_missing))
+    # Make a diff against expected and throw.
+    raise AssertionError("Contents didn't match:\n" + ''.join(
+        difflib.unified_diff(_format_contents(expected_contents),
+                             _format_contents(actual_contents),
+                             fromfile='expected', tofile='actual')).strip())
 
 
 def run_peru_command(args, test_dir, *, env_vars=None):

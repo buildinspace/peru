@@ -2,7 +2,7 @@ from textwrap import dedent
 import unittest
 
 import shared
-from shared import run_peru_command
+from shared import run_peru_command, assert_contents
 
 
 class ReupIntegrationTest(unittest.TestCase):
@@ -29,10 +29,8 @@ class ReupIntegrationTest(unittest.TestCase):
 
     def do_integration_test(self, args, expected_yaml, **kwargs):
         run_peru_command(args, self.test_dir, **kwargs)
-        self.assertDictEqual(
-            {"peru.yaml": expected_yaml},
-            shared.read_dir(
-                self.test_dir, excludes=['.peru']))
+        assert_contents(self.test_dir, {'peru.yaml': expected_yaml},
+                        excludes=['.peru'])
 
     def test_single_reup(self):
         expected = dedent("""\
