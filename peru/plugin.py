@@ -13,6 +13,9 @@ from .error import PrintableError
 
 DEFAULT_PARALLEL_FETCH_LIMIT = 10
 
+DEBUG_PARALLEL_COUNT = 0
+DEBUG_PARALLEL_MAX = 0
+
 # In Python versions prior to 3.4, __file__ returns a relative path. This path
 # is fixed at load time, so if the program later cd's (as we do in tests, at
 # least) __file__ is no longer valid. As a workaround, compute the absolute
@@ -63,6 +66,7 @@ def plugin_get_reup_fields(plugin_context, module_type, module_fields):
 @asyncio.coroutine
 def _plugin_job(plugin_context, module_type, module_fields, command, env,
                 stdout, stderr):
+    global DEBUG_PARALLEL_COUNT, DEBUG_PARALLEL_MAX
     definition = _get_plugin_definition(module_type, module_fields, command,
                                         plugin_context.plugin_paths)
     complete_env = _plugin_env(definition, module_fields)
@@ -84,10 +88,13 @@ def _plugin_job(plugin_context, module_type, module_fields, command, env,
         # DEFAULT_PARALLEL_FETCH_LIMIT. This also lets the user control
         # parallelism with the --jobs flag.
         with (yield from plugin_context.parallelism_semaphore):
+            DEBUG_PARALLEL_COUNT += 1
+            DEBUG_PARALLEL_MAX = max(DEBUG_PARALLEL_COUNT, DEBUG_PARALLEL_MAX)
             proc = yield from asyncio.create_subprocess_exec(
                 definition.executable_path, cwd=plugin_context.cwd,
                 env=complete_env, stdout=stdout, stderr=stderr)
             output, _ = yield from proc.communicate()
+            DEBUG_PARALLEL_COUNT -= 1
     if output is not None:
         output = output.decode('utf8')
     _throw_if_error(proc, definition.executable_path, output)
