@@ -35,7 +35,10 @@ def checkout_tree(url, rev, dest):
     if not already_has_rev(repo_path, rev):
         print('git fetch ' + url)
         git('fetch', '--prune', git_dir=repo_path)
-    git('--work-tree=' + dest, 'checkout', rev, '--', '.', git_dir=repo_path)
+    # If we just use `git checkout rev -- .` here, we get an error when rev is
+    # an empty commit.
+    git('--work-tree=' + dest, 'read-tree', rev, git_dir=repo_path)
+    git('--work-tree=' + dest, 'checkout-index', '--all', git_dir=repo_path)
     checkout_subrepos(repo_path, rev, dest)
 
 

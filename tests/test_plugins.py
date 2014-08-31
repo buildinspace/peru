@@ -48,6 +48,11 @@ class PluginsTest(unittest.TestCase):
         GitRepo(self.content_dir)
         self.do_plugin_test("git", {"url": self.content_dir}, self.content)
 
+    def test_empty_git_rev(self):
+        empty_dir = shared.create_dir()
+        GitRepo(empty_dir)
+        self.do_plugin_test('git', {'url': empty_dir}, {})
+
     def test_hg_plugin(self):
         HgRepo(self.content_dir)
         self.do_plugin_test("hg", {"url": self.content_dir}, self.content)
