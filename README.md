@@ -180,9 +180,9 @@ up to date, and you'll still be able to reach old versions in your history.
 - `clean`
   - Remove imported files. Same `--force`/`-f` flag as `sync`.
 - `reup`
-  - Update plugin fields with new revision information. For `git`, `hg`, and
-    `svn`, this updates the `rev` field. For the `curl` plugin, this sets the
-    `sha1` field. You can optionally give specific module names as arguments.
+  - Update module fields with new revision information. For `git`, `hg`, and
+    `svn`, this updates the `rev` field. For `curl`, this sets the `sha1`
+    field. You can optionally give specific module names as arguments.
 - `copy`
   - Make a copy of all the files in a module. Either specify a directory to put
     them in, or peru will create a temp dir for you. This lets you take a look
