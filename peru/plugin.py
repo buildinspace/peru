@@ -1,10 +1,13 @@
 import asyncio
 from asyncio import subprocess
+import codecs
 from collections import namedtuple
 import contextlib
+import io
 import os
-from subprocess import CalledProcessError
+import sys
 import tempfile
+import textwrap
 
 import yaml
 
@@ -36,24 +39,22 @@ PluginContext = namedtuple(
 
 
 @asyncio.coroutine
-def plugin_fetch(plugin_context, module_type, module_fields, dest, *,
-                 capture_output=False, stderr_to_stdout=False):
+def plugin_fetch(plugin_context, module_type, module_fields, dest,
+                 display_handle):
     env = {'PERU_FETCH_DEST': dest}
-    stderr = subprocess.STDOUT if stderr_to_stdout else None
-    stdout = subprocess.PIPE if capture_output else None
-    output = yield from _plugin_job(plugin_context, module_type, module_fields,
-                                    'fetch', env, stdout, stderr)
-    return output
+    yield from _plugin_job(plugin_context, module_type, module_fields, 'fetch',
+                           env, display_handle)
 
 
 @asyncio.coroutine
-def plugin_get_reup_fields(plugin_context, module_type, module_fields):
+def plugin_get_reup_fields(plugin_context, module_type, module_fields,
+                           display_handle):
     with tempfile.NamedTemporaryFile(dir=plugin_context.tmp_dir) as tmp:
         output_path = tmp.name
         env = {'PERU_REUP_OUTPUT': output_path}
         yield from _plugin_job(
-            plugin_context, module_type, module_fields, 'reup', env=env,
-            stdout=subprocess.PIPE, stderr=None)
+            plugin_context, module_type, module_fields, 'reup', env,
+            display_handle)
         with open(output_path) as output_file:
             fields = yaml.safe_load(output_file) or {}
 
@@ -70,15 +71,24 @@ def plugin_get_reup_fields(plugin_context, module_type, module_fields):
 
 @asyncio.coroutine
 def _plugin_job(plugin_context, module_type, module_fields, command, env,
-                stdout, stderr):
+                display_handle):
     global DEBUG_PARALLEL_COUNT, DEBUG_PARALLEL_MAX
+
     definition = _get_plugin_definition(module_type, module_fields, command,
                                         plugin_context.plugin_paths)
+
     complete_env = _plugin_env(definition, module_fields)
     complete_env.update({
         'PERU_PLUGIN_CACHE': _plugin_cache_path(
             plugin_context, definition, module_fields)})
     complete_env.update(env)
+
+    # Use stdout's encoding, but provide a default for the case where stdout
+    # has been redirected to a StringIO. (This happens in tests.)
+    decoder = codecs.getincrementaldecoder(sys.stdout.encoding or 'utf8')(
+        errors='replace')
+    output_copy = io.StringIO()
+
     # Use a lock to protect the plugin cache. It would be unsafe for two jobs
     # to read/write to the same plugin cache dir at the same time. The lock
     # (and the cache dir) are both keyed off the module's "cache fields" as
@@ -93,22 +103,29 @@ def _plugin_job(plugin_context, module_type, module_fields, command, env,
         # DEFAULT_PARALLEL_FETCH_LIMIT. This also lets the user control
         # parallelism with the --jobs flag.
         with (yield from plugin_context.parallelism_semaphore):
-            DEBUG_PARALLEL_COUNT += 1
-            DEBUG_PARALLEL_MAX = max(DEBUG_PARALLEL_COUNT, DEBUG_PARALLEL_MAX)
-            proc = yield from asyncio.create_subprocess_exec(
-                definition.executable_path, cwd=plugin_context.cwd,
-                env=complete_env, stdout=stdout, stderr=stderr)
-            output, _ = yield from proc.communicate()
-            DEBUG_PARALLEL_COUNT -= 1
-    if output is not None:
-        output = output.decode('utf8')
-    _throw_if_error(proc, definition.executable_path, output)
-    return output
-
-
-def _throw_if_error(proc, command, output):
+            # Now that the job is really starting, open the output handle.
+            with display_handle:
+                DEBUG_PARALLEL_COUNT += 1
+                DEBUG_PARALLEL_MAX = max(
+                    DEBUG_PARALLEL_COUNT, DEBUG_PARALLEL_MAX)
+                proc = yield from asyncio.create_subprocess_exec(
+                    definition.executable_path, cwd=plugin_context.cwd,
+                    env=complete_env, stdout=subprocess.PIPE,
+                    stderr=subprocess.STDOUT, stdin=subprocess.PIPE)
+                proc.stdin.close()
+                while True:
+                    outputbytes = yield from proc.stdout.read(4096)
+                    if not outputbytes:
+                        break
+                    outputstr = decoder.decode(outputbytes)
+                    display_handle.write(outputstr)
+                    output_copy.write(outputstr)
+                yield from proc.wait()
+                DEBUG_PARALLEL_COUNT -= 1
     if proc.returncode != 0:
-        raise CalledProcessError(proc, command, output)
+        raise PluginRuntimeError(module_type, module_fields, proc.returncode,
+                                 output_copy.getvalue())
+    assert not decoder.buffer, 'decoder nonempty: ' + repr(decoder.buffer)
 
 
 def _format_module_fields(module_fields):
@@ -137,6 +154,15 @@ def _plugin_env(definition, module_fields):
     env.update(_format_module_fields(blank_module_vars))
     # Then add in the fields that are actually defined.
     env.update(_format_module_fields(module_fields))
+
+    # Disable buffering by default in Python subprocesses. Without this,
+    # plugins would usually need to do something like
+    #     print(..., flush=True)
+    # or else all their progress output would get held up in the stdout buffer
+    # until the plugin finally exited. Plugins in other languages will need to
+    # be careful about this.
+    env['PYTHONUNBUFFERED'] = 'true'
+
     return env
 
 
@@ -275,3 +301,15 @@ class PluginMetadataMissingError(PrintableError):
 
 class PluginPermissionsError(PrintableError):
     pass
+
+
+class PluginRuntimeError(PrintableError):
+    def __init__(self, type, fields, errorcode, output):
+        formatted_fields = '\n'.join('    {}: {}'.format(name, val)
+                                     for name, val in fields.items())
+        super().__init__(textwrap.dedent('''\
+            {} plugin exited with error code {}.
+            Fields:
+            {}
+            Output:
+            {}''').format(type, errorcode, formatted_fields, output))

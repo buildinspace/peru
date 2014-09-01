@@ -12,7 +12,7 @@ import urllib.parse
 CACHE_ROOT = os.environ['PERU_PLUGIN_CACHE']
 
 
-def git(*args, git_dir=None):
+def git(*args, git_dir=None, capture_output=False):
     # Avoid forgetting this arg.
     assert git_dir is None or os.path.isdir(git_dir)
 
@@ -21,11 +21,13 @@ def git(*args, git_dir=None):
         command.append('--git-dir={0}'.format(git_dir))
     command.extend(args)
 
+    stdout = subprocess.PIPE if capture_output else None
+    stderr = subprocess.STDOUT if capture_output else None
     process = subprocess.Popen(
         command,
         stdin=subprocess.PIPE,
-        stdout=subprocess.PIPE,
-        stderr=subprocess.STDOUT,
+        stdout=stdout,
+        stderr=stderr,
         universal_newlines=True)
     output, _ = process.communicate()
     if process.returncode != 0:
@@ -42,11 +44,12 @@ def has_clone(url):
     return os.path.exists(repo_cache_path(url))
 
 
-def clone_if_needed(url):
+def clone_if_needed(url, capture_output=False):
     repo_path = repo_cache_path(url)
     if not has_clone(url):
         try:
-            git('clone', '--mirror', url, repo_path)
+            git('clone', '--mirror', '--progress', url, repo_path,
+                capture_output=capture_output)
         except:
             # Delete the whole thing if the clone failed to avoid confusing the
             # cache.

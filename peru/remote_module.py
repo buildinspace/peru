@@ -44,7 +44,8 @@ class RemoteModule:
             with runtime.tmp_dir() as tmp_dir:
                 yield from plugin_fetch(
                     runtime.get_plugin_context(), self.type,
-                    self.plugin_fields, tmp_dir, capture_output=runtime.quiet)
+                    self.plugin_fields, tmp_dir,
+                    runtime.display.get_handle(self.name))
                 tree = runtime.cache.import_tree(tmp_dir)
         runtime.cache.keyval[key] = tree
         return tree
@@ -52,16 +53,19 @@ class RemoteModule:
     @asyncio.coroutine
     def reup(self, runtime):
         reup_fields = yield from plugin_get_reup_fields(
-            runtime.get_plugin_context(), self.type, self.plugin_fields)
-        if not runtime.quiet:
-            print('reup', self.name)
+            runtime.get_plugin_context(), self.type, self.plugin_fields,
+            runtime.display.get_handle(self.name))
+        output_lines = []
         for field, val in reup_fields.items():
             if (field not in self.plugin_fields or
                     val != self.plugin_fields[field]):
-                if not runtime.quiet:
-                    print('  {}: {}'.format(field, val))
+                output_lines.append('  {}: {}'.format(field, val))
                 set_module_field_in_file(
                     runtime.peru_file, self.yaml_name, field, val)
+        if output_lines and not runtime.quiet:
+            runtime.display.print('reup ' + self.name)
+            for line in output_lines:
+                runtime.display.print(line)
 
     def get_local_override(self, path):
         return LocalModule(self.imports, self.default_rule, path)

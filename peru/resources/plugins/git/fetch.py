@@ -18,7 +18,7 @@ def already_has_rev(repo, rev):
         # Make sure the rev exists.
         git('cat-file', '-e', rev, git_dir=repo)
         # Get the hash for the rev.
-        output = git('rev-parse', rev, git_dir=repo)
+        output = git('rev-parse', rev, git_dir=repo, capture_output=True)
     except:
         return False
 
@@ -54,7 +54,7 @@ def checkout_subrepos(repo_path, rev, work_tree):
         sub_full_path = os.path.join(work_tree, sub_relative_path)
         sub_url = parser[section]['url']
         ls_tree = git('ls-tree', '-r', rev, sub_relative_path,
-                      git_dir=repo_path)
+                      git_dir=repo_path, capture_output=True)
         sub_rev = ls_tree.split()[2]
         checkout_tree(sub_url, sub_rev, sub_full_path)
 

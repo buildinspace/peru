@@ -1,11 +1,13 @@
 import asyncio
 import collections
 import os
+import sys
 import tempfile
 
 from . import cache
 from . import compat
 from .error import PrintableError
+from . import display
 from .keyval import KeyVal
 from . import parser
 from . import plugin
@@ -58,6 +60,8 @@ class Runtime:
         # Use a different set of locks to make sure that plugin cache dirs are
         # only used by one job at a time.
         self.plugin_cache_locks = collections.defaultdict(asyncio.Lock)
+
+        self.display = get_display(args)
 
     def tmp_dir(self):
         dir = tempfile.TemporaryDirectory(dir=self._tmp_root)
@@ -120,3 +124,14 @@ def _get_parallel_fetch_limit(args):
         return parallel
     except:
         raise PrintableError('Argument to --jobs must be a number.')
+
+
+def get_display(args):
+    if args['--quiet']:
+        return display.QuietDisplay()
+    elif args['--verbose']:
+        return display.VerboseDisplay()
+    elif sys.stdout.isatty():
+        return display.FancyDisplay()
+    else:
+        return display.QuietDisplay()

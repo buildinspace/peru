@@ -1,6 +1,7 @@
 import asyncio
 from collections import defaultdict
 import hashlib
+import io
 import os
 import subprocess
 import textwrap
@@ -11,14 +12,25 @@ import shared
 from shared import SvnRepo, GitRepo, HgRepo, assert_contents
 
 
-def plugin_fetch(*args, **kwargs):
-    return asyncio.get_event_loop().run_until_complete(
-        plugin.plugin_fetch(*args, **kwargs))
+class TestDisplayHandle(io.StringIO):
+    def __enter__(self):
+        return self
+
+    def __exit__(self, *args):
+        pass
 
 
-def plugin_get_reup_fields(*args, **kwargs):
+def test_plugin_fetch(context, type, fields, dest):
+    handle = TestDisplayHandle()
+    asyncio.get_event_loop().run_until_complete(
+        plugin.plugin_fetch(context, type, fields, dest, handle))
+    return handle.getvalue()
+
+
+def test_plugin_get_reup_fields(context, type, fields):
+    handle = TestDisplayHandle()
     return asyncio.get_event_loop().run_until_complete(
-        plugin.plugin_get_reup_fields(*args, **kwargs))
+        plugin.plugin_get_reup_fields(context, type, fields, handle))
 
 
 class PluginsTest(unittest.TestCase):
@@ -36,12 +48,10 @@ class PluginsTest(unittest.TestCase):
             plugin_cache_locks=defaultdict(asyncio.Lock),
             tmp_dir=shared.create_dir())
 
-    def do_plugin_test(self, type, plugin_fields, expected_content, *,
-                       hide_stderr=False):
+    def do_plugin_test(self, type, plugin_fields, expected_content):
         fetch_dir = shared.create_dir()
-        output = plugin_fetch(
-            self.plugin_context, type, plugin_fields, fetch_dir,
-            capture_output=True, stderr_to_stdout=hide_stderr)
+        output = test_plugin_fetch(
+            self.plugin_context, type, plugin_fields, fetch_dir)
         assert_contents(fetch_dir, expected_content)
         return output
 
@@ -65,7 +75,7 @@ class PluginsTest(unittest.TestCase):
     def test_svn_plugin_reup(self):
         repo = SvnRepo(self.content_dir)
         plugin_fields = {'url': repo.url}
-        output = plugin_get_reup_fields(
+        output = test_plugin_get_reup_fields(
             self.plugin_context, 'svn', plugin_fields)
         self.assertDictEqual({'rev': '1'}, output)
 
@@ -141,7 +151,7 @@ class PluginsTest(unittest.TestCase):
         plugin_fields = {"url": self.content_dir}
         # By default, the git plugin should reup from master.
         expected_output = {"rev": master_head}
-        output = plugin_get_reup_fields(
+        output = test_plugin_get_reup_fields(
             self.plugin_context, "git", plugin_fields)
         self.assertDictEqual(expected_output, output)
         # Add some new commits and make sure master gets fetched properly.
@@ -150,14 +160,14 @@ class PluginsTest(unittest.TestCase):
         repo.run("git commit --allow-empty -m 'more junk'")
         new_master_head = repo.run("git rev-parse master")
         expected_output["rev"] = new_master_head
-        output = plugin_get_reup_fields(
+        output = test_plugin_get_reup_fields(
             self.plugin_context, "git", plugin_fields)
         self.assertDictEqual(expected_output, output)
         # Now specify the reup target explicitly.
         newbranch_head = repo.run("git rev-parse newbranch")
         plugin_fields["reup"] = "newbranch"
         expected_output["rev"] = newbranch_head
-        output = plugin_get_reup_fields(
+        output = test_plugin_get_reup_fields(
             self.plugin_context, "git", plugin_fields)
         self.assertDictEqual(expected_output, output)
 
@@ -167,7 +177,7 @@ class PluginsTest(unittest.TestCase):
         plugin_fields = {"url": self.content_dir}
         # By default, the hg plugin should reup from default.
         expected_output = {"rev": default_tip}
-        output = plugin_get_reup_fields(
+        output = test_plugin_get_reup_fields(
             self.plugin_context, "hg", plugin_fields)
         self.assertDictEqual(expected_output, output)
         # Add some new commits and make sure master gets fetched properly.
@@ -180,14 +190,14 @@ class PluginsTest(unittest.TestCase):
         repo.run("hg commit -A -m 'more junk'")
         new_default_tip = repo.run("hg identify --debug -r default").split()[0]
         expected_output["rev"] = new_default_tip
-        output = plugin_get_reup_fields(
+        output = test_plugin_get_reup_fields(
             self.plugin_context, "hg", plugin_fields)
         self.assertDictEqual(expected_output, output)
         # Now specify the reup target explicitly.
         newbranch_tip = repo.run("hg identify --debug -r tip").split()[0]
         plugin_fields["reup"] = "newbranch"
         expected_output["rev"] = newbranch_tip
-        output = plugin_get_reup_fields(
+        output = test_plugin_get_reup_fields(
             self.plugin_context, "hg", plugin_fields)
         self.assertDictEqual(expected_output, output)
 
@@ -206,8 +216,8 @@ class PluginsTest(unittest.TestCase):
         self.do_plugin_test('curl', fields, {'newname': 'content'})
         # Now run it with the wrong hash, and confirm that there's an error.
         fields['sha1'] = 'wrong hash'
-        with self.assertRaises(subprocess.CalledProcessError):
-            self.do_plugin_test('curl', fields, curl_content, hide_stderr=True)
+        with self.assertRaises(plugin.PluginRuntimeError):
+            self.do_plugin_test('curl', fields, curl_content)
 
     def test_curl_plugin_reup(self):
         curl_content = {'myfile': 'content'}
@@ -217,12 +227,12 @@ class PluginsTest(unittest.TestCase):
         digest.update(b'content')
         real_hash = digest.hexdigest()
         fields = {'url': test_url}
-        output = plugin_get_reup_fields(
+        output = test_plugin_get_reup_fields(
             self.plugin_context, 'curl', fields)
         self.assertDictEqual({'sha1': real_hash}, output)
         # Confirm that we get the same thing with a preexisting hash.
         fields['sha1'] = 'preexisting junk'
-        output = plugin_get_reup_fields(
+        output = test_plugin_get_reup_fields(
             self.plugin_context, 'curl', fields)
         self.assertDictEqual({'sha1': real_hash}, output)
 
@@ -238,12 +248,11 @@ class PluginsTest(unittest.TestCase):
     def test_bad_fields(self):
         # "path" field is required for rsync.
         with self.assertRaises(plugin.PluginModuleFieldError):
-            self.do_plugin_test("rsync", {}, self.content, hide_stderr=True)
+            self.do_plugin_test("rsync", {}, self.content)
         # Also test unrecognized field.
         bad_fields = {"path": self.content_dir, "junk": "junk"}
         with self.assertRaises(plugin.PluginModuleFieldError):
-            self.do_plugin_test("rsync", bad_fields, self.content,
-                                hide_stderr=True)
+            self.do_plugin_test("rsync", bad_fields, self.content)
 
     def test_plugin_paths(self):
         plugins_dir = shared.create_dir({
@@ -260,19 +269,19 @@ class PluginsTest(unittest.TestCase):
         os.chmod(os.path.join(plugins_dir, 'footype', 'reup.py'), 0o755)
         fetch_dir = shared.create_dir()
         context = self.plugin_context._replace(plugin_paths=(plugins_dir,))
-        output = plugin_fetch(context, 'footype', {}, fetch_dir,
-                              capture_output=True)
+        output = test_plugin_fetch(context, 'footype', {}, fetch_dir)
         self.assertEqual('hey there!\n', output)
-        output = plugin_get_reup_fields(context, 'footype', {})
+        output = test_plugin_get_reup_fields(context, 'footype', {})
         self.assertDictEqual({'name': 'val'}, output)
 
     def test_no_such_plugin(self):
         with self.assertRaises(plugin.PluginCandidateError):
-            plugin_fetch(self.plugin_context, 'nosuchtype!', {}, os.devnull)
+            test_plugin_fetch(
+                self.plugin_context, 'nosuchtype!', {}, os.devnull)
 
     def test_multiple_plugin_definitions(self):
         path1 = shared.create_dir({'footype/junk': 'junk'})
         path2 = shared.create_dir({'footype/junk': 'junk'})
         context = self.plugin_context._replace(plugin_paths=(path1, path2))
         with self.assertRaises(plugin.PluginCandidateError):
-            plugin_fetch(context, 'footype', {}, os.devnull)
+            test_plugin_fetch(context, 'footype', {}, os.devnull)
