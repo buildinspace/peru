@@ -44,7 +44,7 @@ class RemoteModule:
             with runtime.tmp_dir() as tmp_dir:
                 yield from plugin_fetch(
                     runtime.get_plugin_context(), self.type,
-                    self.plugin_fields, tmp_dir)
+                    self.plugin_fields, tmp_dir, capture_output=runtime.quiet)
                 tree = runtime.cache.import_tree(tmp_dir)
         runtime.cache.keyval[key] = tree
         return tree

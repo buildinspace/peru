@@ -15,7 +15,7 @@ from . import resolver
 __doc__ = """\
 Usage:
   peru sync [-fqv] [-j N]
-  peru reup [-qv] [-j N] [<modules>...]
+  peru reup [-fqv] [-j N] [--nosync] [<modules>...]
   peru override [list | add <module> <path> | delete <module>]
   peru copy [-fqv] [-j N] <target> [<dest>]
   peru clean [-f]
@@ -31,6 +31,7 @@ Commands:
 Options:
   -f --force     recklessly overwrite files
   -h --help      show help
+  --nosync       after reup, skip the sync
   -j N --jobs N  max number of parallel fetches
   -q --quiet     don't print anything
   -v --verbose   print all the things
@@ -94,6 +95,8 @@ class Main:
                 self.runtime, self.args['<modules>'])
         futures = [module.reup(self.runtime) for module in modules]
         yield from asyncio.gather(*futures)
+        if not self.args['--nosync']:
+            yield from self.do_sync()
 
     @command("override")
     def do_override(self):

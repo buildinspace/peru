@@ -17,7 +17,7 @@ class ReupIntegrationTest(unittest.TestCase):
                 url: {}
                 reup: otherbranch
             """)
-        self.foo_dir = shared.create_dir()
+        self.foo_dir = shared.create_dir({'a': 'b'})
         self.foo_repo = shared.GitRepo(self.foo_dir)
         self.foo_master = self.foo_repo.run("git rev-parse master")
         self.bar_dir = shared.create_dir()
@@ -31,13 +31,26 @@ class ReupIntegrationTest(unittest.TestCase):
     def tearDown(self):
         shared.assert_clean_tmp(os.path.join(self.test_dir, '.peru'))
 
-    def do_integration_test(self, args, expected_yaml, **kwargs):
-        run_peru_command(args, self.test_dir, **kwargs)
-        assert_contents(self.test_dir, {'peru.yaml': expected_yaml},
+    def test_single_reup(self):
+        expected = dedent('''\
+            git module foo:
+                url: {}
+                rev: {}
+
+            git module bar:
+                url: {}
+                reup: otherbranch
+            ''').format(self.foo_dir, self.foo_master, self.bar_dir)
+        run_peru_command(['reup', 'foo'], self.test_dir)
+        assert_contents(self.test_dir, {'peru.yaml': expected},
                         excludes=['.peru'])
 
-    def test_single_reup(self):
-        expected = dedent("""\
+    def test_reup_sync(self):
+        yaml_with_imports = dedent('''\
+            imports:
+                foo: ./
+                bar: ./
+
             git module foo:
                 url: {}
                 rev: {}
@@ -45,11 +58,17 @@ class ReupIntegrationTest(unittest.TestCase):
             git module bar:
                 url: {}
                 reup: otherbranch
-            """).format(self.foo_dir, self.foo_master, self.bar_dir)
-        self.do_integration_test(["reup", "foo", "--quiet"], expected)
+            ''').format(self.foo_dir, self.foo_master, self.bar_dir)
+        test_dir = shared.create_dir({'peru.yaml': yaml_with_imports})
+        # First reup without the sync.
+        run_peru_command(['reup', 'foo', '--nosync'], test_dir)
+        assert_contents(test_dir, {}, excludes=['.peru', 'peru.yaml'])
+        # Now do it with the sync.
+        run_peru_command(['reup', 'foo', '--quiet'], test_dir)
+        assert_contents(test_dir, {'a': 'b'}, excludes=['.peru', 'peru.yaml'])
 
     def test_reup_all(self):
-        expected = dedent("""\
+        expected = dedent('''\
             git module foo:
                 url: {}
                 rev: {}
@@ -58,6 +77,8 @@ class ReupIntegrationTest(unittest.TestCase):
                 url: {}
                 reup: otherbranch
                 rev: {}
-            """).format(self.foo_dir, self.foo_master, self.bar_dir,
+            ''').format(self.foo_dir, self.foo_master, self.bar_dir,
                         self.bar_otherbranch)
-        self.do_integration_test(["reup", "--quiet"], expected)
+        run_peru_command(['reup'], self.test_dir)
+        assert_contents(self.test_dir, {'peru.yaml': expected},
+                        excludes=['.peru'])
