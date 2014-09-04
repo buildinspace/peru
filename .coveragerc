@@ -2,4 +2,4 @@
 source = peru
 
 [report]
-omit = third-party, peru/plugin_shared.py
+omit = third-party
