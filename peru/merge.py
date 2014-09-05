@@ -1,5 +1,6 @@
+import textwrap
+
 from .cache import compute_key, MergeConflictError
-from . import compat
 
 
 def merge_imports_tree(cache, imports, target_trees, base_tree=None):
@@ -29,7 +30,7 @@ def merge_imports_tree(cache, imports, target_trees, base_tree=None):
                 unified_tree, target_trees[target], path)
         except MergeConflictError as e:
             e.message = "Merge conflict in import '{}' at '{}':\n\n{}".format(
-                target, path, compat.indent(e.message, "  "))
+                target, path, textwrap.indent(e.message, "  "))
             raise
     cache.keyval[key] = unified_tree
     return unified_tree

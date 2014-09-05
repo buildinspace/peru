@@ -87,7 +87,7 @@ class ParallelismTest(unittest.TestCase):
         shared.run_peru_command(['sync'], test_dir)
         assert_parallel(1)
 
-    def test_indentical_plugin_cache_fields(self):
+    def test_identical_plugin_cache_fields(self):
         # Plugins that use caching also need to avoid running in parallel, if
         # their cache directories are the same. The noop_cache plugin (created
         # for this test) uses the path field (but not the nonce field) in its

@@ -15,8 +15,3 @@ class CompatTest(unittest.TestCase):
         # Creating the dir again should be a no-op even though the permissions
         # have changed.
         compat.makedirs(foo_dir)
-
-    def test_indent(self):
-        self.assertEqual("  a", compat.indent("a", "  "))
-        self.assertEqual("  a\n", compat.indent("a\n", "  "))
-        self.assertEqual("  a\n\n  b", compat.indent("a\n\nb", "  "))
