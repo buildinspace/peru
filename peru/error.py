@@ -1,3 +1,3 @@
 class PrintableError(Exception):
-    def __init__(self, msg=None):
-        self.msg = msg
+    def __init__(self, message):
+        self.message = message

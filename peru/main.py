@@ -68,7 +68,7 @@ def find_matching_command(args):
 
 class Main:
     def run(self, argv, env):
-        self.args = docopt.docopt(__doc__, argv, help=False)
+        self.args = parse_argv(argv)
 
         matching_command = find_matching_command(self.args)
         if matching_command:
@@ -130,6 +130,10 @@ class Main:
             self.runtime, parser.build_imports({}))
 
 
+def parse_argv(argv):
+    return docopt.docopt(__doc__, argv, help=False)
+
+
 def print_red(*args, **kwargs):
     if sys.stdout.isatty():
         sys.stdout.write("\x1b[31m")
@@ -146,6 +150,7 @@ def main(argv=None, env=None):
     try:
         Main().run(argv, env)
     except PrintableError as e:
-        if e.msg:
-            print_red(e.msg)
+        if parse_argv(argv)['--verbose']:
+            raise  # Just allow the stacktrace to print if verbose.
+        print_red(e.message)
         sys.exit(1)

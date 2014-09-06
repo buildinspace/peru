@@ -28,8 +28,8 @@ def merge_imports_tree(cache, imports, target_trees, base_tree=None):
             unified_tree = cache.merge_trees(
                 unified_tree, target_trees[target], path)
         except MergeConflictError as e:
-            e.msg = "Merge conflict in import '{}' at '{}':\n\n{}".format(
-                target, path, compat.indent(e.msg, "  "))
+            e.message = "Merge conflict in import '{}' at '{}':\n\n{}".format(
+                target, path, compat.indent(e.message, "  "))
             raise
     cache.keyval[key] = unified_tree
     return unified_tree
