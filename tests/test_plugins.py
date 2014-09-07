@@ -3,6 +3,7 @@ from collections import defaultdict
 import hashlib
 import os
 import subprocess
+import textwrap
 import unittest
 
 import peru.plugin as plugin
@@ -32,7 +33,8 @@ class PluginsTest(unittest.TestCase):
             plugin_paths=(),
             parallelism_semaphore=asyncio.BoundedSemaphore(
                 plugin.DEFAULT_PARALLEL_FETCH_LIMIT),
-            plugin_cache_locks=defaultdict(asyncio.Lock))
+            plugin_cache_locks=defaultdict(asyncio.Lock),
+            tmp_dir=shared.create_dir())
 
     def do_plugin_test(self, type, plugin_fields, expected_content, *,
                        hide_stderr=False):
@@ -247,8 +249,12 @@ class PluginsTest(unittest.TestCase):
         plugins_dir = shared.create_dir({
             'footype/fetch.py':
                 '#! /usr/bin/env python3\nprint("hey there!")\n',
-            'footype/reup.py':
-                '#! /usr/bin/env python3\nprint("name: val")\n',
+            'footype/reup.py': textwrap.dedent('''\
+                #! /usr/bin/env python3
+                import os
+                outfile = os.environ['PERU_REUP_OUTPUT']
+                print("name: val", file=open(outfile, 'w'))
+                '''),
             'footype/plugin.yaml': ''})
         os.chmod(os.path.join(plugins_dir, 'footype', 'fetch.py'), 0o755)
         os.chmod(os.path.join(plugins_dir, 'footype', 'reup.py'), 0o755)

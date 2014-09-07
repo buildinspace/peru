@@ -4,6 +4,7 @@ from collections import namedtuple
 import contextlib
 import os
 from subprocess import CalledProcessError
+import tempfile
 
 import yaml
 
@@ -31,7 +32,7 @@ PluginDefinition = namedtuple(
 PluginContext = namedtuple(
     'PluginContext',
     ['cwd', 'plugin_cache_root', 'plugin_paths', 'parallelism_semaphore',
-     'plugin_cache_locks'])
+     'plugin_cache_locks', 'tmp_dir'])
 
 
 @asyncio.coroutine
@@ -47,10 +48,14 @@ def plugin_fetch(plugin_context, module_type, module_fields, dest, *,
 
 @asyncio.coroutine
 def plugin_get_reup_fields(plugin_context, module_type, module_fields):
-    output = yield from _plugin_job(
-        plugin_context, module_type, module_fields, 'reup', env={},
-        stdout=subprocess.PIPE, stderr=None)
-    fields = yaml.safe_load(output) or {}
+    with tempfile.NamedTemporaryFile(dir=plugin_context.tmp_dir) as tmp:
+        output_path = tmp.name
+        env = {'PERU_REUP_OUTPUT': output_path}
+        yield from _plugin_job(
+            plugin_context, module_type, module_fields, 'reup', env=env,
+            stdout=subprocess.PIPE, stderr=None)
+        with open(output_path) as output_file:
+            fields = yaml.safe_load(output_file) or {}
 
     for key, value in fields.items():
         if not isinstance(key, str):

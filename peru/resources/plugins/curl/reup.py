@@ -4,6 +4,7 @@ import hashlib
 import os
 import urllib.request
 
+reup_output = os.environ['PERU_REUP_OUTPUT']
 
 url = os.environ['PERU_MODULE_URL']
 sha1 = os.environ['PERU_MODULE_SHA1']
@@ -16,4 +17,5 @@ with urllib.request.urlopen(url) as request:
             break
         digest.update(buf)
 
-print('sha1:', digest.hexdigest())
+with open(reup_output, 'w') as output_file:
+    print('sha1:', digest.hexdigest(), file=output_file)

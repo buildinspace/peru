@@ -5,6 +5,9 @@ import sys
 
 from svn_plugin_shared import svn
 
+output_file = os.environ['PERU_REUP_OUTPUT']
+url = os.environ['PERU_MODULE_URL']
+
 
 def remote_head_rev(url):
     info = svn('info', url).split('\n')
@@ -15,5 +18,7 @@ def remote_head_rev(url):
     print('svn revision info not found', file=sys.stderr)
     sys.exit(1)
 
-# Quote Subversion revisions to prevent integer intepretation.
-print('rev:', '"{}"'.format(remote_head_rev(os.environ['PERU_MODULE_URL'])))
+rev = remote_head_rev(url)
+with open(output_file, 'w') as f:
+    # Quote Subversion revisions to prevent integer intepretation.
+    print('rev:', '"{}"'.format(rev), file=f)
