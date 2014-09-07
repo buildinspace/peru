@@ -1,3 +1,4 @@
+import os
 from textwrap import dedent
 import unittest
 
@@ -26,6 +27,9 @@ class ReupIntegrationTest(unittest.TestCase):
         self.bar_otherbranch = self.bar_repo.run("git rev-parse otherbranch")
         self.start_yaml = template.format(self.foo_dir, self.bar_dir)
         self.test_dir = shared.create_dir({"peru.yaml": self.start_yaml})
+
+    def tearDown(self):
+        shared.assert_clean_tmp(os.path.join(self.test_dir, '.peru'))
 
     def do_integration_test(self, args, expected_yaml, **kwargs):
         run_peru_command(args, self.test_dir, **kwargs)

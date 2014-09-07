@@ -91,6 +91,17 @@ def assert_contents(dir, expected_contents, excludes=()):
                              fromfile='expected', tofile='actual')).strip())
 
 
+def assert_clean_tmp(peru_dir):
+    tmp_root = os.path.join(peru_dir, 'tmp')
+    if os.path.exists(tmp_root):
+        tmpfiles = os.listdir(tmp_root)
+        assert not tmpfiles, 'main tmp dir is not clean: ' + str(tmpfiles)
+    cache_tmp_root = os.path.join(peru_dir, 'cache', 'tmp')
+    if os.path.exists(cache_tmp_root):
+        tmpfiles = os.listdir(cache_tmp_root)
+        assert not tmpfiles, 'cache tmp dir is not clean: ' + str(tmpfiles)
+
+
 def run_peru_command(args, test_dir, *, env_vars=None):
     old_cwd = os.getcwd()
     old_stdout = sys.stdout

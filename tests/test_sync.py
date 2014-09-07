@@ -25,16 +25,7 @@ class SyncTest(unittest.TestCase):
         self.peru_dir = os.path.join(self.test_dir, '.peru')
 
     def tearDown(self):
-        # Make sure that everything in the tmp dirs has been cleaned up.
-        tmp_root = os.path.join(self.peru_dir, "tmp")
-        if os.path.exists(tmp_root):
-            tmpfiles = os.listdir(tmp_root)
-            self.assertListEqual([], tmpfiles, msg="main tmp dir is not clean")
-        cache_tmp_root = os.path.join(self.peru_dir, "cache", "tmp")
-        if os.path.exists(cache_tmp_root):
-            tmpfiles = os.listdir(cache_tmp_root)
-            self.assertListEqual([], tmpfiles,
-                                 msg="cache tmp dir is not clean")
+        shared.assert_clean_tmp(self.peru_dir)
 
     def write_peru_yaml(self, template):
         peru_yaml = dedent(template.format(self.module_dir))
