@@ -60,6 +60,13 @@ class PluginsTest(unittest.TestCase):
         repo = SvnRepo(self.content_dir)
         self.do_plugin_test('svn', {'url': repo.url}, self.content)
 
+    def test_svn_plugin_reup(self):
+        repo = SvnRepo(self.content_dir)
+        plugin_fields = {'url': repo.url}
+        output = plugin_get_reup_fields(
+            self.plugin_context, 'svn', plugin_fields)
+        self.assertDictEqual({'rev': '1'}, output)
+
     def test_git_plugin_with_submodule(self):
         content_repo = GitRepo(self.content_dir)
         submodule_dir = shared.create_dir({'another': 'file'})
