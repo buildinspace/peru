@@ -110,7 +110,7 @@ def run_peru_command(args, test_dir, *, env_vars=None):
 
 
 class Repo:
-    def __init__(self, path=None):
+    def __init__(self, path):
         self.path = path
 
     def run(self, command):
@@ -141,3 +141,15 @@ class HgRepo(Repo):
                 username = peru <peru>
                 """))
         self.run("hg commit -A -m 'first commit'")
+
+
+class SvnRepo(Repo):
+    def __init__(self, content_dir):
+        # SVN can't create a repo "in place" like git or hg.
+        repo_dir = create_dir()
+        super().__init__(repo_dir)
+        self.url = 'file://' + repo_dir
+
+        self.run('svnadmin create .')
+        self.run('svn import {} {} -m "initial commit"'.format(
+            content_dir, self.url))
