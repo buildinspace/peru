@@ -11,6 +11,6 @@ svn(
     'export',
     '--force',
     '--revision',
-    os.environ.get('PERU_MODULE_REV') or 'HEAD',
+    os.environ['PERU_MODULE_REV'] or 'HEAD',
     os.environ['PERU_MODULE_URL'],
     os.environ['PERU_FETCH_DEST'])

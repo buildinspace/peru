@@ -61,5 +61,5 @@ def checkout_subrepos(repo_path, rev, work_tree):
 
 checkout_tree(
     os.environ['PERU_MODULE_URL'],
-    os.environ.get('PERU_MODULE_REV') or 'master',
+    os.environ['PERU_MODULE_REV'] or 'master',
     os.environ['PERU_FETCH_DEST'])

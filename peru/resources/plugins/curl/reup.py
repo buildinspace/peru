@@ -6,7 +6,7 @@ import urllib.request
 
 
 url = os.environ['PERU_MODULE_URL']
-sha1 = os.environ.get('PERU_MODULE_SHA1')
+sha1 = os.environ['PERU_MODULE_SHA1']
 
 digest = hashlib.sha1()
 with urllib.request.urlopen(url) as request:

@@ -126,7 +126,11 @@ def _validate_plugin_definition(definition, module_fields):
 
 def _plugin_env(definition, module_fields):
     env = os.environ.copy()
-    env.update({field: '' for field in definition.optional_fields})
+    # First, blank out all module field vars.  This prevents the calling
+    # environment from leaking in when optional fields are undefined.
+    blank_module_vars = {field: '' for field in definition.fields}
+    env.update(_format_module_fields(blank_module_vars))
+    # Then add in the fields that are actually defined.
     env.update(_format_module_fields(module_fields))
     return env
 

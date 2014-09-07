@@ -9,12 +9,12 @@ from curl_plugin_shared import get_request_filename
 
 
 url = os.environ['PERU_MODULE_URL']
-sha1 = os.environ.get('PERU_MODULE_SHA1')
-filename = os.environ.get('PERU_MODULE_FILENAME')
+sha1 = os.environ['PERU_MODULE_SHA1']
+filename = os.environ['PERU_MODULE_FILENAME']
 
 digest = hashlib.sha1()
 with urllib.request.urlopen(url) as request:
-    if filename is None:
+    if not filename:
         filename = get_request_filename(request)
     full_filepath = os.path.join(os.environ['PERU_FETCH_DEST'], filename)
     with open(full_filepath, 'wb') as outfile:
