@@ -28,7 +28,7 @@ But peru is all about fetching, and that lets us get a few things right:
 There's another class of tools, like git submodules and Google's
 [Repo](http://source.android.com/source/developing.html), that do fetching as
 part of your source control. These tend to break sweet features like `git
-bisect`.  Peru leaves your source control the hell alone.
+bisect`.  Peru leaves your source control the heck alone.
 
 ## Installation
 
@@ -54,7 +54,7 @@ git module rack_example:
 
 Now run `peru sync`.
 
-#### What the hell just happened?
+#### What the heck just happened?
 
 Peru cloned Rack for you, and imported a copy of it under the `rack` directory.
 It also created a magical directory called `.peru` to hold that clone and some
