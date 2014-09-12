@@ -18,7 +18,7 @@ Usage:
   peru reup [-fqv] [-j N] [--nosync] [<modules>...]
   peru override [list | add <module> <path> | delete <module>]
   peru copy [-fqv] [-j N] <target> [<dest>]
-  peru clean [-f]
+  peru clean [-fv]
   peru (help | --help | --version)
 
 Commands:
