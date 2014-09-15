@@ -137,13 +137,24 @@ def _validate_plugin_definition(definition, module_fields):
     if not os.access(definition.executable_path, os.X_OK):
         raise PluginPermissionsError(
             'Plugin command is not executable: ' + definition.executable_path)
-    if not all(isinstance(field, str) for field in definition.fields):
+
+    field_names_not_strings = [name for name in definition.fields
+                               if not isinstance(name, str)]
+    if field_names_not_strings:
         raise PluginModuleFieldError(
-            'Metadata field names must be strings.')
-    if not all(field in module_fields for field in definition.required_fields):
-        raise PluginModuleFieldError('Required module field missing.')
-    if any(key not in definition.fields for key in module_fields.keys()):
-        raise PluginModuleFieldError('Unexpected module field.')
+            'Metadata field names must be strings: ' +
+            ', '.join(repr(name) for name in field_names_not_strings))
+
+    missing_module_fields = definition.required_fields - module_fields.keys()
+    if missing_module_fields:
+        raise PluginModuleFieldError(
+            'Required module field missing: ' +
+            ', '.join(missing_module_fields))
+
+    unknown_module_fields = module_fields.keys() - definition.fields
+    if unknown_module_fields:
+        raise PluginModuleFieldError(
+            'Unknown module fields: ' + ', '.join(unknown_module_fields))
 
 
 def _plugin_env(definition, module_fields):

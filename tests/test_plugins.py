@@ -245,14 +245,24 @@ class PluginsTest(unittest.TestCase):
     def test_empty_plugin(self):
         self.do_plugin_test("empty", {}, {})
 
-    def test_bad_fields(self):
-        # "path" field is required for rsync.
-        with self.assertRaises(plugin.PluginModuleFieldError):
-            self.do_plugin_test("rsync", {}, self.content)
-        # Also test unrecognized field.
-        bad_fields = {"path": self.content_dir, "junk": "junk"}
-        with self.assertRaises(plugin.PluginModuleFieldError):
-            self.do_plugin_test("rsync", bad_fields, self.content)
+    def test_missing_required_field(self):
+        # The 'path' field is required for rsync.
+        try:
+            self.do_plugin_test('rsync', {}, self.content)
+        except plugin.PluginModuleFieldError as e:
+            assert 'path' in e.message, 'message should mention missing field'
+        else:
+            assert False, 'should throw PluginModuleFieldError'
+
+    def test_unknown_field(self):
+        # The 'junk' field isn't valid for rsync.
+        bad_fields = {'path': self.content_dir, 'junk': 'junk'}
+        try:
+            self.do_plugin_test('rsync', bad_fields, self.content)
+        except plugin.PluginModuleFieldError as e:
+            assert 'junk' in e.message, 'message should mention bad field'
+        else:
+            assert False, 'should throw PluginModuleFieldError'
 
     def test_plugin_paths(self):
         plugins_dir = shared.create_dir({

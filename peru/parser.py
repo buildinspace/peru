@@ -95,10 +95,16 @@ def _build_remote_module(name, type, blob, yaml_name):
     _validate_name(name)
     default_rule = _extract_default_rule(blob)
     plugin_fields = blob
-    assert all(isinstance(val, str) for val in plugin_fields.values()), \
-        "all plugin fields must be strings"
-    assert all(not re.findall("\s", name) for name in plugin_fields), \
-        "whitespace is not allowed in plugin field names"
+
+    # Do some validation on the module fields.
+    non_string_fields = [(key, val) for key, val in plugin_fields.items()
+                         if not isinstance(key, str)
+                         or not isinstance(val, str)]
+    if non_string_fields:
+        raise ParserError(
+            'Module field names and values must be strings: ' +
+            ', '.join(repr(pair) for pair in non_string_fields))
+
     module = RemoteModule(name, type, default_rule, plugin_fields, yaml_name)
     return module
 

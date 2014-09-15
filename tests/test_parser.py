@@ -138,3 +138,27 @@ class ParserTest(unittest.TestCase):
         # But should fail with duplicates.
         with self.assertRaises(ParserError):
             parse_string(input.format("foo", "foo"))
+
+    def test_non_string_module_field_name(self):
+        input = dedent('''\
+            git module foo:
+                12345: bar
+            ''')
+        try:
+            parse_string(input)
+        except ParserError as e:
+            assert '12345' in e.message
+        else:
+            assert False, 'expected ParserError'
+
+    def test_non_string_module_field_value(self):
+        input = dedent('''\
+            git module foo:
+                bar: 4567
+            ''')
+        try:
+            parse_string(input)
+        except ParserError as e:
+            assert '4567' in e.message
+        else:
+            assert False, 'expected ParserError'
