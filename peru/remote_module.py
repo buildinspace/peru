@@ -2,33 +2,20 @@ import asyncio
 
 from .cache import compute_key
 from .edit_yaml import set_module_field_in_file
-from .merge import merge_imports_tree
 from .local_module import LocalModule
 from .plugin import plugin_fetch, plugin_get_reup_fields
-from . import resolver
 
 
 class RemoteModule:
-    def __init__(self, name, type, imports, default_rule, plugin_fields,
-                 yaml_name):
+    def __init__(self, name, type, default_rule, plugin_fields, yaml_name):
         self.name = name
         self.type = type
-        self.imports = imports
         self.default_rule = default_rule
         self.plugin_fields = plugin_fields
         self.yaml_name = yaml_name  # used by reup to edit the markup
 
     @asyncio.coroutine
     def get_tree(self, runtime):
-        # Fetch this module and its dependencies in parallel.
-        fetch_tree, target_trees = yield from asyncio.gather(
-            self._get_fetch_tree(runtime),
-            resolver.get_trees(runtime, self.imports.targets))
-        return merge_imports_tree(
-            runtime.cache, self.imports, target_trees, fetch_tree)
-
-    @asyncio.coroutine
-    def _get_fetch_tree(self, runtime):
         key = compute_key({
             "type": self.type,
             "plugin_fields": self.plugin_fields,
@@ -68,4 +55,4 @@ class RemoteModule:
                 runtime.display.print(line)
 
     def get_local_override(self, path):
-        return LocalModule(self.imports, self.default_rule, path)
+        return LocalModule(None, self.default_rule, path)

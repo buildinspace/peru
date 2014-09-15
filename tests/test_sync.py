@@ -201,9 +201,7 @@ class SyncTest(unittest.TestCase):
 
         cp module foo:
             path: {}
-            imports:
-                x: subdir
-            build: mv foo subdir/builtfoo
+            build: mkdir -p subdir && mv foo subdir/builtfoo
             export: subdir
 
         # Test that this rule gets run in the right place (e.g. in the
@@ -228,24 +226,24 @@ class SyncTest(unittest.TestCase):
         output = run_peru_command(['override', 'list'], self.test_dir)
         self.assertEqual(output, 'foo: {}\n'.format(override_dir))
         # Run the sync and confirm that the override worked.
-        self.do_integration_test(['sync'], {'builtfoo': 'override!', 'x': 'x'})
+        self.do_integration_test(['sync'], {'builtfoo': 'override!'})
         # Delete the override.
         run_peru_command(['override', 'delete', 'foo'], self.test_dir)
         # Confirm that the override was deleted.
         output = run_peru_command(['override'], self.test_dir)
         self.assertEqual(output, '')
         # Rerun the sync and confirm the original content is back.
-        self.do_integration_test(['sync'], {'builtfoo': 'bar!', 'x': 'x'})
+        self.do_integration_test(['sync'], {'builtfoo': 'bar!'})
 
     def test_override_after_regular_sync(self):
         self.write_peru_yaml(self.override_test_yaml)
         # First, do a regular sync.
-        self.do_integration_test(['sync'], {'builtfoo': 'bar!', 'x': 'x'})
+        self.do_integration_test(['sync'], {'builtfoo': 'bar!'})
         # Now, add an override, and confirm that the new sync works.
         override_dir = shared.create_dir({'foo': 'override'})
         run_peru_command(['override', 'add', 'foo', override_dir],
                          self.test_dir)
-        self.do_integration_test(['sync'], {'builtfoo': 'override!', 'x': 'x'})
+        self.do_integration_test(['sync'], {'builtfoo': 'override!'})
 
     def test_relative_override_from_subdir(self):
         self.write_peru_yaml('''\

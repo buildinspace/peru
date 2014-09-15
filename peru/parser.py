@@ -93,15 +93,13 @@ def _extract_remote_modules(blob, scope):
 
 def _build_remote_module(name, type, blob, yaml_name):
     _validate_name(name)
-    imports = _extract_imports(blob)
     default_rule = _extract_default_rule(blob)
     plugin_fields = blob
     assert all(isinstance(val, str) for val in plugin_fields.values()), \
         "all plugin fields must be strings"
     assert all(not re.findall("\s", name) for name in plugin_fields), \
         "whitespace is not allowed in plugin field names"
-    module = RemoteModule(name, type, imports, default_rule, plugin_fields,
-                          yaml_name)
+    module = RemoteModule(name, type, default_rule, plugin_fields, yaml_name)
     return module
 
 

@@ -197,7 +197,6 @@ up to date, and you'll still be able to reach old versions in your history.
   - fields: `url` `[rev]` `[reup]`
 - `curl` - actually powered by Python's `urllib`
   - fields: `url` `[filename]` `[sha1]`
-- `empty` - when you want a module that just `imports` other modules
 - A few others mostly for testing purposes. See `rsync` for an example
   implemented in Bash.
 
@@ -214,7 +213,6 @@ up to date, and you'll still be able to reach old versions in your history.
 - Modules can take a `build` field, which is an arbitrary shell command that
   gets run after they're fetched. This is done "in outer space" and cached, so
   that only the final result makes it into your project.
-- Modules can have `imports` of their own, to fetch dependencies for building.
 - You can define named rules that take the same general fields as modules, so
   that you can build one module in multiple ways. These use an awkward,
   undocumented syntax.

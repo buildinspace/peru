@@ -24,11 +24,10 @@ class LocalModule:
         compat.makedirs(self.peru_dir)
 
     @asyncio.coroutine
-    def apply_imports(self, runtime, imports=None):
-        # Allow the caller to supply specific imports, e.g. empty imports for
-        # `peru clean`.
+    def apply_imports(self, runtime, custom_imports=None):
+        imports = custom_imports or self.imports
         if imports is None:
-            imports = self.imports
+            return
 
         target_trees = yield from resolver.get_trees(runtime, imports.targets)
         imports_tree = merge_imports_tree(runtime.cache, imports, target_trees)

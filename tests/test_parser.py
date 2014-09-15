@@ -41,9 +41,6 @@ class ParserTest(unittest.TestCase):
             sometype module foo:
                 url: http://www.example.com/
                 rev: abcdefg
-                imports:
-                    wham: bam/
-                    thank: you/maam
             """)
         result = parse_string(input)
         self.assertIn("foo", result.scope)
@@ -51,8 +48,6 @@ class ParserTest(unittest.TestCase):
         self.assertIsInstance(module, RemoteModule)
         self.assertEqual(module.name, "foo")
         self.assertEqual(module.type, "sometype")
-        self.assertEqual(module.imports, build_imports(
-            {'wham': 'bam/', 'thank': 'you/maam'}))
         self.assertDictEqual(module.plugin_fields,
                              {"url": "http://www.example.com/",
                               "rev": "abcdefg"})
