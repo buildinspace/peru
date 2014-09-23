@@ -1,21 +1,17 @@
 #! /usr/bin/env python3
 
-import hashlib
 import os
 import urllib.request
+
+import curl_plugin_shared
 
 reup_output = os.environ['PERU_REUP_OUTPUT']
 
 url = os.environ['PERU_MODULE_URL']
 sha1 = os.environ['PERU_MODULE_SHA1']
 
-digest = hashlib.sha1()
 with urllib.request.urlopen(url) as request:
-    while True:
-        buf = request.read(4096)
-        if not buf:
-            break
-        digest.update(buf)
+    digest = curl_plugin_shared.download_file(request, None)
 
 with open(reup_output, 'w') as output_file:
-    print('sha1:', digest.hexdigest(), file=output_file)
+    print('sha1:', digest, file=output_file)

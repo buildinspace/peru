@@ -217,7 +217,7 @@ class PluginsTest(unittest.TestCase):
         # Now run it with the wrong hash, and confirm that there's an error.
         fields['sha1'] = 'wrong hash'
         with self.assertRaises(plugin.PluginRuntimeError):
-            self.do_plugin_test('curl', fields, curl_content)
+            self.do_plugin_test('curl', fields, {'newname': 'content'})
 
     def test_curl_plugin_reup(self):
         curl_content = {'myfile': 'content'}
