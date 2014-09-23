@@ -6,7 +6,7 @@ import subprocess
 import textwrap
 
 
-def hg(*args, hg_dir=None):
+def hg(*args, hg_dir=None, capture_output=False):
     # Avoid forgetting this arg.
     assert hg_dir is None or os.path.isdir(hg_dir)
 
@@ -16,9 +16,10 @@ def hg(*args, hg_dir=None):
         command.append(hg_dir)
     command.extend(args)
 
-    process = subprocess.Popen(
-        command, stdin=subprocess.PIPE, stdout=subprocess.PIPE,
-        stderr=subprocess.STDOUT, universal_newlines=True)
+    stdout = subprocess.PIPE if capture_output else None
+    stderr = subprocess.STDOUT if capture_output else None
+    process = subprocess.Popen(command, stdin=subprocess.PIPE, stdout=stdout,
+                               stderr=stderr, universal_newlines=True)
     output, _ = process.communicate()
     if process.returncode != 0:
         raise RuntimeError(
@@ -58,7 +59,8 @@ def configure(repo_path):
 
 def already_has_rev(repo, rev):
     try:
-        output = hg('identify', '--debug', '--rev', rev, hg_dir=repo)
+        output = hg('identify', '--debug', '--rev', rev, hg_dir=repo,
+                    capture_output=True)
     except:
         return False
 

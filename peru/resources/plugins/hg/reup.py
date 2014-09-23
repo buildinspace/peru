@@ -13,7 +13,8 @@ reup = os.environ['PERU_MODULE_REUP'] or 'default'
 
 hg_plugin_shared.clone_if_needed(url, cache_path)
 hg('pull', hg_dir=cache_path)
-output = hg('identify', '--debug', '--rev', reup, hg_dir=cache_path)
+output = hg('identify', '--debug', '--rev', reup, hg_dir=cache_path,
+            capture_output=True)
 
 with open(reup_output, 'w') as output_file:
     print('rev:', output.split()[0], file=output_file)
