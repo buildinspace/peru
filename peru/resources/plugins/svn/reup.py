@@ -10,7 +10,7 @@ url = os.environ['PERU_MODULE_URL']
 
 
 def remote_head_rev(url):
-    info = svn('info', url).split('\n')
+    info = svn('info', url, capture_output=True).split('\n')
     for item in info:
         if item.startswith('Revision: '):
             return item.split()[1]
