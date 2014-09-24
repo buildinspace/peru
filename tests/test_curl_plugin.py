@@ -7,10 +7,10 @@ import unittest
 
 import peru
 
-CURL_SHARED_PATH = abspath(
+curl_plugin_path = abspath(
     join(dirname(peru.__file__), 'resources', 'plugins', 'curl',
-         'curl_plugin_shared.py'))
-curl_plugin_shared = imp.load_source('_curl_plugin_shared', CURL_SHARED_PATH)
+         'curl_plugin.py'))
+curl_plugin = imp.load_source('_curl_plugin', curl_plugin_path)
 
 
 class MockRequest:
@@ -28,25 +28,25 @@ class MockRequest:
 
 class CurlPluginTest(unittest.TestCase):
     def test_format_bytes(self):
-        self.assertEqual('0B', curl_plugin_shared.format_bytes(0))
-        self.assertEqual('999B', curl_plugin_shared.format_bytes(999))
-        self.assertEqual('1.0KB', curl_plugin_shared.format_bytes(1000))
-        self.assertEqual('999.9KB', curl_plugin_shared.format_bytes(999999))
-        self.assertEqual('1.0MB', curl_plugin_shared.format_bytes(10**6))
-        self.assertEqual('1.0GB', curl_plugin_shared.format_bytes(10**9))
-        self.assertEqual('1000.0GB', curl_plugin_shared.format_bytes(10**12))
+        self.assertEqual('0B', curl_plugin.format_bytes(0))
+        self.assertEqual('999B', curl_plugin.format_bytes(999))
+        self.assertEqual('1.0KB', curl_plugin.format_bytes(1000))
+        self.assertEqual('999.9KB', curl_plugin.format_bytes(999999))
+        self.assertEqual('1.0MB', curl_plugin.format_bytes(10**6))
+        self.assertEqual('1.0GB', curl_plugin.format_bytes(10**9))
+        self.assertEqual('1000.0GB', curl_plugin.format_bytes(10**12))
 
     def test_get_request_filename(self):
         request = MockRequest('http://www.example.com/', {}, b'junk')
         self.assertEqual('index.html',
-                         curl_plugin_shared.get_request_filename(request))
+                         curl_plugin.get_request_filename(request))
         request.url = 'http://www.example.com/foo'
         self.assertEqual('foo',
-                         curl_plugin_shared.get_request_filename(request))
+                         curl_plugin.get_request_filename(request))
         request._info = {'Content-Disposition':
                          'attachment; filename=bar'}
         self.assertEqual('bar',
-                         curl_plugin_shared.get_request_filename(request))
+                         curl_plugin.get_request_filename(request))
 
     def test_download_file_with_length(self):
         content = b'xy' * 4096
@@ -57,7 +57,7 @@ class CurlPluginTest(unittest.TestCase):
         stdout = io.StringIO()
         output_file = io.BytesIO()
         with contextlib.redirect_stdout(stdout):
-            sha1 = curl_plugin_shared.download_file(request, output_file)
+            sha1 = curl_plugin.download_file(request, output_file)
         self.assertEqual(
             'downloaded 50% 4.0KB/8.1KB\ndownloaded 100% 8.1KB/8.1KB\n',
             stdout.getvalue())
@@ -70,7 +70,7 @@ class CurlPluginTest(unittest.TestCase):
         stdout = io.StringIO()
         output_file = io.BytesIO()
         with contextlib.redirect_stdout(stdout):
-            sha1 = curl_plugin_shared.download_file(request, output_file)
+            sha1 = curl_plugin.download_file(request, output_file)
         self.assertEqual(
             'downloaded 3B\n',
             stdout.getvalue())

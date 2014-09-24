@@ -1,7 +1,11 @@
+#! /usr/bin/env python3
+
 import hashlib
 import os
 import re
+import sys
 from urllib.parse import urlsplit
+import urllib.request
 
 
 def get_request_filename(request):
@@ -49,3 +53,42 @@ def download_file(request, output_file):
             total_kb = '/' + format_bytes(file_size)
         print('downloaded{} {}{}'.format(percentage, kb_downloaded, total_kb))
     return digest.hexdigest()
+
+
+def plugin_fetch(url, sha1):
+    with urllib.request.urlopen(url) as request:
+        filename = os.environ['PERU_MODULE_FILENAME']
+        if not filename:
+            filename = get_request_filename(request)
+        full_filepath = os.path.join(os.environ['PERU_FETCH_DEST'], filename)
+        with open(full_filepath, 'wb') as output_file:
+            digest = download_file(request, output_file)
+
+    if sha1 and digest != sha1:
+        print('Bad checksum!\n     url: {}\nexpected: {}\n  actual: {}'
+              .format(url, sha1, digest), file=sys.stderr)
+        sys.exit(1)
+
+
+def plugin_reup(url, sha1):
+    reup_output = os.environ['PERU_REUP_OUTPUT']
+    with urllib.request.urlopen(url) as request:
+        digest = download_file(request, None)
+    with open(reup_output, 'w') as output_file:
+        print('sha1:', digest, file=output_file)
+
+
+def main():
+    url = os.environ['PERU_MODULE_URL']
+    sha1 = os.environ['PERU_MODULE_SHA1']
+    command = os.environ['PERU_PLUGIN_COMMAND']
+    if command == 'fetch':
+        plugin_fetch(url, sha1)
+    elif command == 'reup':
+        plugin_reup(url, sha1)
+    else:
+        raise RuntimeError('unknown command: ' + repr(command))
+
+
+if __name__ == '__main__':
+    main()

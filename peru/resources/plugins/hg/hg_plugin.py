@@ -5,6 +5,11 @@ import shutil
 import subprocess
 import textwrap
 
+CACHE_PATH = os.environ['PERU_PLUGIN_CACHE']
+URL = os.environ['PERU_MODULE_URL']
+REV = os.environ['PERU_MODULE_REV'] or 'default'
+REUP = os.environ['PERU_MODULE_REUP'] or 'default'
+
 
 def hg(*args, hg_dir=None, capture_output=False):
     # Avoid forgetting this arg.
@@ -31,19 +36,18 @@ def hg(*args, hg_dir=None, capture_output=False):
     return output
 
 
-def clone_if_needed(url, cache_path, verbose=False):
-    if not os.path.exists(os.path.join(cache_path, '.hg')):
+def clone_if_needed(url, verbose=False):
+    if not os.path.exists(os.path.join(CACHE_PATH, '.hg')):
         try:
             if verbose:
                 print('hg clone', url)
-            hg('clone', '--noupdate', url, cache_path)
+            hg('clone', '--noupdate', url, CACHE_PATH)
         except:
             # Delete the whole thing if the clone failed to avoid confusing the
             # cache.
-            shutil.rmtree(cache_path)
+            shutil.rmtree(CACHE_PATH)
             raise
-        configure(cache_path)
-    return cache_path
+        configure(CACHE_PATH)
 
 
 def configure(repo_path):
@@ -70,3 +74,34 @@ def already_has_rev(repo, rev):
     # 2) It's not clear at a glance whether something is a branch or a hash.
     # Keep it simple.
     return output.split()[0] == rev
+
+
+def plugin_fetch():
+    dest = os.environ['PERU_FETCH_DEST']
+    clone_if_needed(URL, verbose=True)
+    if not already_has_rev(CACHE_PATH, REV):
+        print('hg pull', URL)
+        hg('pull', hg_dir=CACHE_PATH)
+    # TODO: Should this handle subrepos?
+    hg('archive', '--type', 'files', '--rev', REV, dest, hg_dir=CACHE_PATH)
+
+
+def plugin_reup():
+    reup_output = os.environ['PERU_REUP_OUTPUT']
+
+    clone_if_needed(URL, CACHE_PATH)
+    hg('pull', hg_dir=CACHE_PATH)
+    output = hg('identify', '--debug', '--rev', REUP, hg_dir=CACHE_PATH,
+                capture_output=True)
+
+    with open(reup_output, 'w') as output_file:
+        print('rev:', output.split()[0], file=output_file)
+
+
+command = os.environ['PERU_PLUGIN_COMMAND']
+if command == 'fetch':
+    plugin_fetch()
+elif command == 'reup':
+    plugin_reup()
+else:
+    raise RuntimeError('Unknown command: ' + repr(command))

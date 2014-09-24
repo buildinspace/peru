@@ -1,5 +1,5 @@
-fetch exe: fetch.py
-reup exe: reup.py
+fetch exe: curl_plugin.py
+reup exe: curl_plugin.py
 required fields:
     - url
 optional fields:

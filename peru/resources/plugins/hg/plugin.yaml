@@ -1,5 +1,5 @@
-fetch exe: fetch.py
-reup exe: reup.py
+fetch exe: hg_plugin.py
+reup exe: hg_plugin.py
 required fields:
     - url
 optional fields:

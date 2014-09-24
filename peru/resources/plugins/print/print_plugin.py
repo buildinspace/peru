@@ -1,5 +1,8 @@
 #! /usr/bin/env python3
 
+# This plugin is for testing the fancy display. It prints some output without
+# making any network requests. I needed it on an airplane :)
+
 import random
 import sys
 import time
