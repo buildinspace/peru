@@ -7,6 +7,7 @@ import tempfile
 
 import docopt
 
+from .async import stable_gather
 from .error import PrintableError
 from . import parser
 from .runtime import Runtime
@@ -94,7 +95,7 @@ class Main:
             modules = resolver.get_modules(
                 self.runtime, self.args['<modules>'])
         futures = [module.reup(self.runtime) for module in modules]
-        yield from asyncio.gather(*futures)
+        yield from stable_gather(*futures)
         if not self.args['--nosync']:
             yield from self.do_sync()
 

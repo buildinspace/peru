@@ -1,13 +1,14 @@
 import asyncio
 import os
 
+from .async import stable_gather
 from .error import PrintableError
 
 
 @asyncio.coroutine
 def get_trees(runtime, targets):
     futures = [get_tree(runtime, target) for target in targets]
-    trees = yield from asyncio.gather(*futures)
+    trees = yield from stable_gather(*futures)
     return dict(zip(targets, trees))
 
 
