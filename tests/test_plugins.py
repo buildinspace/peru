@@ -274,7 +274,11 @@ class PluginsTest(unittest.TestCase):
                 outfile = os.environ['PERU_REUP_OUTPUT']
                 print("name: val", file=open(outfile, 'w'))
                 '''),
-            'footype/plugin.yaml': ''})
+            'footype/plugin.yaml': textwrap.dedent('''\
+                fetch exe: fetch.py
+                reup exe: reup.py
+                required fields: []
+                ''')})
         os.chmod(os.path.join(plugins_dir, 'footype', 'fetch.py'), 0o755)
         os.chmod(os.path.join(plugins_dir, 'footype', 'reup.py'), 0o755)
         fetch_dir = shared.create_dir()

@@ -1,5 +1,6 @@
 # This plugin is for testing purposes. The cache dir is not used. The nonce is
 # there to let us change module fields without changing plugin cache fields.
+fetch exe: fetch.py
 required fields:
     - path
 optional fields:

@@ -1,2 +1,3 @@
+fetch exe: fetch.sh
 required fields:
     - path

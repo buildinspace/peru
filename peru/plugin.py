@@ -29,8 +29,8 @@ PLUGINS_DIR = os.path.abspath(
 
 PluginDefinition = namedtuple(
     'PluginDefinition',
-    ['type', 'executable_path', 'fields', 'required_fields', 'optional_fields',
-     'cache_fields'])
+    ['type', 'fetch_exe', 'reup_exe', 'fields', 'required_fields',
+     'optional_fields', 'cache_fields'])
 
 PluginContext = namedtuple(
     'PluginContext',
@@ -77,7 +77,9 @@ def _plugin_job(plugin_context, module_type, module_fields, command, env,
     definition = _get_plugin_definition(module_type, module_fields, command,
                                         plugin_context.plugin_paths)
 
-    complete_env = _plugin_env(definition, module_fields)
+    exe = _get_plugin_exe(definition, command)
+
+    complete_env = _plugin_env(definition, module_fields, command)
     complete_env.update({
         'PERU_PLUGIN_CACHE': _plugin_cache_path(
             plugin_context, definition, module_fields)})
@@ -109,9 +111,9 @@ def _plugin_job(plugin_context, module_type, module_fields, command, env,
                 DEBUG_PARALLEL_MAX = max(
                     DEBUG_PARALLEL_COUNT, DEBUG_PARALLEL_MAX)
                 proc = yield from asyncio.create_subprocess_exec(
-                    definition.executable_path, cwd=plugin_context.cwd,
-                    env=complete_env, stdout=subprocess.PIPE,
-                    stderr=subprocess.STDOUT, stdin=subprocess.PIPE)
+                    exe, cwd=plugin_context.cwd, env=complete_env,
+                    stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
+                    stdin=subprocess.PIPE)
                 proc.stdin.close()
                 while True:
                     outputbytes = yield from proc.stdout.read(4096)
@@ -128,16 +130,27 @@ def _plugin_job(plugin_context, module_type, module_fields, command, env,
     assert not decoder.buffer, 'decoder nonempty: ' + repr(decoder.buffer)
 
 
+def _get_plugin_exe(definition, command):
+    if command == 'fetch':
+        exe = definition.fetch_exe
+    elif command == 'reup':
+        exe = definition.reup_exe
+    else:
+        raise RuntimeError('Unrecognized command name: ' + repr(command))
+
+    if not os.path.exists(exe):
+        raise PluginPermissionsError('Plugin exe does not exist: ' + exe)
+    if not os.access(exe, os.X_OK):
+        raise PluginPermissionsError('Plugin exe is not executable: ' + exe)
+    return exe
+
+
 def _format_module_fields(module_fields):
     return {'PERU_MODULE_{}'.format(name.upper()): value for
             name, value in module_fields.items()}
 
 
 def _validate_plugin_definition(definition, module_fields):
-    if not os.access(definition.executable_path, os.X_OK):
-        raise PluginPermissionsError(
-            'Plugin command is not executable: ' + definition.executable_path)
-
     field_names_not_strings = [name for name in definition.fields
                                if not isinstance(name, str)]
     if field_names_not_strings:
@@ -157,8 +170,9 @@ def _validate_plugin_definition(definition, module_fields):
             'Unknown module fields: ' + ', '.join(unknown_module_fields))
 
 
-def _plugin_env(definition, module_fields):
+def _plugin_env(definition, module_fields, command):
     env = os.environ.copy()
+
     # First, blank out all module field vars.  This prevents the calling
     # environment from leaking in when optional fields are undefined.
     blank_module_vars = {field: '' for field in definition.fields}
@@ -173,6 +187,10 @@ def _plugin_env(definition, module_fields):
     # until the plugin finally exited. Plugins in other languages will need to
     # be careful about this.
     env['PYTHONUNBUFFERED'] = 'true'
+
+    # For plugins that use the same exe for fetch and reup, make the command
+    # name available in the environment.
+    env['PERU_PLUGIN_COMMAND'] = command
 
     return env
 
@@ -211,13 +229,19 @@ def _plugin_cache_key(definition, module_fields):
 
 
 def _get_plugin_definition(module_type, module_fields, command, plugin_paths):
-    executable_path, metadata_path = _find_plugin_files(
-        module_type, command, plugin_paths)
+    root = _find_plugin_dir(module_type, plugin_paths)
+    metadata_path = os.path.join(root, 'plugin.yaml')
+    if not os.path.isfile(metadata_path):
+        raise PluginMetadataMissingError(
+            'No metadata file found for plugin at path: {}'.format(root))
 
     # Read the metadata document.
     with open(metadata_path) as metafile:
         metadoc = yaml.safe_load(metafile) or {}
-    required_fields = frozenset(metadoc.pop('required fields', []))
+    fetch_exe = os.path.join(root, metadoc.pop('fetch exe'))
+    reup_exe = (None if 'reup exe' not in metadoc
+                else os.path.join(root, metadoc.pop('reup exe')))
+    required_fields = frozenset(metadoc.pop('required fields'))
     optional_fields = frozenset(metadoc.pop('optional fields', []))
     cache_fields = frozenset(metadoc.pop('cache fields', []))
     fields = required_fields | optional_fields
@@ -236,40 +260,10 @@ def _get_plugin_definition(module_type, module_fields, command, plugin_paths):
             str(invalid))
 
     definition = PluginDefinition(
-        module_type, executable_path, fields, required_fields, optional_fields,
-        cache_fields)
+        module_type, fetch_exe, reup_exe, fields, required_fields,
+        optional_fields, cache_fields)
     _validate_plugin_definition(definition, module_fields)
     return definition
-
-
-def _find_plugin_files(module_type, command, plugin_paths):
-    root = _find_plugin_dir(module_type, plugin_paths)
-
-    # Scan for executable files in the directory. The command is used as a
-    # prefix, not an exact match, to support extensions. This is mainly because
-    # extensions are mandatory on Windows.
-    matches = [match for match in os.listdir(root) if
-               match.startswith(command) and
-               os.path.isfile(os.path.join(root, match))]
-
-    # Ensure there is exactly one match. It is possible for multiple files to
-    # share the command prefix, and we don't want to have to guess.
-    if not(matches):
-        raise PluginCommandCandidateError(
-            'No candidate for command `{}`.'.format(command))
-    if len(matches) > 1:
-        # Barf if there is more than one candidate.
-        raise PluginCommandCandidateError(
-            'More than one candidate for command `{}`.'.format(command))
-    executable_path = os.path.join(root, matches[0])
-
-    # Look for a metadata file.
-    metadata_path = os.path.join(root, 'plugin.yaml')
-    if not os.path.isfile(metadata_path):
-        raise PluginMetadataMissingError(
-            'No metadata file found for plugin at path: {}'.format(root))
-
-    return (executable_path, metadata_path)
 
 
 def _find_plugin_dir(module_type, plugin_paths):

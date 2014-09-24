@@ -1,3 +1,5 @@
+fetch exe: fetch.py
+reup exe: reup.py
 required fields:
     - url
 optional fields:

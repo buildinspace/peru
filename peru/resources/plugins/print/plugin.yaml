@@ -1,2 +1,3 @@
+fetch exe: fetch.py
 required fields:
     - nonce
