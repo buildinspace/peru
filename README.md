@@ -111,7 +111,7 @@ The `pathogen` module uses the `curl` type instead of `git`. (This is just for
 the sake of an example. In real life you'd probably want to use `git` here
 too.) Since this `url` is a tarball, we use a `build` command to unpack it
 after it's fetched.  The contents of the `pathogen` module are copied into
-`.vim/autoload`, and because that module specifies an `export` directory, it's
+`.vim/autoload`, and because the module specifies an `export` directory, it's
 that directory rather than the whole module that gets copied. The result is
 that Pathogen's `autoload` directory gets merged with our own, which is the
 standard way to install Pathogen.
@@ -185,8 +185,9 @@ up to date, and you'll still be able to reach old versions in your history.
     field. You can optionally give specific module names as arguments.
 - `copy`
   - Make a copy of all the files in a module. Either specify a directory to put
-    them in, or peru will create a temp dir for you. This lets you take a look
-    at modules you don't import yourself, like nested dependencies.
+    them in, or peru will create a temp dir for you. You can use this to see
+    modules you don't normally import, or to play with different module/rule
+    combinations (see "Rules" below).
 - `override`
   - Replace the contents of a module with a local directory path, usually a
     clone you've made of the same repo. This lets you test changes to imported
@@ -209,24 +210,54 @@ up to date, and you'll still be able to reach old versions in your history.
 - Plugins are defined with a complicated, undocumented directory layout that
   changes all the time for no reason.
 
-## Build Commands
-- Modules can take a `build` field, which is an arbitrary shell command that
-  gets run after they're fetched. This is done "in outer space" and cached, so
-  that only the final result makes it into your project.
-- You can define named rules that take the same general fields as modules, so
-  that you can build one module in multiple ways. These use an awkward,
-  undocumented syntax.
+## Rules
+- Some fields (like `url` and `rev`) are specific to certain module types.
+  There are also fields you can use in any module, which modify the the tree of
+  files after it's fetched. These made an appearance in the fancy example
+  above:
+  - `build`: A shell command to run on the fetched files. Fetching happens in a
+    temporary directory, and this command will be run there.
+  - `export`: A subdirectory that peru should treat as the root of the module
+    tree. Everything else is dropped, including parent directories. Applies
+    after `build`.
+  - `files`: A file or directory, or a list of files and directories, to
+    include in the module. Everything else is dropped, though the root of the
+    module tree is not changed. These can have `*` or `**` globs, powered by
+    Python's pathlib. Applies after `export`.
+- Besides using those fields in your modules, you can also use them in "named
+  rules", which let you transform one module in multiple ways. For example, say
+  you want the `asyncio` subdir from the Tulip project, but you also want the
+  license file somewhere else. Rather than defining the same module twice, you
+  can use one module and two named rules, like this:
+
+```yaml
+imports:
+    tulip|asyncio: python/asyncio/
+    tulip|license: licenses/
+
+hg module tulip:
+    url: https://code.google.com/p/tulip/
+
+rule asyncio:
+    export: asyncio/
+
+rule license:
+    files: COPYING
+```
+
+- As in the example above, named rules are declared a lot like modules and then
+  used in the `imports` list, with the syntax `module|rule`.  The `|` operator
+  there works kind of like a shell pipeline, so you can even do twisted things
+  like `module|rule1|rule2`, with each rule applying to the output tree of the
+  previous.
 
 ## Configuration
-- Set `PERU_CACHE` to move peru's cache somewhere outside the `.peru`
-  directory. In particular, you can put it somewhere central, like
-  `~/.peru-cache`. This lets you run commands like `git clean -dfx` without
-  losing all your cloned repos, and it also lets you share clones between
-  projects. Be careful, though: if you have nondeterministic modules (like
-  `git` modules without an explicit `rev`), sharing the cache means that
-  commands run in one project can affect others. Consider using the `--exclude`
-  argument to `git clean` instead.
-- Set `PERU_DIR` to have peru store its state somewhere besides `.peru`. You
-  should not share this between projects, or peru will get very confused.
+- Set `PERU_CACHE` to move peru's cache somewhere besides `.peru/cache`. In
+  particular, you can put it somewhere central, like `~/.peru-cache`. This lets
+  you run commands like `git clean -dfx` without losing all your cloned repos,
+  and it also lets you share clones between projects.
+- Set `PERU_DIR` to have peru store all of its state (including the cache, if
+  `PERU_CACHE` is not set) somewhere besides `.peru`. You should not share this
+  between projects, or peru will get very confused.
 - Set `PERU_FILE_NAME` if you absolutely must call your file something weird
   like `peru.yml`.
