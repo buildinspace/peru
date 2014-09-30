@@ -5,9 +5,11 @@
 Peru is a tool for including other people's code in your projects. It's a lot
 like [git submodules](http://git-scm.com/book/en/Git-Tools-Submodules), except
 that peru stays out of the way of your other tools. You write a `peru.yaml`
-file and then run peru when you feel like it, like in your build scripts or in
-your source control hooks. Your projects can live in git, hg, svn, tarballs,
-whatever. And your dependencies can too.
+file and then call `peru sync` when you need code, either by hand or in your
+build scripts. Your projects can live in git, hg, svn, tarballs, whatever. And
+your dependencies can too.
+
+![snazzy gif](https://raw.githubusercontent.com/buildinspace/peru/master/docs/peru.gif)
 
 ## Why?
 
@@ -215,8 +217,9 @@ up to date, and you'll still be able to reach old versions in your history.
   There are also fields you can use in any module, which modify the the tree of
   files after it's fetched. These made an appearance in the fancy example
   above:
-  - `build`: A shell command to run on the fetched files. Fetching happens in a
-    temporary directory, and this command will be run there.
+  - `build`: A shell command to run on the fetched files. Fetching happens
+    somewhere in outer space (a temporary directory), and this command will be
+    run there.
   - `export`: A subdirectory that peru should treat as the root of the module
     tree. Everything else is dropped, including parent directories. Applies
     after `build`.
