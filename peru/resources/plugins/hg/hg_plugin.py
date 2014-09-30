@@ -61,6 +61,11 @@ def configure(repo_path):
             '''))
 
 
+def hg_pull(url, repo_path):
+    print('hg pull', url)
+    hg('pull', hg_dir=repo_path)
+
+
 def already_has_rev(repo, rev):
     try:
         output = hg('identify', '--debug', '--rev', rev, hg_dir=repo,
@@ -80,8 +85,7 @@ def plugin_fetch():
     dest = os.environ['PERU_FETCH_DEST']
     clone_if_needed(URL, verbose=True)
     if not already_has_rev(CACHE_PATH, REV):
-        print('hg pull', URL)
-        hg('pull', hg_dir=CACHE_PATH)
+        hg_pull(URL, CACHE_PATH)
     # TODO: Should this handle subrepos?
     hg('archive', '--type', 'files', '--rev', REV, dest, hg_dir=CACHE_PATH)
 
@@ -90,7 +94,7 @@ def plugin_reup():
     reup_output = os.environ['PERU_REUP_OUTPUT']
 
     clone_if_needed(URL, CACHE_PATH)
-    hg('pull', hg_dir=CACHE_PATH)
+    hg_pull(URL, CACHE_PATH)
     output = hg('identify', '--debug', '--rev', REUP, hg_dir=CACHE_PATH,
                 capture_output=True)
 

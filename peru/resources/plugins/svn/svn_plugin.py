@@ -29,6 +29,7 @@ def svn(*args, svn_dir=None, capture_output=False):
 
 
 def remote_head_rev(url):
+    print('svn info', url)
     info = svn('info', url, capture_output=True).split('\n')
     for item in info:
         if item.startswith('Revision: '):

@@ -74,6 +74,11 @@ def clone_and_maybe_print(url):
     return clone_if_needed(url)
 
 
+def git_fetch(url, repo_path):
+    print('git fetch ' + url)
+    git('fetch', '--prune', git_dir=repo_path)
+
+
 def already_has_rev(repo, rev):
     try:
         # Make sure the rev exists.
@@ -94,8 +99,7 @@ def already_has_rev(repo, rev):
 def checkout_tree(url, rev, dest):
     repo_path = clone_and_maybe_print(url)
     if not already_has_rev(repo_path, rev):
-        print('git fetch ' + url)
-        git('fetch', '--prune', git_dir=repo_path)
+        git_fetch(url, repo_path)
     # If we just use `git checkout rev -- .` here, we get an error when rev is
     # an empty commit.
     git('--work-tree=' + dest, 'read-tree', rev, git_dir=repo_path)
@@ -127,7 +131,7 @@ def plugin_fetch():
 def plugin_reup():
     reup_output = os.environ['PERU_REUP_OUTPUT']
     repo_path = clone_if_needed(URL)
-    git('fetch', '--prune', git_dir=repo_path)
+    git_fetch(URL, repo_path)
     output = git('rev-parse', REUP, git_dir=repo_path, capture_output=True)
     with open(reup_output, 'w') as out_file:
         print('rev:', output.strip(), file=out_file)
