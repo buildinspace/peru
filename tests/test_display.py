@@ -23,9 +23,9 @@ class DisplayTest(unittest.TestCase):
             disp.print('print stuff')
             handle.write('in job 2\n')
         expected = textwrap.dedent('''\
-            === fetching title ===
+            === started title ===
             print stuff
-            === title done ===
+            === finished title ===
             in job 1
             in job 2
             ===

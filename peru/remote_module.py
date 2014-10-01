@@ -24,7 +24,7 @@ class RemoteModule:
         # lock is taken on the cache key, not the module itself, so two
         # different modules with identical fields will take the same lock and
         # avoid double fetching.
-        cache_key_lock = runtime.module_cache_locks[key]
+        cache_key_lock = runtime.cache_key_locks[key]
         with (yield from cache_key_lock):
             if key in runtime.cache.keyval:
                 return runtime.cache.keyval[key]
@@ -34,7 +34,7 @@ class RemoteModule:
                     self.plugin_fields, tmp_dir,
                     runtime.display.get_handle(self.name))
                 tree = runtime.cache.import_tree(tmp_dir)
-        runtime.cache.keyval[key] = tree
+            runtime.cache.keyval[key] = tree
         return tree
 
     @asyncio.coroutine

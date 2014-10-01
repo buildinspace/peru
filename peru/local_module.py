@@ -58,9 +58,10 @@ class LocalModule:
         yield from self.apply_imports(runtime)
         export_path = self.root
         if self.default_rule:
-            export_path = self.default_rule.do_build(export_path)
+            export_path = yield from self.default_rule.do_build(
+                runtime, export_path)
         for rule in rules:
-            export_path = rule.do_build(export_path)
+            export_path = yield from rule.do_build(runtime, export_path)
         return export_path
 
     @asyncio.coroutine

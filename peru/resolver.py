@@ -20,9 +20,9 @@ def get_tree(runtime, target_str):
         return tree
     tree = yield from module.get_tree(runtime)
     if module.default_rule:
-        tree = module.default_rule.get_tree(runtime, tree)
+        tree = yield from module.default_rule.get_tree(runtime, tree)
     for rule in rules:
-        tree = rule.get_tree(runtime, tree)
+        tree = yield from rule.get_tree(runtime, tree)
     return tree
 
 

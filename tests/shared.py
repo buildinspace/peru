@@ -111,7 +111,7 @@ def run_peru_command(args, test_dir, *, env_vars=None):
     try:
         # Rather than invoking peru as a subprocess, just call directly into
         # the Main class. This lets us check that the right types of exceptions
-        # make it up to the top, so we don't need to check specific outputs
+        # make it up to the top, so we don't need to check specific output
         # strings.
         peru.main.Main().run(args, env_vars or {})
     finally:

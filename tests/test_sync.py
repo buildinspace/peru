@@ -135,6 +135,32 @@ class SyncTest(unittest.TestCase):
         self.write_peru_yaml(template)
         self.do_integration_test(["sync"], {"foo": "bar2", "copy2": "bar2"})
 
+    def test_build_output(self):
+        # Make sure build commands are sending their output to the display like
+        # they're supposed do. This also has the effect of testing that modules
+        # and rules are cached like they're supposed to be -- if not, they'll
+        # show up in the output more than once.
+        self.write_peru_yaml('''\
+            imports:
+                basic: dir1/
+                basic|complicated: dir2/
+
+            cp module basic:
+                path: {}
+                build: echo foo
+
+            rule complicated:
+                build: echo bar
+            ''')
+        expected_output = dedent('''\
+            === started basic ===
+            === finished basic ===
+            foo
+            bar
+            ''')
+        output = run_peru_command(['sync', '-v'], self.test_dir)
+        self.assertEqual(expected_output, output)
+
     def test_rule_with_files(self):
         content = {name: '' for name in [
             'foo',

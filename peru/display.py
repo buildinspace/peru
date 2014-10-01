@@ -49,6 +49,9 @@ class BaseDisplay:
         self.outstanding_jobs.add(job_id)
         return _DisplayHandle(self, job_id)
 
+    def get_printing_handle(self):
+        return _PrintingDisplayHandle(self)
+
     # FancyDisplay overrides print() to avoid conflicting with redraws.
     def print(self, *args, **kwargs):
         print(*args, file=self.output, **kwargs)
@@ -88,10 +91,10 @@ class VerboseDisplay(BaseDisplay):
     once, to make sure jobs don't get interleaved. We use '===' as a delimiter
     to try to separate jobs from one another, and from other output.'''
     def _job_started(self, job_id):
-        print('===', 'fetching', self.titles[job_id], '===', file=self.output)
+        print('===', 'started', self.titles[job_id], '===', file=self.output)
 
     def _job_finished(self, job_id):
-        print('===', self.titles[job_id], 'done', '===', file=self.output)
+        print('===', 'finished', self.titles[job_id], '===', file=self.output)
         outputstr = self.buffers[job_id].getvalue()
         if outputstr:
             self.output.write(outputstr)
@@ -240,3 +243,18 @@ class _DisplayHandle:
         self._display._handle_finish(self._job_id)
         self._job_id = None
         self._closed = True
+
+
+class _PrintingDisplayHandle:
+    '''Implements the interface of a real display handle, but just prints.'''
+    def __init__(self, display):
+        self._display = display
+
+    def write(self, string):
+        self._display.print(string, end='')
+
+    def __enter__(self):
+        pass
+
+    def __exit__(self, *args):
+        pass
