@@ -113,8 +113,7 @@ def _plugin_job(plugin_context, module_type, module_fields, command, env,
                 proc = yield from asyncio.create_subprocess_exec(
                     exe, cwd=plugin_context.cwd, env=complete_env,
                     stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
-                    stdin=subprocess.PIPE)
-                proc.stdin.close()
+                    stdin=subprocess.DEVNULL)
                 while True:
                     outputbytes = yield from proc.stdout.read(4096)
                     if not outputbytes:

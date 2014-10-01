@@ -15,7 +15,7 @@ def svn(*args, svn_dir=None, capture_output=False):
     stdout = subprocess.PIPE if capture_output else None
     stderr = subprocess.STDOUT if capture_output else None
     process = subprocess.Popen(
-        command, stdin=subprocess.PIPE, stdout=stdout, stderr=stderr,
+        command, stdin=subprocess.DEVNULL, stdout=stdout, stderr=stderr,
         cwd=svn_dir, universal_newlines=True)
     output, _ = process.communicate()
     if process.returncode != 0:

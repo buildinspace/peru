@@ -30,7 +30,7 @@ def git(*args, git_dir=None, capture_output=False):
     stderr = subprocess.STDOUT if capture_output else None
     process = subprocess.Popen(
         command,
-        stdin=subprocess.PIPE,
+        stdin=subprocess.DEVNULL,
         stdout=stdout,
         stderr=stderr,
         universal_newlines=True)
