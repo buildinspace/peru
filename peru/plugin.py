@@ -1,16 +1,14 @@
 import asyncio
-from asyncio import subprocess
-import codecs
 from collections import namedtuple
 import contextlib
-import io
 import os
-import sys
+import subprocess
 import tempfile
 import textwrap
 
 import yaml
 
+from .async import create_subprocess_with_handle
 from . import cache
 from .compat import makedirs
 from .error import PrintableError
@@ -85,12 +83,6 @@ def _plugin_job(plugin_context, module_type, module_fields, command, env,
             plugin_context, definition, module_fields)})
     complete_env.update(env)
 
-    # Use stdout's encoding, but provide a default for the case where stdout
-    # has been redirected to a StringIO. (This happens in tests.)
-    decoder = codecs.getincrementaldecoder(sys.stdout.encoding or 'utf8')(
-        errors='replace')
-    output_copy = io.StringIO()
-
     # Use a lock to protect the plugin cache. It would be unsafe for two jobs
     # to read/write to the same plugin cache dir at the same time. The lock
     # (and the cache dir) are both keyed off the module's "cache fields" as
@@ -103,30 +95,22 @@ def _plugin_job(plugin_context, module_type, module_fields, command, env,
         # Most plugin fetches hit the network, and for performance reasons we
         # don't want to fire off too many network requests at once. See
         # DEFAULT_PARALLEL_FETCH_LIMIT. This also lets the user control
-        # parallelism with the --jobs flag.
+        # parallelism with the --jobs flag. It's important that this is the
+        # last lock taken before starting a job, otherwise we might waste a job
+        # slot just waiting on other locks.
         with (yield from plugin_context.parallelism_semaphore):
-            # Now that the job is really starting, open the output handle.
-            with display_handle:
-                DEBUG_PARALLEL_COUNT += 1
-                DEBUG_PARALLEL_MAX = max(
-                    DEBUG_PARALLEL_COUNT, DEBUG_PARALLEL_MAX)
-                proc = yield from asyncio.create_subprocess_exec(
-                    exe, cwd=plugin_context.cwd, env=complete_env,
-                    stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
-                    stdin=subprocess.DEVNULL)
-                while True:
-                    outputbytes = yield from proc.stdout.read(4096)
-                    if not outputbytes:
-                        break
-                    outputstr = decoder.decode(outputbytes)
-                    display_handle.write(outputstr)
-                    output_copy.write(outputstr)
-                yield from proc.wait()
-                DEBUG_PARALLEL_COUNT -= 1
-    if proc.returncode != 0:
-        raise PluginRuntimeError(module_type, module_fields, proc.returncode,
-                                 output_copy.getvalue())
-    assert not decoder.buffer, 'decoder nonempty: ' + repr(decoder.buffer)
+            DEBUG_PARALLEL_COUNT += 1
+            DEBUG_PARALLEL_MAX = max(DEBUG_PARALLEL_COUNT, DEBUG_PARALLEL_MAX)
+
+            try:
+                yield from create_subprocess_with_handle(
+                    [exe], display_handle, cwd=plugin_context.cwd,
+                    env=complete_env)
+            except subprocess.CalledProcessError as e:
+                raise PluginRuntimeError(module_type, module_fields,
+                                         e.returncode, e.output)
+
+            DEBUG_PARALLEL_COUNT -= 1
 
 
 def _get_plugin_exe(definition, command):
