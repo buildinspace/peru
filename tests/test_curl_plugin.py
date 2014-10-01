@@ -1,4 +1,3 @@
-import contextlib
 import hashlib
 import imp
 import io
@@ -56,8 +55,7 @@ class CurlPluginTest(unittest.TestCase):
             content)
         stdout = io.StringIO()
         output_file = io.BytesIO()
-        with contextlib.redirect_stdout(stdout):
-            sha1 = curl_plugin.download_file(request, output_file)
+        sha1 = curl_plugin.download_file(request, output_file, stdout)
         self.assertEqual(
             'downloaded 50% 4.0KB/8.1KB\ndownloaded 100% 8.1KB/8.1KB\n',
             stdout.getvalue())
@@ -69,8 +67,7 @@ class CurlPluginTest(unittest.TestCase):
         request = MockRequest('some url', {}, content)
         stdout = io.StringIO()
         output_file = io.BytesIO()
-        with contextlib.redirect_stdout(stdout):
-            sha1 = curl_plugin.download_file(request, output_file)
+        sha1 = curl_plugin.download_file(request, output_file, stdout)
         self.assertEqual(
             'downloaded 3B\n',
             stdout.getvalue())

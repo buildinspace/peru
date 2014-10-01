@@ -32,7 +32,7 @@ def format_bytes(num_bytes):
     return '{}B'.format(num_bytes)
 
 
-def download_file(request, output_file):
+def download_file(request, output_file, stdout=sys.stdout):
     digest = hashlib.sha1()
     file_size_str = request.info().get('Content-Length')
     file_size = int(file_size_str) if file_size_str is not None else None
@@ -51,7 +51,8 @@ def download_file(request, output_file):
         if file_size:
             percentage = ' {}%'.format(round(100 * bytes_read / file_size))
             total_kb = '/' + format_bytes(file_size)
-        print('downloaded{} {}{}'.format(percentage, kb_downloaded, total_kb))
+        print('downloaded{} {}{}'.format(percentage, kb_downloaded, total_kb),
+              file=stdout)
     return digest.hexdigest()
 
 
