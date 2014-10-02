@@ -70,7 +70,8 @@ class ParallelismTest(unittest.TestCase):
     def test_identical_fields(self):
         # This checks that modules with identical fields are not fetched in
         # parallel. This is the same logic that protects us from fetching a
-        # given module twice, like when two other modules both import it.
+        # given module twice, like when it's imported with two different named
+        # rules.
         foo = shared.create_dir()
         peru_yaml = dedent('''\
             imports:
