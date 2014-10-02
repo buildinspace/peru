@@ -156,5 +156,5 @@ def main(argv=None, env=None):
     except PrintableError as e:
         if parse_argv(argv)['--verbose']:
             raise  # Just allow the stacktrace to print if verbose.
-        print_red(e.message)
+        print_red(e.message, end='' if e.message.endswith('\n') else '\n')
         sys.exit(1)
