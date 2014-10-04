@@ -9,7 +9,7 @@ file and then call `peru sync` when you need code, either by hand or in your
 build scripts. Your projects can live in git, hg, svn, tarballs, whatever. And
 your dependencies can too.
 
-![snazzy gif](https://raw.githubusercontent.com/buildinspace/peru/master/docs/peru.gif)
+![snazzy gif](docs/peru.gif)
 
 ## Why?
 
