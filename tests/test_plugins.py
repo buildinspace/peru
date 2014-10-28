@@ -7,6 +7,7 @@ import subprocess
 import textwrap
 import unittest
 
+import peru.async as async
 import peru.plugin as plugin
 import shared
 from shared import SvnRepo, GitRepo, HgRepo, assert_contents
@@ -22,14 +23,14 @@ class TestDisplayHandle(io.StringIO):
 
 def test_plugin_fetch(context, type, fields, dest):
     handle = TestDisplayHandle()
-    asyncio.get_event_loop().run_until_complete(
+    async.run_task(
         plugin.plugin_fetch(context, type, fields, dest, handle))
     return handle.getvalue()
 
 
 def test_plugin_get_reup_fields(context, type, fields):
     handle = TestDisplayHandle()
-    return asyncio.get_event_loop().run_until_complete(
+    return async.run_task(
         plugin.plugin_get_reup_fields(context, type, fields, handle))
 
 

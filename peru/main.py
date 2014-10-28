@@ -7,7 +7,7 @@ import tempfile
 
 import docopt
 
-from .async import stable_gather
+from . import async
 from .error import PrintableError
 from . import parser
 from .runtime import Runtime
@@ -75,7 +75,7 @@ class Main:
         matching_command = find_matching_command(self.args)
         if matching_command:
             self.runtime = Runtime(self.args, env)
-            asyncio.get_event_loop().run_until_complete(matching_command(self))
+            async.run_task(matching_command(self))
         else:
             if self.args["--version"]:
                 print(__version__)
@@ -95,7 +95,7 @@ class Main:
             modules = resolver.get_modules(
                 self.runtime, self.args['<modules>'])
         futures = [module.reup(self.runtime) for module in modules]
-        yield from stable_gather(*futures)
+        yield from async.stable_gather(*futures)
         if not self.args['--nosync']:
             yield from self.do_sync()
 

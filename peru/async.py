@@ -1,8 +1,23 @@
 import asyncio
 import codecs
 import io
+import os
 import subprocess
 import sys
+
+# The default event loop on Windows doesn't support subprocesses, so we need to
+# use the proactor loop. See:
+# https://docs.python.org/3/library/asyncio-eventloops.html#available-event-loops
+# Because the event loop is essentially a global variable, we have to set this
+# at import time. Otherwise asyncio objects that get instantiated early
+# (particularly Locks and Semaphores) could grab a reference to the wrong loop.
+# TODO: Importing for side effects isn't very clean. Find a better way.
+if os.name == 'nt':
+    asyncio.set_event_loop(asyncio.ProactorEventLoop())
+
+
+def run_task(coro):
+    return asyncio.get_event_loop().run_until_complete(coro)
 
 
 def stable_gather(*coros):
