@@ -83,6 +83,8 @@ def create_subprocess_with_handle(command, display_handle, *, shell=False, cwd,
         raise subprocess.CalledProcessError(
             returncode, command, output_copy.getvalue())
 
-    assert not decoder.buffer, 'decoder nonempty: ' + repr(decoder.buffer)
+    if hasattr(decoder, 'buffer'):
+        # The utf8 decoder has this attribute, but some others don't.
+        assert not decoder.buffer, 'decoder nonempty: ' + repr(decoder.buffer)
 
     return output_copy.getvalue()
