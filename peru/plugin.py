@@ -76,6 +76,9 @@ def _plugin_job(plugin_context, module_type, module_fields, command, env,
                                         plugin_context.plugin_paths)
 
     exe = _get_plugin_exe(definition, command)
+    # For Windows to run scripts with the right interpreter, we need to use run
+    # as a shell command, rather than exec.
+    shell_command_line = subprocess.list2cmdline([exe])
 
     complete_env = _plugin_env(definition, module_fields, command)
     complete_env.update({
@@ -104,8 +107,8 @@ def _plugin_job(plugin_context, module_type, module_fields, command, env,
 
             try:
                 yield from create_subprocess_with_handle(
-                    [exe], display_handle, cwd=plugin_context.cwd,
-                    env=complete_env)
+                    shell_command_line, display_handle, cwd=plugin_context.cwd,
+                    env=complete_env, shell=True)
             except subprocess.CalledProcessError as e:
                 raise PluginRuntimeError(module_type, module_fields,
                                          e.returncode, e.output)
