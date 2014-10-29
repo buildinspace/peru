@@ -22,7 +22,7 @@ showuntracked() {
 }
 old_untracked=`showuntracked`
 
-coverage run -m unittest discover --start tests
+coverage run -m unittest discover --start tests --catch
 
 new_untracked=`showuntracked`
 if [[ "$old_untracked" != "$new_untracked" ]] ; then
