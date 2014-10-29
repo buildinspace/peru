@@ -1,6 +1,7 @@
 import difflib
 import io
 import os
+from pathlib import Path
 import subprocess
 import sys
 import tempfile
@@ -34,36 +35,29 @@ def create_dir(path_contents_map=None):
 
 
 def write_files(dir, path_contents_map):
+    dir = Path(dir)
     for path, contents in path_contents_map.items():
-        full_path = os.path.join(dir, path)
-        full_parent = os.path.dirname(full_path)
-        if not os.path.isdir(full_parent):
-            os.makedirs(full_parent)
-        with open(full_path, "w") as f:
+        path = Path(path)
+        full_path = dir / path
+        makedirs(str(full_path.parent))
+        with full_path.open('w') as f:
             f.write(contents)
 
 
 def read_dir(startdir, excludes=()):
+    startdir = Path(startdir)
     contents = {}
-    for subpath, dirs, files in os.walk(startdir):
-        # Read the contents of files, excepting excludes.
-        for file in files:
-            filepath = os.path.join(subpath, file)
-            relpath = os.path.relpath(filepath, startdir)
-            if relpath in excludes:
-                continue
-            with open(filepath) as f:
-                try:
-                    content = f.read()
-                except UnicodeDecodeError:
-                    content = '<BINARY>'
-            contents[relpath] = content
-        # Avoid recursing into excluded subdirectories.
-        for dir in dirs.copy():  # copy, because we're going to modify it
-            dirpath = os.path.join(subpath, dir)
-            relpath = os.path.relpath(dirpath, startdir)
-            if relpath in excludes:
-                dirs.remove(dir)
+    for p in startdir.glob('**/*'):
+        if not p.is_file():
+            continue
+        relpath = p.relative_to(startdir)
+        if any(str(relpath).startswith(str(e)) for e in excludes):
+            continue
+        with p.open() as f:
+            try:
+                contents[relpath] = f.read()
+            except UnicodeDecodeError:
+                contents[relpath] = '<BINARY>'
     return contents
 
 
@@ -73,7 +67,9 @@ def _format_contents(contents):
 
 
 def assert_contents(dir, expected_contents, excludes=()):
-    # Ignore peru.yaml and .peru by default.
+    dir = Path(dir)
+    expected_contents = {Path(key): val for key, val
+                         in expected_contents.items()}
     actual_contents = read_dir(dir, excludes)
     if expected_contents == actual_contents:
         return
@@ -82,8 +78,8 @@ def assert_contents(dir, expected_contents, excludes=()):
     excluded_files = full_contents.keys() - actual_contents.keys()
     excluded_missing = expected_contents.keys() & excluded_files
     if excluded_missing:
-        raise AssertionError('EXPECTED FILES WERE EXCLUDED FROM THE TEST: ' +
-                             ', '.join(excluded_missing))
+        raise AssertionError('EXPECTED FILES WERE EXCLUDED FROM THE TEST: {}'
+                             .format(excluded_missing))
     # Make a diff against expected and throw.
     raise AssertionError("Contents didn't match:\n" + ''.join(
         difflib.unified_diff(_format_contents(expected_contents),
