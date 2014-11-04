@@ -74,8 +74,9 @@ def create_subprocess_with_handle(command, display_handle, *, shell=False, cwd,
             if not outputbytes:
                 break
             outputstr = decoder.decode(outputbytes)
-            display_handle.write(outputstr)
-            output_copy.write(outputstr)
+            outputstr_unified = _unify_newlines(outputstr)
+            display_handle.write(outputstr_unified)
+            output_copy.write(outputstr_unified)
 
         returncode = yield from proc.wait()
 
@@ -88,3 +89,17 @@ def create_subprocess_with_handle(command, display_handle, *, shell=False, cwd,
         assert not decoder.buffer, 'decoder nonempty: ' + repr(decoder.buffer)
 
     return output_copy.getvalue()
+
+
+def _unify_newlines(s):
+    r'''Because all asyncio subprocess output is read in binary mode, we don't
+    get universal newlines for free. But it's the right thing to do, because we
+    do all our printing with strings in text mode, which translates "\n" back
+    into the platform-appropriate line separator. So for example, "\r\n" in a
+    string on Windows will become "\r\r\n" when it gets printed. This function
+    ensures that all newlines are represented as "\n" internally, which solves
+    that problem and also helps our tests work on Windows. Right now we only
+    handle Windows, but we can expand this if there's ever another newline
+    style we have to support.'''
+
+    return s.replace('\r\n', '\n')
