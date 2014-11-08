@@ -22,7 +22,7 @@ def tmp_file():
 
 
 def _tmp_root():
-    root = '/tmp/peru/test'
+    root = os.path.join(tempfile.gettempdir(), 'peru', 'test')
     makedirs(root)
     return root
 
