@@ -8,7 +8,7 @@ from shared import run_peru_command, assert_contents
 
 class ReupIntegrationTest(unittest.TestCase):
     def setUp(self):
-        template = dedent("""\
+        template = dedent('''\
             git module foo:
                 url: {}
                 rev: master
@@ -16,17 +16,18 @@ class ReupIntegrationTest(unittest.TestCase):
             git module bar:
                 url: {}
                 reup: otherbranch
-            """)
+            ''')
         self.foo_dir = shared.create_dir({'a': 'b'})
         self.foo_repo = shared.GitRepo(self.foo_dir)
-        self.foo_master = self.foo_repo.run("git rev-parse master")
+        self.foo_master = self.foo_repo.run('git', 'rev-parse', 'master')
         self.bar_dir = shared.create_dir()
         self.bar_repo = shared.GitRepo(self.bar_dir)
-        self.bar_repo.run("git checkout -q -b otherbranch")
-        self.bar_repo.run("git commit --allow-empty -m junk")
-        self.bar_otherbranch = self.bar_repo.run("git rev-parse otherbranch")
+        self.bar_repo.run('git', 'checkout', '-q', '-b', 'otherbranch')
+        self.bar_repo.run('git', 'commit', '--allow-empty', '-m', 'junk')
+        self.bar_otherbranch = self.bar_repo.run(
+            'git', 'rev-parse', 'otherbranch')
         self.start_yaml = template.format(self.foo_dir, self.bar_dir)
-        self.test_dir = shared.create_dir({"peru.yaml": self.start_yaml})
+        self.test_dir = shared.create_dir({'peru.yaml': self.start_yaml})
 
     def tearDown(self):
         shared.assert_clean_tmp(os.path.join(self.test_dir, '.peru'))

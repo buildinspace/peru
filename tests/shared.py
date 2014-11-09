@@ -120,8 +120,8 @@ class Repo:
     def __init__(self, path):
         self.path = path
 
-    def run(self, command):
-        output = subprocess.check_output(command, shell=True, cwd=self.path)
+    def run(self, *command):
+        output = subprocess.check_output(command, cwd=self.path)
         return output.decode('utf8').strip()
 
 
@@ -129,25 +129,25 @@ class GitRepo(Repo):
     def __init__(self, content_dir):
         super().__init__(content_dir)
 
-        self.run("git init")
-        self.run("git config user.name peru")
-        self.run("git config user.email peru")
-        self.run("git add -A")
-        self.run("git commit --allow-empty -m 'first commit'")
+        self.run('git', 'init')
+        self.run('git', 'config', 'user.name', 'peru')
+        self.run('git', 'config', 'user.email', 'peru')
+        self.run('git', 'add', '-A')
+        self.run('git', 'commit', '--allow-empty', '-m', 'first commit')
 
 
 class HgRepo(Repo):
     def __init__(self, content_dir):
         super().__init__(content_dir)
 
-        self.run("hg init")
-        hgrc_path = os.path.join(content_dir, ".hg", "hgrc")
-        with open(hgrc_path, "a") as f:
-            f.write(textwrap.dedent("""\
+        self.run('hg', 'init')
+        hgrc_path = os.path.join(content_dir, '.hg', 'hgrc')
+        with open(hgrc_path, 'a') as f:
+            f.write(textwrap.dedent('''\
                 [ui]
                 username = peru <peru>
-                """))
-        self.run("hg commit -A -m 'first commit'")
+                '''))
+        self.run('hg', 'commit', '-A', '-m', 'first commit')
 
 
 class SvnRepo(Repo):
@@ -157,6 +157,6 @@ class SvnRepo(Repo):
         super().__init__(repo_dir)
         self.url = 'file://' + repo_dir
 
-        self.run('svnadmin create .')
-        self.run('svn import {} {} -m "initial commit"'.format(
-            content_dir, self.url))
+        self.run('svnadmin', 'create', '.')
+        self.run('svn', 'import', content_dir, self.url,
+                 '-m', 'initial commit')
