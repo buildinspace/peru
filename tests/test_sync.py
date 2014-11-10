@@ -112,6 +112,7 @@ class SyncTest(unittest.TestCase):
             ''')
         self.do_integration_test(['sync'], {})
 
+    @unittest.skipIf(os.name == 'nt', 'build commands not Windows-compatible')
     def test_module_rules(self):
         template = """\
             cp module foo:
@@ -135,6 +136,7 @@ class SyncTest(unittest.TestCase):
         self.write_peru_yaml(template)
         self.do_integration_test(["sync"], {"foo": "bar2", "copy2": "bar2"})
 
+    @unittest.skipIf(os.name == 'nt', 'build commands not Windows-compatible')
     def test_build_output(self):
         # Make sure build commands are sending their output to the display like
         # they're supposed do. This also has the effect of testing that modules
@@ -239,6 +241,7 @@ class SyncTest(unittest.TestCase):
             foo|bang: ./
         '''
 
+    @unittest.skipIf(os.name == 'nt', 'build commands not Windows-compatible')
     def test_override(self):
         self.write_peru_yaml(self.override_test_yaml)
         override_dir = shared.create_dir({'foo': 'override'})
@@ -261,6 +264,7 @@ class SyncTest(unittest.TestCase):
         # Rerun the sync and confirm the original content is back.
         self.do_integration_test(['sync'], {'builtfoo': 'bar!'})
 
+    @unittest.skipIf(os.name == 'nt', 'build commands not Windows-compatible')
     def test_override_after_regular_sync(self):
         self.write_peru_yaml(self.override_test_yaml)
         # First, do a regular sync.
@@ -315,6 +319,7 @@ class SyncTest(unittest.TestCase):
                          self.test_dir)
         self.do_integration_test(['sync'], {'foo': 'override'})
 
+    @unittest.skipIf(os.name == 'nt', 'build commands not Windows-compatible')
     def test_rules_in_override(self):
         def _write_peru_yaml(target):
             self.write_peru_yaml('''\
