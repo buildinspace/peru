@@ -155,7 +155,7 @@ class SvnRepo(Repo):
         # SVN can't create a repo "in place" like git or hg.
         repo_dir = create_dir()
         super().__init__(repo_dir)
-        self.url = 'file://' + repo_dir
+        self.url = Path(repo_dir).as_uri()
 
         self.run('svnadmin', 'create', '.')
         self.run('svn', 'import', content_dir, self.url,

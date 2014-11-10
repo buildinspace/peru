@@ -3,6 +3,7 @@ from collections import defaultdict
 import hashlib
 import io
 import os
+from pathlib import Path
 import subprocess
 import textwrap
 import unittest
@@ -217,7 +218,7 @@ class PluginsTest(unittest.TestCase):
     def test_curl_plugin_fetch(self):
         curl_content = {'myfile': 'content'}
         test_dir = shared.create_dir(curl_content)
-        test_url = 'file://{}/{}'.format(test_dir, 'myfile')
+        test_url = (Path(test_dir) / 'myfile').as_uri()
         fields = {'url': test_url}
         self.do_plugin_test('curl', fields, curl_content)
         # Run the test again with an explicit hash and an explicit filename.
@@ -235,7 +236,7 @@ class PluginsTest(unittest.TestCase):
     def test_curl_plugin_reup(self):
         curl_content = {'myfile': 'content'}
         test_dir = shared.create_dir(curl_content)
-        test_url = 'file://{}/{}'.format(test_dir, 'myfile')
+        test_url = (Path(test_dir) / 'myfile').as_uri()
         digest = hashlib.sha1()
         digest.update(b'content')
         real_hash = digest.hexdigest()
