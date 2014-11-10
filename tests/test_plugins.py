@@ -48,7 +48,7 @@ class PluginsTest(unittest.TestCase):
             parallelism_semaphore=asyncio.BoundedSemaphore(
                 plugin.DEFAULT_PARALLEL_FETCH_LIMIT),
             plugin_cache_locks=defaultdict(asyncio.Lock),
-            tmp_dir=shared.create_dir())
+            tmp_root=shared.create_dir())
         plugin.debug_assert_clean_parallel_count()
 
     def tearDown(self):

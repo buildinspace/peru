@@ -99,7 +99,7 @@ class Runtime:
             plugin_paths=self.plugin_paths,
             parallelism_semaphore=self.fetch_semaphore,
             plugin_cache_locks=self.plugin_cache_locks,
-            tmp_dir=self._tmp_root)
+            tmp_root=self._tmp_root)
 
 
 def find_peru_file(start_dir, name):

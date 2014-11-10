@@ -33,7 +33,7 @@ PluginDefinition = namedtuple(
 PluginContext = namedtuple(
     'PluginContext',
     ['cwd', 'plugin_cache_root', 'plugin_paths', 'parallelism_semaphore',
-     'plugin_cache_locks', 'tmp_dir'])
+     'plugin_cache_locks', 'tmp_root'])
 
 
 @asyncio.coroutine
@@ -47,8 +47,8 @@ def plugin_fetch(plugin_context, module_type, module_fields, dest,
 @asyncio.coroutine
 def plugin_get_reup_fields(plugin_context, module_type, module_fields,
                            display_handle):
-    with tempfile.NamedTemporaryFile(dir=plugin_context.tmp_dir) as tmp:
-        output_path = tmp.name
+    with tempfile.TemporaryDirectory(dir=plugin_context.tmp_root) as tmp_dir:
+        output_path = os.path.join(tmp_dir, 'reup_output')
         env = {'PERU_REUP_OUTPUT': output_path}
         yield from _plugin_job(
             plugin_context, module_type, module_fields, 'reup', env,
