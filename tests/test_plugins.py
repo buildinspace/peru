@@ -253,6 +253,7 @@ class PluginsTest(unittest.TestCase):
     def test_cp_plugin(self):
         self.do_plugin_test("cp", {"path": self.content_dir}, self.content)
 
+    @unittest.skipIf(os.name == 'nt', 'the rsync plugin is written in bash')
     def test_rsync_plugin(self):
         self.do_plugin_test("rsync", {"path": self.content_dir}, self.content)
 
@@ -260,19 +261,19 @@ class PluginsTest(unittest.TestCase):
         self.do_plugin_test("empty", {}, {})
 
     def test_missing_required_field(self):
-        # The 'path' field is required for rsync.
+        # The 'url' field is required for git.
         try:
-            self.do_plugin_test('rsync', {}, self.content)
+            self.do_plugin_test('git', {}, self.content)
         except plugin.PluginModuleFieldError as e:
-            assert 'path' in e.message, 'message should mention missing field'
+            assert 'url' in e.message, 'message should mention missing field'
         else:
             assert False, 'should throw PluginModuleFieldError'
 
     def test_unknown_field(self):
-        # The 'junk' field isn't valid for rsync.
-        bad_fields = {'path': self.content_dir, 'junk': 'junk'}
+        # The 'junk' field isn't valid for git.
+        bad_fields = {'url': self.content_dir, 'junk': 'junk'}
         try:
-            self.do_plugin_test('rsync', bad_fields, self.content)
+            self.do_plugin_test('git', bad_fields, self.content)
         except plugin.PluginModuleFieldError as e:
             assert 'junk' in e.message, 'message should mention bad field'
         else:
