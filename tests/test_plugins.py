@@ -87,6 +87,12 @@ class PluginsTest(unittest.TestCase):
 
     def test_git_plugin_with_submodule(self):
         content_repo = GitRepo(self.content_dir)
+        # Git has a small bug: The .gitmodules file is always created with "\n"
+        # line endings, even on Windows. With core.autocrlf turned on, that
+        # causes a warning when the file is added/committed, because those line
+        # endings would get replaced with "\r\n" when the file was checked out.
+        # We can just turn autocrlf off for this test to silence the warning.
+        content_repo.run('git', 'config', 'core.autocrlf', 'false')
         submodule_dir = shared.create_dir({'another': 'file'})
         submodule_repo = GitRepo(submodule_dir)
         content_repo.run(
