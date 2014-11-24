@@ -5,7 +5,7 @@ python:
 install:
   - pip install coveralls flake8
 script:
-  - ./test.sh
+  - ./test.sh -v
   - ./scripts/validate_third_party.sh
 after_success:
   coveralls
