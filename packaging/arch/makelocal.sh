@@ -12,6 +12,6 @@ set -e
 cd $(dirname "$BASH_SOURCE")
 rm -rf src
 mkdir src
-ln -s ../../../.. src/peru
+ln -s ../../.. src/peru
 
 makepkg -e "$@"
