@@ -48,6 +48,10 @@ class PluginsTest(unittest.TestCase):
                 plugin.DEFAULT_PARALLEL_FETCH_LIMIT),
             plugin_cache_locks=defaultdict(asyncio.Lock),
             tmp_dir=shared.create_dir())
+        plugin.debug_assert_clean_parallel_count()
+
+    def tearDown(self):
+        plugin.debug_assert_clean_parallel_count()
 
     def do_plugin_test(self, type, plugin_fields, expected_content):
         fetch_dir = shared.create_dir()

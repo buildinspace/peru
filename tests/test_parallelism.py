@@ -18,14 +18,14 @@ class ParallelismTest(unittest.TestCase):
 
     def setUp(self):
         # Make sure nothing is fishy with the jobs counter, and reset the max.
-        assert plugin.DEBUG_PARALLEL_COUNT == 0
+        plugin.debug_assert_clean_parallel_count()
         plugin.DEBUG_PARALLEL_MAX = 0
 
     def tearDown(self):
         # Make sure nothing is fishy with the jobs counter. No sense in
         # resetting the max here, because the rest of our tests don't know to
         # reset it anyway.
-        assert plugin.DEBUG_PARALLEL_COUNT == 0
+        plugin.debug_assert_clean_parallel_count()
 
     def test_two_jobs_in_parallel(self):
         # This just checks that two different modules can actually be fetched

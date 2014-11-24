@@ -109,8 +109,8 @@ def _plugin_job(plugin_context, module_type, module_fields, command, env,
             except subprocess.CalledProcessError as e:
                 raise PluginRuntimeError(module_type, module_fields,
                                          e.returncode, e.output)
-
-            DEBUG_PARALLEL_COUNT -= 1
+            finally:
+                DEBUG_PARALLEL_COUNT -= 1
 
 
 def _get_plugin_exe(definition, command):
@@ -269,6 +269,11 @@ def _find_plugin_dir(module_type, plugin_paths):
                 '\n'.join(matches)))
 
     return matches[0]
+
+
+def debug_assert_clean_parallel_count():
+    assert DEBUG_PARALLEL_COUNT == 0, \
+        "parallel count should be 0 but it's " + str(DEBUG_PARALLEL_COUNT)
 
 
 class PluginCandidateError(PrintableError):
