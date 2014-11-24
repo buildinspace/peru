@@ -41,7 +41,8 @@ done < <(git ls-files -z --cached --other --exclude-standard third-party)
 echo Syncing third-party to $expected_dir
 cp peru.yaml "$expected_dir"
 cd "$expected_dir"
-"$repo_root/peru.sh" sync
+# Sync quietly, to spare Travis from a lot of junk output.
+"$repo_root/peru.sh" sync -q
 # The peru.yaml file and the .peru dir won't be in the found dir, so get rid of
 # them here.
 rm -rf peru.yaml .peru
