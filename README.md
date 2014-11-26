@@ -34,10 +34,20 @@ bisect`.  Peru leaves your source control the heck alone.
 
 ## Installation
 
-Until we make spiffy packages, just clone this repo and use the `peru.sh`
-script. If you like, you can symlink that to something like `~/bin/peru`. The
-dependencies are just **python3 (>=3.3)** and **git**, though if you're going
-to fetch from **hg** or **svn** you'll need those too.
+Peru requires **python** (3.3 or later) and **git**, and optionally **hg** and
+**svn** if you want fetch from those types of repos. Use
+[pip](https://pip.pypa.io/en/latest/) to install it:
+
+```
+pip install peru
+# For Python 3.4, the line above is enough. For 3.3, you also need:
+pip install asyncio pathlib
+```
+
+On Arch Linux, you can also install `peru-git` [from the
+AUR](https://aur.archlinux.org/packages/peru-git/). On Ubuntu, you can install
+`peru` from [our
+PPA](https://launchpad.net/~buildinspace/+archive/ubuntu/peru).
 
 ## Getting Started
 
