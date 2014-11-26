@@ -38,7 +38,7 @@ Peru requires **python** (3.3 or later) and **git**, and optionally **hg** and
 **svn** if you want fetch from those types of repos. Use
 [pip](https://pip.pypa.io/en/latest/) to install it:
 
-```
+```python
 pip install peru
 # For Python 3.4, the line above is enough. For 3.3, you also need:
 pip install asyncio pathlib
