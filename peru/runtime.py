@@ -1,7 +1,6 @@
 import asyncio
 import collections
 import os
-import sys
 import tempfile
 
 from . import cache
@@ -136,7 +135,7 @@ def get_display(args):
         return display.QuietDisplay()
     elif args['--verbose']:
         return display.VerboseDisplay()
-    elif sys.stdout.isatty():
+    elif compat.is_fancy_terminal():
         return display.FancyDisplay()
     else:
         return display.QuietDisplay()

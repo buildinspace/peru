@@ -8,6 +8,7 @@ import tempfile
 import docopt
 
 from . import async
+from . import compat
 from .error import PrintableError
 from . import parser
 from .runtime import Runtime
@@ -139,10 +140,10 @@ def parse_argv(argv):
 
 
 def print_red(*args, **kwargs):
-    if sys.stdout.isatty():
+    if compat.is_fancy_terminal():
         sys.stdout.write("\x1b[31m")
     print(*args, **kwargs)
-    if sys.stdout.isatty():
+    if compat.is_fancy_terminal():
         sys.stdout.write("\x1b[39m")
 
 
