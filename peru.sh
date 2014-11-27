@@ -27,4 +27,4 @@ repo_root=$(dirname $(realpath $BASH_SOURCE))
 
 source "$repo_root/scripts/env.sh"
 
-"$repo_root/bin/peru" "$@"
+python3 -c "import peru.main; peru.main.main()" "$@"

@@ -23,7 +23,11 @@ setuptools.setup(
     license='MIT',
     packages=['peru'],
     package_data={'peru': resources_paths},
-    scripts=['bin/peru'],
+    entry_points={
+        'console_scripts': [
+            'peru=peru.main:main',
+        ]
+    },
     install_requires=[
         'docopt',
         'PyYAML',
