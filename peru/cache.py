@@ -1,6 +1,7 @@
 import hashlib
 import json
 import os
+import pathlib
 import subprocess
 
 from .compat import makedirs
@@ -98,34 +99,36 @@ class Cache:
 
     def merge_trees(self, base_tree, merge_tree, merge_path='.'):
         if base_tree:
-            self._git("read-tree", base_tree)
+            self._git('read-tree', base_tree)
         else:
-            self._git("read-tree", "--empty")
+            self._git('read-tree', '--empty')
 
         # The --prefix argument to read-tree chokes on paths that contain dot
-        # or dot-dot. Instead of "./", it wants the empty string. Oblige it.
-        # TODO: This could change the meaning of .. with respect to symlinks.
-        #       Should we ban .. entirely in import paths?
-        prefix = os.path.normpath(merge_path)
-        prefix = "" if prefix == "." else prefix
+        # or dot-dot. Instead of './', it wants the empty string. Oblige it.
+        # NOTE: This parameter *must* be forward-slash-separated, even on
+        # Windows. os.path.normpath() is not correct here!
+        merge_path_obj = pathlib.Path(merge_path)
+        assert '..' not in merge_path_obj.parts
+        prefix = merge_path_obj.as_posix()
+        prefix = '' if prefix == '.' else prefix
 
         # The git docs say that a --prefix value must end in a slash. That
         # doesn't seem to be true in practice, but better safe than sorry. Note
-        # that git treats "--prefix=/" as the root of the tree, so this doesn't
+        # that git treats '--prefix=/' as the root of the tree, so this doesn't
         # break that case.
-        if not prefix.endswith("/"):
-            prefix += "/"
+        if not prefix.endswith('/'):
+            prefix += '/'
 
         # Normally read-tree with --prefix wants to make sure changes don't
         # stomp on the working copy. The -i flag tells it to pretend the
         # working copy doesn't exist. (Which is important, because we don't
         # have one right now!)
         try:
-            self._git("read-tree", "-i", "--prefix", prefix, merge_tree)
+            self._git('read-tree', '-i', '--prefix', prefix, merge_tree)
         except self.GitError as e:
             raise MergeConflictError(e.output) from e
 
-        unified_tree = self._git("write-tree")
+        unified_tree = self._git('write-tree')
         return unified_tree
 
     # TODO: Use temporary index files for everything in Cache.

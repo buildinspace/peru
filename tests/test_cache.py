@@ -165,6 +165,18 @@ class CacheTest(unittest.TestCase):
             # subdir/ is already populated, so this merge should throw.
             self.cache.merge_trees(merged_tree, self.content_tree, "subdir")
 
+    def test_merge_with_deep_prefix(self):
+        '''This test was inspired by a bug on Windows where we would give git a
+        backslash-separated merge prefix, even though git demands forward slash
+        as a path separator.'''
+        content = {'file': 'stuff'}
+        content_dir = shared.create_dir(content)
+        tree = self.cache.import_tree(content_dir)
+        prefixed_tree = self.cache.merge_trees(None, tree, 'a/b/')
+        export_dir = shared.create_dir()
+        self.cache.export_tree(prefixed_tree, export_dir)
+        assert_contents(export_dir, {'a/b/file': 'stuff'})
+
     def test_read_file(self):
         self.assertEqual(
             b'foo', self.cache.read_file(self.content_tree, 'a'))
