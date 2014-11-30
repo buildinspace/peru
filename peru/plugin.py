@@ -10,6 +10,7 @@ import yaml
 
 from .async import create_subprocess_with_handle
 from . import cache
+from . import compat
 from .compat import makedirs
 from .error import PrintableError
 
@@ -18,12 +19,7 @@ DEFAULT_PARALLEL_FETCH_LIMIT = 10
 DEBUG_PARALLEL_COUNT = 0
 DEBUG_PARALLEL_MAX = 0
 
-# In Python versions prior to 3.4, __file__ returns a relative path. This path
-# is fixed at load time, so if the program later cd's (as we do in tests, at
-# least) __file__ is no longer valid. As a workaround, compute the absolute
-# path at load time.
-PLUGINS_DIR = os.path.abspath(
-    os.path.join(os.path.dirname(__file__), 'resources', 'plugins'))
+PLUGINS_DIR = os.path.join(compat.MODULE_ROOT, 'resources', 'plugins')
 
 PluginDefinition = namedtuple(
     'PluginDefinition',

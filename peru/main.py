@@ -39,8 +39,7 @@ Options:
   -v --verbose   print all the things
 """
 
-__version__ = "peru 0.1"
-
+version_file = os.path.join(compat.MODULE_ROOT, 'VERSION')
 
 commands_map = {}
 
@@ -79,7 +78,7 @@ class Main:
             async.run_task(matching_command(self))
         else:
             if self.args["--version"]:
-                print(__version__)
+                print(get_version())
             else:
                 # Print the help.
                 print(__doc__, end="")
@@ -133,6 +132,11 @@ class Main:
         # Apply empty imports.
         yield from self.runtime.local_module.apply_imports(
             self.runtime, parser.build_imports({}))
+
+
+def get_version():
+    with open(version_file) as f:
+        return f.read().strip()
 
 
 def parse_argv(argv):

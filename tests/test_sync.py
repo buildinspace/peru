@@ -392,4 +392,4 @@ class SyncTest(unittest.TestCase):
 
     def test_version(self):
         version_output = run_peru_command(["--version"], self.test_dir)
-        self.assertEqual(peru.main.__version__, version_output.strip())
+        self.assertEqual(peru.main.get_version(), version_output.strip())
