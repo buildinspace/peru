@@ -30,13 +30,13 @@ But peru is all about fetching, and that lets us get a few things right:
 There's another class of tools, like git submodules and Google's
 [Repo](http://source.android.com/source/developing.html), that do fetching as
 part of your source control. These tend to break sweet features like `git
-bisect`.  Peru leaves your source control the heck alone.
+bisect`. Peru leaves your source control the heck alone.
 
 ## Installation
 
-Peru requires **python** (3.3 or later) and **git**, and optionally **hg** and
-**svn** if you want fetch from those types of repos. Use
-[pip](https://pip.pypa.io/en/latest/) to install it:
+Peru supports Linux, Mac, and Windows. It requires **python** (3.3 or later)
+and **git**, and optionally **hg** and **svn** if you want fetch from those
+types of repos. Use [pip](https://pip.pypa.io/en/latest/) to install it:
 
 ```python
 pip install peru
@@ -44,10 +44,10 @@ pip install peru
 pip install asyncio pathlib
 ```
 
-On Arch Linux, you can also install `peru-git` [from the
-AUR](https://aur.archlinux.org/packages/peru-git/). On Ubuntu, you can install
-`peru` from [our
-PPA](https://launchpad.net/~buildinspace/+archive/ubuntu/peru).
+On Ubuntu, you can install `peru` from [our
+PPA](https://launchpad.net/~buildinspace/+archive/ubuntu/peru). On Arch, you
+can install `peru-git` [from the
+AUR](https://aur.archlinux.org/packages/peru-git/).
 
 ## Getting Started
 
