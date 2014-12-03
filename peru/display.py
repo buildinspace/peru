@@ -156,11 +156,11 @@ class FancyDisplay(BaseDisplay):
         for slot, job_id in enumerate(self._job_slots):
             # Fancy unicode box characters in the left column.
             if slot == 0:
-                self.output.write('╭' if len(self._job_slots) > 1 else '╶')
+                self.output.write('┌' if len(self._job_slots) > 1 else '╶')
             elif slot < len(self._job_slots) - 1:
                 self.output.write('├')
             else:
-                self.output.write('╰')
+                self.output.write('└')
             self.output.write(' ')
             self.output.write(self.titles[job_id])
             self.output.write(': ')

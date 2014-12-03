@@ -52,8 +52,8 @@ class DisplayTest(unittest.TestCase):
         handle2.write('something2')
         disp._draw()
         expected2 = textwrap.dedent('''\
-            ╭ title1: something1 
-            ╰ title2: something2 
+            ┌ title1: something1 
+            └ title2: something2 
             ''')  # nopep8
         self.assertEqual(expected2, output.getlines())
 
@@ -62,9 +62,9 @@ class DisplayTest(unittest.TestCase):
         handle3.write('something3')
         disp._draw()
         expected3 = textwrap.dedent('''\
-            ╭ title1: something1 
+            ┌ title1: something1 
             ├ title2: something2 
-            ╰ title3: something3 
+            └ title3: something3 
             ''')  # nopep8
         self.assertEqual(expected3, output.getlines())
 
@@ -72,9 +72,9 @@ class DisplayTest(unittest.TestCase):
         disp._draw()
         expected4 = textwrap.dedent('''\
             stuff above
-            ╭ title1: something1 
+            ┌ title1: something1 
             ├ title2: something2 
-            ╰ title3: something3 
+            └ title3: something3 
             ''')  # nopep8
         self.assertEqual(expected4, output.getlines())
 
@@ -82,8 +82,8 @@ class DisplayTest(unittest.TestCase):
         disp._draw()
         expected5 = textwrap.dedent('''\
             stuff above
-            ╭ title1: something1 
-            ╰ title3: something3 
+            ┌ title1: something1 
+            └ title3: something3 
             ''')  # nopep8
         self.assertEqual(expected5, output.getlines())
 
