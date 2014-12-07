@@ -27,9 +27,10 @@ But peru is all about fetching, and that lets us get a few things right:
   with the latest versions of your dependencies. Peru can pick specific files
   out of a tree, or mix multiple trees into a single directory.
 
-There's another class of tools, like git submodules and Google's
-[Repo](http://source.android.com/source/developing.html), that do fetching as
-part of your source control. These tend to break sweet features like `git
+There's another class of tools, like Google's
+[gclient](http://dev.chromium.org/developers/how-tos/depottools) and
+[repo](http://source.android.com/source/developing.html), that do fetching as
+part of your source control. Those tend to break sweet features like `git
 bisect`. Peru leaves your source control the heck alone.
 
 ## Installation
