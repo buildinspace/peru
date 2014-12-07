@@ -6,6 +6,6 @@ install:
   - pip install coveralls flake8
 script:
   - ./test.sh -v
-  - ./scripts/validate_third_party.sh
+  - ./scripts/validate-third-party.sh
 after_success:
   coveralls

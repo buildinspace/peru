@@ -9,9 +9,9 @@ for var in `env | grep PERU_ | cut -d = -f 1` ; do
   unset $var
 done
 
-cd $(dirname "$BASH_SOURCE")
+cd $(dirname "$BASH_SOURCE")/..
 
-source ./scripts/env.sh
+source scripts/env.sh
 
 export PYTHONASYNCIODEBUG=1
 
