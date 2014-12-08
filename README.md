@@ -22,7 +22,8 @@ But peru is all about fetching, and that lets us get a few things right:
 - **Reproducibility.** When you check out an old version of your code, you can
   get exactly the same dependencies as when you wrote that code.
 - **Speed.** Fetches run in parallel, everything is cached, and we use git
-  internally for heavy lifting.
+  internally for heavy lifting. (See
+  [Architecture: Caching](docs/architecture.md#caching).)
 - **Dubious features.** Peru can automatically update your `peru.yaml` file
   with the latest versions of your dependencies. Peru can pick specific files
   out of a tree, or mix multiple trees into a single directory.
@@ -215,34 +216,34 @@ up to date, and you'll still be able to reach old versions in your history.
   implemented in Bash.
 
 ## Creating New Module Types
-- Module type plugins are as-dumb-as-possible scripts that only know how to
-  fetch, and optionally reup. Peru shells out to them and then handles most of
-  the caching magic itself, though plugins can also do their own caching as
-  appropriate.  For example, the git and hg plugins keep track of repos they
-  clone. Peru itself doesn't need to know how to do that.
-- Plugins are defined with a complicated, undocumented directory layout that
-  changes all the time for no reason.
+Module type plugins are as-dumb-as-possible scripts that only know how to
+fetch, and optionally reup. Peru shells out to them and then handles most of
+the caching magic itself, though plugins can also do their own caching as
+appropriate.  For example, the git and hg plugins keep track of repos they
+clone. Peru itself doesn't need to know how to do that. For all the details,
+see [Architecture: Plugins](docs/architecture.md#plugins).
 
 ## Rules
-- Some fields (like `url` and `rev`) are specific to certain module types.
-  There are also fields you can use in any module, which modify the the tree of
-  files after it's fetched. These made an appearance in the fancy example
-  above:
-  - `build`: A shell command to run on the fetched files. Fetching happens
-    somewhere in outer space (a temporary directory), and this command will be
-    run there.
-  - `export`: A subdirectory that peru should treat as the root of the module
-    tree. Everything else is dropped, including parent directories. Applies
-    after `build`.
-  - `files`: A file or directory, or a list of files and directories, to
-    include in the module. Everything else is dropped, though the root of the
-    module tree is not changed. These can have `*` or `**` globs, powered by
-    Python's pathlib. Applies after `export`.
-- Besides using those fields in your modules, you can also use them in "named
-  rules", which let you transform one module in multiple ways. For example, say
-  you want the `asyncio` subdir from the Tulip project, but you also want the
-  license file somewhere else. Rather than defining the same module twice, you
-  can use one module and two named rules, like this:
+Some fields (like `url` and `rev`) are specific to certain module types. There
+are also fields you can use in any module, which modify the the tree of files
+after it's fetched. These made an appearance in the fancy example above:
+
+- `build`: A shell command to run on the fetched files. Fetching happens
+  somewhere in outer space (a temporary directory), and this command will be
+  run there.
+- `export`: A subdirectory that peru should treat as the root of the module
+  tree. Everything else is dropped, including parent directories. Applies
+  after `build`.
+- `files`: A file or directory, or a list of files and directories, to
+  include in the module. Everything else is dropped, though the root of the
+  module tree is not changed. These can have `*` or `**` globs, powered by
+  Python's pathlib. Applies after `export`.
+
+Besides using those fields in your modules, you can also use them in "named
+rules", which let you transform one module in multiple ways. For example, say
+you want the `asyncio` subdir from the Tulip project, but you also want the
+license file somewhere else. Rather than defining the same module twice, you
+can use one module and two named rules, like this:
 
 ```yaml
 imports:
@@ -259,11 +260,11 @@ rule license:
     files: COPYING
 ```
 
-- As in the example above, named rules are declared a lot like modules and then
-  used in the `imports` list, with the syntax `module|rule`.  The `|` operator
-  there works kind of like a shell pipeline, so you can even do twisted things
-  like `module|rule1|rule2`, with each rule applying to the output tree of the
-  previous.
+As in the example above, named rules are declared a lot like modules and then
+used in the `imports` list, with the syntax `module|rule`.  The `|` operator
+there works kind of like a shell pipeline, so you can even do twisted things
+like `module|rule1|rule2`, with each rule applying to the output tree of the
+previous.
 
 ## Configuration
 - Set `PERU_CACHE` to move peru's cache somewhere besides `.peru/cache`. In
