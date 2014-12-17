@@ -24,11 +24,11 @@ Usage:
   peru (help | --help | --version)
 
 Commands:
-  sync      apply imports to the working copy
-  reup      get updated module fields from remotes
-  override  replace a remote module with a local copy
-  copy      make a copy of the outputs of a build target
-  clean     delete imports from the working copy
+  sync      fetch imports and copy them to your project
+  reup      update the version information for your modules
+  override  replace a remote module with a local directory
+  copy      copy all the files from a module
+  clean     delete imports from your project
 
 Options:
   -f --force     recklessly overwrite files
