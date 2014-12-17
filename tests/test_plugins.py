@@ -1,5 +1,6 @@
 import asyncio
 from collections import defaultdict
+import contextlib
 import hashlib
 import io
 import os
@@ -44,7 +45,6 @@ class PluginsTest(unittest.TestCase):
         self.plugin_context = plugin.PluginContext(
             cwd='.',
             plugin_cache_root=self.cache_root,
-            plugin_paths=(),
             parallelism_semaphore=asyncio.BoundedSemaphore(
                 plugin.DEFAULT_PARALLEL_FETCH_LIMIT),
             plugin_cache_locks=defaultdict(asyncio.Lock),
@@ -285,38 +285,61 @@ class PluginsTest(unittest.TestCase):
         else:
             assert False, 'should throw PluginModuleFieldError'
 
-    def test_plugin_paths(self):
-        plugins_dir = shared.create_dir({
-            'footype/fetch.py':
+    def test_user_defined_plugin(self):
+        plugin_prefix = 'peru/plugins/footype/'
+        fetch_file = plugin_prefix + 'fetch.py'
+        reup_file = plugin_prefix + 'reup.py'
+        plugin_yaml_file = plugin_prefix + 'plugin.yaml'
+        fake_config_dir = shared.create_dir({
+            fetch_file:
                 '#! /usr/bin/env python3\nprint("hey there!")\n',
-            'footype/reup.py': textwrap.dedent('''\
+            reup_file: textwrap.dedent('''\
                 #! /usr/bin/env python3
                 import os
                 outfile = os.environ['PERU_REUP_OUTPUT']
                 print("name: val", file=open(outfile, 'w'))
                 '''),
-            'footype/plugin.yaml': textwrap.dedent('''\
+            plugin_yaml_file: textwrap.dedent('''\
                 fetch exe: fetch.py
                 reup exe: reup.py
                 required fields: []
                 ''')})
-        os.chmod(os.path.join(plugins_dir, 'footype', 'fetch.py'), 0o755)
-        os.chmod(os.path.join(plugins_dir, 'footype', 'reup.py'), 0o755)
+        os.chmod(os.path.join(fake_config_dir, fetch_file), 0o755)
+        os.chmod(os.path.join(fake_config_dir, reup_file), 0o755)
         fetch_dir = shared.create_dir()
-        context = self.plugin_context._replace(plugin_paths=(plugins_dir,))
-        output = test_plugin_fetch(context, 'footype', {}, fetch_dir)
-        self.assertEqual('hey there!\n', output)
-        output = test_plugin_get_reup_fields(context, 'footype', {})
-        self.assertDictEqual({'name': 'val'}, output)
+
+        # We need to trick peru into loading plugins from the fake config dir
+        # dir. We do this by setting an env var, which depends on the platform.
+        if os.name == 'nt':
+            # Windows
+            config_path_variable = 'LOCALAPPDATA'
+        else:
+            # non-Windows
+            config_path_variable = 'XDG_CONFIG_HOME'
+
+        with temporary_environment(config_path_variable, fake_config_dir):
+            output = test_plugin_fetch(
+                self.plugin_context, 'footype', {}, fetch_dir)
+            self.assertEqual('hey there!\n', output)
+            output = test_plugin_get_reup_fields(
+                self.plugin_context, 'footype', {})
+            self.assertDictEqual({'name': 'val'}, output)
 
     def test_no_such_plugin(self):
         with self.assertRaises(plugin.PluginCandidateError):
             test_plugin_fetch(
                 self.plugin_context, 'nosuchtype!', {}, os.devnull)
 
-    def test_multiple_plugin_definitions(self):
-        path1 = shared.create_dir({'footype/junk': 'junk'})
-        path2 = shared.create_dir({'footype/junk': 'junk'})
-        context = self.plugin_context._replace(plugin_paths=(path1, path2))
-        with self.assertRaises(plugin.PluginCandidateError):
-            test_plugin_fetch(context, 'footype', {}, os.devnull)
+
+@contextlib.contextmanager
+def temporary_environment(name, value):
+    NOT_SET = object()
+    old_value = os.environ.get(name, NOT_SET)
+    os.environ[name] = value
+    try:
+        yield
+    finally:
+        if old_value is NOT_SET:
+            del os.environ[name]
+        else:
+            os.environ[name] = old_value

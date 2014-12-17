@@ -112,6 +112,18 @@ plugin scripts that want to refer to other files in the plugin folder
 need to use paths based on `argv[0]`; simple relative paths won't work
 for that.
 
+You can install your own plugins by putting them in one of the directories that
+peru searches. On Posix systems, those are:
+
+1. `$XDG_CONFIG_HOME/peru/plugins/` (default `~/.config/peru/plugins/`)
+2. `/usr/local/lib/peru/plugins/`
+3. `/usr/lib/peru/plugins/`
+
+On Windows, the plugin paths are:
+
+1. `%LOCALAPPDATA%\peru\plugins\`
+2. `%PROGRAMFILES%\peru\plugins\`
+
 ## Caching
 
 There are two types of caching in peru: plugin caching and the main tree

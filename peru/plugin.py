@@ -19,8 +19,6 @@ DEFAULT_PARALLEL_FETCH_LIMIT = 10
 DEBUG_PARALLEL_COUNT = 0
 DEBUG_PARALLEL_MAX = 0
 
-PLUGINS_DIR = os.path.join(compat.MODULE_ROOT, 'resources', 'plugins')
-
 PluginDefinition = namedtuple(
     'PluginDefinition',
     ['type', 'fetch_exe', 'reup_exe', 'fields', 'required_fields',
@@ -28,8 +26,8 @@ PluginDefinition = namedtuple(
 
 PluginContext = namedtuple(
     'PluginContext',
-    ['cwd', 'plugin_cache_root', 'plugin_paths', 'parallelism_semaphore',
-     'plugin_cache_locks', 'tmp_root'])
+    ['cwd', 'plugin_cache_root', 'parallelism_semaphore', 'plugin_cache_locks',
+     'tmp_root'])
 
 
 @asyncio.coroutine
@@ -68,8 +66,7 @@ def _plugin_job(plugin_context, module_type, module_fields, command, env,
                 display_handle):
     global DEBUG_PARALLEL_COUNT, DEBUG_PARALLEL_MAX
 
-    definition = _get_plugin_definition(module_type, module_fields, command,
-                                        plugin_context.plugin_paths)
+    definition = _get_plugin_definition(module_type, module_fields, command)
 
     exe = _get_plugin_exe(definition, command)
     # For Windows to run scripts with the right interpreter, we need to use run
@@ -210,8 +207,8 @@ def _plugin_cache_key(definition, module_fields):
     })
 
 
-def _get_plugin_definition(module_type, module_fields, command, plugin_paths):
-    root = _find_plugin_dir(module_type, plugin_paths)
+def _get_plugin_definition(module_type, module_fields, command):
+    root = _find_plugin_dir(module_type)
     metadata_path = os.path.join(root, 'plugin.yaml')
     if not os.path.isfile(metadata_path):
         raise PluginMetadataMissingError(
@@ -248,26 +245,47 @@ def _get_plugin_definition(module_type, module_fields, command, plugin_paths):
     return definition
 
 
-def _find_plugin_dir(module_type, plugin_paths):
+def _find_plugin_dir(module_type):
     '''Find the directory containing the plugin definition for the given type.
     Do this by searching all the paths where plugins can live for a dir that
     matches the type name.'''
-    roots = [PLUGINS_DIR] + list(plugin_paths)
-    options = [os.path.join(root, module_type) for root in roots]
-    matches = [option for option in options if os.path.isdir(option)]
 
-    if not matches:
+    for install_dir in _get_plugin_install_dirs():
+        candidate = os.path.join(install_dir, module_type)
+        if os.path.isdir(candidate):
+            return candidate
+    else:
         raise PluginCandidateError(
             'No plugin found for `{}` module in paths:\n{}'.format(
                 module_type,
-                '\n'.join(roots)))
-    if len(matches) > 1:
-        raise PluginCandidateError(
-            'Multiple plugins found for `{}` module:\n{}'.format(
-                module_type,
-                '\n'.join(matches)))
+                '\n'.join(_get_plugin_install_dirs())))
 
-    return matches[0]
+
+def _get_plugin_install_dirs():
+    '''Return all the places on the filesystem where we should look for plugin
+    definitions. Order is significant here: user-installed plugins should be
+    searched first, followed by system-installed plugins, and last of all peru
+    builtins.'''
+    builtins_dir = os.path.join(compat.MODULE_ROOT, 'resources', 'plugins')
+    if os.name == 'nt':
+        # Windows
+        local_data_dir = os.path.expandvars('%LOCALAPPDATA%')
+        program_files_dir = os.path.expandvars('%PROGRAMFILES%')
+        return (
+            os.path.join(local_data_dir, 'peru', 'plugins'),
+            os.path.join(program_files_dir, 'peru', 'plugins'),
+            builtins_dir,
+        )
+    else:
+        # non-Windows
+        default_config_dir = os.path.expanduser('~/.config')
+        config_dir = os.environ.get('XDG_CONFIG_HOME', default_config_dir)
+        return (
+            os.path.join(config_dir, 'peru', 'plugins'),
+            '/usr/local/lib/peru/plugins',
+            '/usr/lib/peru/plugins',
+            builtins_dir,
+        )
 
 
 def debug_assert_clean_parallel_count():
