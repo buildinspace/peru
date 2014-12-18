@@ -16,7 +16,15 @@ def get_request_filename(request):
         pieces = re.split('\s*;\s*', disposition)
         for piece in pieces:
             if piece.startswith('filename='):
-                return piece[len('filename='):]
+                filename = piece[len('filename='):]
+                # Strip exactly one " from each end.
+                if filename.startswith('"'):
+                    filename = filename[1:]
+                if filename.endswith('"'):
+                    filename = filename[:-1]
+                # Interpret backslashed quotes.
+                filename = filename.replace('\\"', '"')
+                return filename
     # If no filename was specified, pick a reasonable default.
     return os.path.basename(urlsplit(request.url).path) or 'index.html'
 

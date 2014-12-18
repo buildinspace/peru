@@ -46,6 +46,16 @@ class CurlPluginTest(unittest.TestCase):
                          'attachment; filename=bar'}
         self.assertEqual('bar',
                          curl_plugin.get_request_filename(request))
+        # Check quoted filenames.
+        request._info = {'Content-Disposition':
+                         'attachment; filename="bar"'}
+        self.assertEqual('bar',
+                         curl_plugin.get_request_filename(request))
+        # Check backslashed quotes in filenames.
+        request._info = {'Content-Disposition':
+                         'attachment; filename="bar\\""'}
+        self.assertEqual('bar"',
+                         curl_plugin.get_request_filename(request))
 
     def test_download_file_with_length(self):
         content = b'xy' * 4096
