@@ -42,7 +42,7 @@ echo Syncing third-party to $expected_dir
 cp peru.yaml "$expected_dir"
 cd "$expected_dir"
 # Sync quietly, to spare Travis from a lot of junk output.
-"$repo_root/peru.sh" sync -q
+"$repo_root/peru.py" sync -q
 # The peru.yaml file and the .peru dir won't be in the found dir, so get rid of
 # them here.
 rm -rf peru.yaml .peru
