@@ -1,5 +1,6 @@
 import os
 import setuptools
+import sys
 
 # Written according to the docs at
 # https://packaging.python.org/en/latest/distributing.html
@@ -25,6 +26,17 @@ def get_all_resources_filepaths():
         resources_paths.extend(relpaths)
     return resources_paths
 
+
+def get_install_requires():
+    dependencies = ['docopt', 'PyYAML']
+    # Python 3.3 needs extra libs that aren't installed by default.
+    if sys.version_info < (3, 3):
+        raise RuntimeError('The minimum supported Python version is 3.3.')
+    elif (3, 3) <= sys.version_info < (3, 4):
+        dependencies.extend(['asyncio', 'pathlib'])
+    return dependencies
+
+
 setuptools.setup(
     name='peru',
     description='A tool for fetching code',
@@ -40,10 +52,5 @@ setuptools.setup(
             'peru=peru.main:main',
         ]
     },
-    install_requires=[
-        'asyncio',  # Python 3.3.
-        'docopt',
-        'pathlib',  # Python 3.3.
-        'PyYAML',
-    ],
+    install_requires=get_install_requires(),
 )
