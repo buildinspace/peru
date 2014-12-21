@@ -6,7 +6,6 @@ import subprocess
 
 REPO_ROOT = os.path.dirname(os.path.realpath(__file__))
 TESTS_DIR = os.path.join(REPO_ROOT, 'tests')
-THIRD_PARTY_DIR = os.path.join(REPO_ROOT, 'third-party')
 
 
 def get_untracked_files():
@@ -34,7 +33,7 @@ def main():
 
     # Run the actual tests.
     env = os.environ.copy()
-    env['PYTHONPATH'] = ':'.join((REPO_ROOT, THIRD_PARTY_DIR))
+    env['PYTHONPATH'] = REPO_ROOT
     args = sys.argv[1:]
     if len(args) > 0 and args[0] == '--with-coverage':
         args.pop(0)

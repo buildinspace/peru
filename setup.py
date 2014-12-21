@@ -40,7 +40,9 @@ setuptools.setup(
         ]
     },
     install_requires=[
+        'asyncio',  # Python 3.3.
         'docopt',
+        'pathlib',  # Python 3.3.
         'PyYAML',
     ],
 )

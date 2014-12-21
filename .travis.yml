@@ -3,9 +3,8 @@ python:
   - "3.3"
   - "3.4"
 install:
-  - pip install coveralls flake8
+  - pip install -r ./requirements-dev.txt
 script:
   - ./test.py --with-coverage -v
-  - ./scripts/validate-third-party.sh
 after_success:
   coveralls
