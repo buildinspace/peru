@@ -27,6 +27,7 @@ def get_all_resources_filepaths():
 
 setuptools.setup(
     name='peru',
+    description='A tool for fetching code',
     version=get_version(),
     url='https://github.com/buildinspace/peru',
     author="Jack O'Connor <oconnor663@gmail.com>, "
