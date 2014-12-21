@@ -20,8 +20,10 @@ class LocalModule:
         # override for a *different* project. The two different perus won't be
         # talking to the same lastimports file, and your imports may get dirty.
         # This is a tiny corner case, but maybe we should try to detect it?
+        # TODO: LocalModule should probably be renamed to OverrideModule and
+        # should no longer modify the override dir at all. See
+        # https://github.com/buildinspace/peru/issues/72.
         self.peru_dir = peru_dir or os.path.join(root, ".peru")
-        compat.makedirs(self.peru_dir)
 
     @asyncio.coroutine
     def apply_imports(self, runtime, custom_imports=None):
@@ -48,6 +50,7 @@ class LocalModule:
         return last_imports_tree
 
     def _set_last_imports(self, tree):
+        compat.makedirs(os.path.dirname(self._last_imports_path()))
         with open(self._last_imports_path(), 'w') as f:
             f.write(tree)
 
