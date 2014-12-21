@@ -1,0 +1,8 @@
+#!/usr/bin/make -f
+# -*- makefile -*-
+
+#export DH_VERBOSE=1
+export PYBUILD_NAME=peru
+
+%:
+	dh $@ --with python3 --buildsystem=pybuild

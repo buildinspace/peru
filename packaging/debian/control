@@ -1,0 +1,15 @@
+Source: peru
+Section: utils
+Priority: optional
+Maintainer: Sean Olson <olson.sean.k@gmail.com>
+Build-Depends: debhelper (>= 8.0.0), dh-python, python3, python3-setuptools (>= 3.3)
+Standards-Version: 3.9.4
+Homepage: https://github.com/buildinspace/peru
+Vcs-Git: https://github.com/buildinspace/peru
+Vcs-Browser: https://github.com/buildinspace/peru
+
+Package: peru
+Architecture: all
+Depends: ${misc:Depends}, ${python3:Depends}, git
+Suggests: mercurial, subversion
+Description: A tool for fetching code
