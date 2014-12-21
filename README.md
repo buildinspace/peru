@@ -42,8 +42,6 @@ types of repos. Use [pip](https://pip.pypa.io/en/latest/) to install it:
 
 ```python
 pip install peru
-# For Python 3.4, the line above is enough. For 3.3, you also need:
-pip install asyncio pathlib
 ```
 
 On Ubuntu, you can install `peru` from [our
@@ -276,3 +274,9 @@ previous.
   between projects, or peru will get very confused.
 - Set `PERU_FILE_NAME` if you absolutely must call your file something weird
   like `peru.yml`.
+
+## Links
+- [Discussion and announcements (Google
+  Group)](https://groups.google.com/forum/#!forum/peru-tool)
+- [Code review (Phabricator)](https://phabricator.buildinspace.com)
+- [Architecture doc](docs/architecture.md)
