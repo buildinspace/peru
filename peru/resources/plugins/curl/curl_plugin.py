@@ -2,10 +2,13 @@
 
 import hashlib
 import os
+import pathlib
 import re
 import sys
+import tarfile
 from urllib.parse import urlsplit
 import urllib.request
+import zipfile
 
 
 def get_request_filename(request):
@@ -65,11 +68,20 @@ def download_file(request, output_file, stdout=sys.stdout):
 
 
 def plugin_fetch(url, sha1):
+    unpack = os.environ['PERU_MODULE_UNPACK']
+    dest = os.environ['PERU_FETCH_DEST']
+    if unpack:
+        # Download to the tmp dir for later unpacking.
+        download_dir = os.environ['PERU_PLUGIN_TMP']
+    else:
+        # Download directly to the destination dir.
+        download_dir = dest
+
     with urllib.request.urlopen(url) as request:
         filename = os.environ['PERU_MODULE_FILENAME']
         if not filename:
             filename = get_request_filename(request)
-        full_filepath = os.path.join(os.environ['PERU_FETCH_DEST'], filename)
+        full_filepath = os.path.join(download_dir, filename)
         with open(full_filepath, 'wb') as output_file:
             digest = download_file(request, output_file)
 
@@ -77,6 +89,26 @@ def plugin_fetch(url, sha1):
         print('Bad checksum!\n     url: {}\nexpected: {}\n  actual: {}'
               .format(url, sha1, digest), file=sys.stderr)
         sys.exit(1)
+
+    if unpack == 'tar':
+        with tarfile.open(full_filepath) as t:
+            validate_filenames(info.path for info in t.getmembers())
+            t.extractall(dest)
+    elif unpack == 'zip':
+        with zipfile.ZipFile(full_filepath) as z:
+            # The zipfile library automatically strips .. and leading slashes.
+            z.extractall(dest)
+    elif unpack:
+        print('Unknown value for "unpack":', unpack, file=sys.stderr)
+        sys.exit(1)
+
+
+def validate_filenames(names):
+    for name in names:
+        path = pathlib.PurePosixPath(name)
+        if path.is_absolute() or '..' in path.parts:
+            print('Illegal path in archive:', name, file=sys.stderr)
+            sys.exit(1)
 
 
 def plugin_reup(url, sha1):

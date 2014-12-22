@@ -5,3 +5,4 @@ required fields:
 optional fields:
     - sha1
     - filename
+    - unpack
