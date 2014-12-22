@@ -94,6 +94,8 @@ defined to tell the plugin what to do:
 - `PERU_PLUGIN_CACHE` points to the plugin's cache directory. If
   `plugin.yaml` doesn't include `cache fields`, this path will be
   `/dev/null` (or `nul` on Windows).
+- `PERU_PLUGIN_TMP` points to a temp directory that will be deleted
+  after the job is finished.
 - `PERU_MODULE_*`: Each module field is provided as a variable of this
   form. For example, the git plugin gets its `url` field as
   `PERU_MODULE_URL`. The variables for optional fields that aren't

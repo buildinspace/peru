@@ -76,7 +76,7 @@ def _plugin_job(plugin_context, module_type, module_fields, command, env,
         shell_command_line = subprocess.list2cmdline([exe])
 
         complete_env = _plugin_env(
-            plugin_context, definition, module_fields, command)
+            plugin_context, definition, module_fields, command, stack)
         complete_env.update(env)
 
         # Use a lock to protect the plugin cache. It would be unsafe for two
@@ -151,7 +151,8 @@ def _validate_plugin_definition(definition, module_fields):
             'Unknown module fields: ' + ', '.join(unknown_module_fields))
 
 
-def _plugin_env(plugin_context, plugin_definition, module_fields, command):
+def _plugin_env(plugin_context, plugin_definition, module_fields, command,
+                exit_stack):
     env = os.environ.copy()
 
     # First, blank out all module field vars.  This prevents the calling
@@ -172,6 +173,9 @@ def _plugin_env(plugin_context, plugin_definition, module_fields, command):
     # For plugins that use the same exe for fetch and reup, make the command
     # name available in the environment.
     env['PERU_PLUGIN_COMMAND'] = command
+
+    # Create a directory for plugins' temporary files.
+    env['PERU_PLUGIN_TMP'] = exit_stack.enter_context(tmp_dir(plugin_context))
 
     # Create a persistent cache dir for saved files, like repo clones.
     env['PERU_PLUGIN_CACHE'] = _plugin_cache_path(
