@@ -105,9 +105,9 @@ git module dircolors:
 
 curl module pathogen:
     url: https://codeload.github.com/tpope/vim-pathogen/tar.gz/v2.3
-    # Run this command after fetching. In this case, it unpacks the archive.
-    build: tar xfz vim-pathogen-2.3.tar.gz
-    # After the build command, use this subdirectory as the root of the module.
+    # Untar the archive after fetching.
+    unpack: tar
+    # After the unpack, use this subdirectory as the root of the module.
     export: vim-pathogen-2.3/autoload/
 
 git module vim-solarized:
@@ -119,14 +119,14 @@ git module vim-solarized:
 The contents of the `dircolors` module are copied to the root of our repo. The
 `files` field restricts this to just one file, `dircolors.ansi-dark`.
 
-The `pathogen` module uses the `curl` type instead of `git`. (This is just for
-the sake of an example. In real life you'd probably want to use `git` here
-too.) Since this `url` is a tarball, we use a `build` command to unpack it
-after it's fetched.  The contents of the `pathogen` module are copied into
-`.vim/autoload`, and because the module specifies an `export` directory, it's
-that directory rather than the whole module that gets copied. The result is
-that Pathogen's `autoload` directory gets merged with our own, which is the
-standard way to install Pathogen.
+The `pathogen` module uses the `curl` type instead of `git`, and its URL points
+to a tarball. (This is for the sake of an example. In real life you'd probably
+use `git` here too.) The `unpack` field means that we get the contents of the
+tarball rather than the tarball file itself. Because the module specifies an
+`export` directory, it's that directory rather than the whole module that gets
+copied to the import path, `.vim/autoload`. The result is that Pathogen's
+`autoload` directory gets merged with our own, which is the standard way to
+install Pathogen.
 
 The `vim-solarized` module gets copied into its own directory under `bundle`,
 which is where Pathogen will look for it. Note that it has an explicit `rev`
@@ -160,7 +160,7 @@ index 15c758d..7f0e26b 100644
 
  curl module pathogen:
      url: https://codeload.github.com/tpope/vim-pathogen/tar.gz/v2.3
-     build: tar xfz v2.3
+     unpack: tar
      export: vim-pathogen-2.3/autoload/
 +    sha1: 9c3fd6d9891bfe2cd3ed3ddc9ffe5f3fccb72b6a
 
@@ -206,12 +206,24 @@ up to date, and you'll still be able to reach old versions in your history.
     modules without needing to push your changes upstream or edit `peru.yaml`.
 
 ## Module Types
-- `git` `hg` `svn`
-  - fields: `url` `[rev]` `[reup]`
-- `curl` - actually powered by Python's `urllib`
-  - fields: `url` `[filename]` `[sha1]`
-- A few others mostly for testing purposes. See `rsync` for an example
-  implemented in Bash.
+
+##### git, hg, svn
+For cloning repos. These types all provide the same fields:
+- `url`: required, any protocol supported by the underlying VCS
+- `rev`: optional, the specific revision/branch/tag to fetch
+- `reup`: optional, the branch/tag to get the latest rev from when running
+  `peru reup`
+
+##### curl
+For downloading a file from a URL. This type is powered by Pythons's standard
+library, rather than an external program.
+- `url`: required, any kind supported by `urllib` (HTTP, FTP, `file://`)
+- `filename`: optional, overrides the default filename
+- `sha1`: optional, checks that the downloaded file matches the checksum
+- `unpack`: optional, `tar` or `zip`
+
+Peru includes a few other types mostly for testing purposes. See `rsync` for an
+example implemented in Bash.
 
 ## Creating New Module Types
 Module type plugins are as-dumb-as-possible scripts that only know how to
