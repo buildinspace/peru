@@ -226,12 +226,13 @@ Some fields (like `url` and `rev`) are specific to certain module types. There
 are also fields you can use in any module, which modify the the tree of files
 after it's fetched. These made an appearance in the fancy example above:
 
-- `build`: A shell command to run on the fetched files. Fetching happens
+- <s>`build`: A shell command to run on the fetched files. Fetching happens
   somewhere in outer space (a temporary directory), and this command will be
-  run there.
+  run there.</s> [Deprecated for security and portability reasons. This will go
+  away soon. The untarring/unzipping use case will be handled with the new
+  `unpack` field in the curl type.]
 - `export`: A subdirectory that peru should treat as the root of the module
-  tree. Everything else is dropped, including parent directories. Applies
-  after `build`.
+  tree. Everything else is dropped, including parent directories.
 - `files`: A file or directory, or a list of files and directories, to
   include in the module. Everything else is dropped, though the root of the
   module tree is not changed. These can have `*` or `**` globs, powered by
