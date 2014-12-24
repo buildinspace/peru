@@ -1,7 +1,7 @@
 import collections
 import os
 import re
-import sys
+import textwrap
 import yaml
 
 from .error import PrintableError
@@ -73,13 +73,14 @@ Warning: The "build" field is no longer supported. If you need to untar/unzip
 def _extract_rule(name, blob):
     _validate_name(name)
     if 'build' in blob:
-        print(build_deprecation_warning, file=sys.stderr)
-    build_command = blob.pop('build', None)
+        raise ParserError(textwrap.dedent('''\
+            The "build" field is no longer supported. If you need to
+            untar/unzip a curl module, use the "unpack" field.'''))
     export = blob.pop('export', None)
     files = _extract_maybe_list_field(blob, 'files')
-    if not build_command and not export and not files:
+    if not export and not files:
         return None
-    rule = Rule(name, build_command, export, files)
+    rule = Rule(name, export, files)
     return rule
 
 

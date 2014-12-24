@@ -49,11 +49,6 @@ class Runtime:
         num_fetches = _get_parallel_fetch_limit(args)
         self.fetch_semaphore = asyncio.BoundedSemaphore(num_fetches)
 
-        # Use a simple lock to limit builds to one at a time. This is in part
-        # for performance reasons, and in part because it lets builds print
-        # above the fancy display without interleaving.
-        self.build_lock = asyncio.Lock()
-
         # Use locks to make sure the same cache keys don't get double fetched.
         self.cache_key_locks = collections.defaultdict(asyncio.Lock)
 

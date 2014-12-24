@@ -55,24 +55,5 @@ class LocalModule:
             f.write(tree)
 
     @asyncio.coroutine
-    def do_build(self, runtime, rules):
-        """Runs all the build rules, taking their export paths into account.
-        Returns the final export path."""
-        yield from self.apply_imports(runtime)
-        export_path = self.root
-        if self.default_rule:
-            export_path = yield from self.default_rule.do_build(
-                runtime, export_path)
-        for rule in rules:
-            export_path = yield from rule.do_build(runtime, export_path)
-        return export_path
-
-    @asyncio.coroutine
-    def get_tree(self, runtime, rules):
-        export_path = yield from self.do_build(runtime, rules)
-        # It's important that we exclude .peru from the imported files. Imports
-        # could by copied into the root of the toplevel project, and that would
-        # conflict with the .peru dir there. Also, it's just garbage that the
-        # user doesn't want. (But it's important to keep track of lastimports
-        # in local overrides. And possibly other stuff in the future.)
-        return runtime.cache.import_tree(export_path, excludes=['.peru'])
+    def get_tree(self, runtime):
+        return runtime.cache.import_tree(self.root)

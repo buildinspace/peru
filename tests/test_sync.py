@@ -115,58 +115,27 @@ class SyncTest(unittest.TestCase):
         self.write_yaml(empty_yaml)
         self.do_integration_test(['sync'], {})
 
-    @unittest.skipIf(os.name == 'nt', 'build commands not Windows-compatible')
     def test_module_rules(self):
-        module_dir = shared.create_dir({'foo': 'bar'})
+        module_dir = shared.create_dir({'a/b': '', 'c/d': ''})
         yaml = '''\
             cp module foo:
                 path: {}
-                build: printf 2 >> foo; mkdir baz; mv foo baz
-                export: baz
 
-            rule copy1:
-                build: cp foo copy1
+            rule get_a:
+                export: a
 
-            rule copy2:
-                build: cp foo copy2
+            rule get_c:
+                export: c
 
             imports:
-                foo|copy1: ./
+                foo|get_a: ./
             '''.format(module_dir)
         self.write_yaml(yaml)
-        self.do_integration_test(['sync'], {'foo': 'bar2', 'copy1': 'bar2'})
+        self.do_integration_test(['sync'], {'b': ''})
         # Run it again with a different import to make sure we clean up.
-        yaml_different = yaml.replace('foo|copy1', 'foo|copy2')
+        yaml_different = yaml.replace('foo|get_a', 'foo|get_c')
         self.write_yaml(yaml_different)
-        self.do_integration_test(['sync'], {'foo': 'bar2', 'copy2': 'bar2'})
-
-    @unittest.skipIf(os.name == 'nt', 'build commands not Windows-compatible')
-    def test_build_output(self):
-        # Make sure build commands are sending their output to the display like
-        # they're supposed do. This also has the effect of testing that modules
-        # and rules are cached like they're supposed to be -- if not, they'll
-        # show up in the output more than once.
-        module_dir = shared.create_dir({'foo': 'bar'})
-        self.write_yaml('''\
-            imports:
-                basic: dir1/
-                basic|complicated: dir2/
-
-            cp module basic:
-                path: {}
-                build: echo foo
-
-            rule complicated:
-                build: echo bar
-            ''', module_dir)
-        expected_output = textwrap.dedent('''\
-            === started basic ===
-            === finished basic ===
-            foo
-            bar
-            ''')
-        output = run_peru_command(['sync', '-v'], self.test_dir)
-        self.assertEqual(expected_output, output)
+        self.do_integration_test(['sync'], {'d': ''})
 
     def test_rule_with_files(self):
         content = {name: '' for name in [
@@ -229,29 +198,15 @@ class SyncTest(unittest.TestCase):
         self.assertFalse(os.path.exists(
             os.path.join(self.peru_dir, 'cache')))
 
-    override_template = '''\
-        # module x is for testing imports in the overridden module foo
-        empty module x:
-            build: printf x > x
-
-        cp module foo:
-            path: {}
-            build: mkdir -p subdir && mv foo subdir/builtfoo
-            export: subdir
-
-        # Test that this rule gets run in the right place (e.g. in the
-        # export dir) even when the foo module is overridden.
-        rule bang:
-            build: printf '!' >> builtfoo
-
-        imports:
-            foo|bang: ./
-        '''
-
-    @unittest.skipIf(os.name == 'nt', 'build commands not Windows-compatible')
     def test_override(self):
         module_dir = shared.create_dir({'foo': 'bar'})
-        self.write_yaml(self.override_template, module_dir)
+        self.write_yaml('''\
+            cp module foo:
+                path: {}
+
+            imports:
+                foo: ./
+            ''', module_dir)
         override_dir = shared.create_dir({'foo': 'override'})
         # Set the override.
         run_peru_command(['override', 'add', 'foo', override_dir],
@@ -263,26 +218,31 @@ class SyncTest(unittest.TestCase):
         output = run_peru_command(['override', 'list'], self.test_dir)
         self.assertEqual(output, 'foo: {}\n'.format(override_dir))
         # Run the sync and confirm that the override worked.
-        self.do_integration_test(['sync'], {'builtfoo': 'override!'})
+        self.do_integration_test(['sync'], {'foo': 'override'})
         # Delete the override.
         run_peru_command(['override', 'delete', 'foo'], self.test_dir)
         # Confirm that the override was deleted.
         output = run_peru_command(['override'], self.test_dir)
         self.assertEqual(output, '')
         # Rerun the sync and confirm the original content is back.
-        self.do_integration_test(['sync'], {'builtfoo': 'bar!'})
+        self.do_integration_test(['sync'], {'foo': 'bar'})
 
-    @unittest.skipIf(os.name == 'nt', 'build commands not Windows-compatible')
     def test_override_after_regular_sync(self):
         module_dir = shared.create_dir({'foo': 'bar'})
-        self.write_yaml(self.override_template, module_dir)
+        self.write_yaml('''\
+            cp module foo:
+                path: {}
+
+            imports:
+                foo: ./
+            ''', module_dir)
         # First, do a regular sync.
-        self.do_integration_test(['sync'], {'builtfoo': 'bar!'})
+        self.do_integration_test(['sync'], {'foo': 'bar'})
         # Now, add an override, and confirm that the new sync works.
         override_dir = shared.create_dir({'foo': 'override'})
         run_peru_command(['override', 'add', 'foo', override_dir],
                          self.test_dir)
-        self.do_integration_test(['sync'], {'builtfoo': 'override!'})
+        self.do_integration_test(['sync'], {'foo': 'override'})
 
     def test_relative_override_from_subdir(self):
         self.write_yaml('''\
@@ -328,42 +288,23 @@ class SyncTest(unittest.TestCase):
                          self.test_dir)
         self.do_integration_test(['sync'], {'foo': 'override'})
 
-    @unittest.skipIf(os.name == 'nt', 'build commands not Windows-compatible')
     def test_rules_in_override(self):
-        module_dir = shared.create_dir({'foo': 'bar'})
+        module_dir = shared.create_dir({'a/b': 'c'})
         yaml = '''
             imports:
-                {}: ./
+                foo|get_a: ./
 
             cp module foo:
                 path: {}
 
-            rule test_build:
-                build: |
-                    printf fee >> fi
-                    mkdir -p subdir
-                    printf fo >> subdir/fum
-
-            rule test_export:
-                export: subdir
+            rule get_a:
+                export: a
             '''
-        self.write_yaml(yaml, 'foo|test_build', module_dir)
-        override_dir = shared.create_dir()
+        self.write_yaml(yaml, module_dir)
+        override_dir = shared.create_dir({'a/b': 'override'})
         run_peru_command(['override', 'add', 'foo', override_dir],
                          self.test_dir)
-
-        # Syncing against a build rule should build in the override.
-        self.do_integration_test(['sync'], {'fi': 'fee', 'subdir/fum': 'fo'})
-
-        # Another sync should run the build again.
-        self.do_integration_test(
-            ['sync'], {'fi': 'feefee', 'subdir/fum': 'fofo'})
-
-        # Make sure export dirs are respected in rules that come after.
-        self.write_yaml(yaml, 'foo|test_build|test_export|test_build',
-                        module_dir)
-        self.do_integration_test(
-            ['sync'], {'fum': 'fofofo', 'fi': 'fee', 'subdir/fum': 'fo'})
+        self.do_integration_test(['sync'], {'b': 'override'})
 
     def test_copy(self):
         module_dir = shared.create_dir({'foo': 'bar'})

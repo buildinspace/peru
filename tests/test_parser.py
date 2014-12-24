@@ -25,7 +25,6 @@ class ParserTest(unittest.TestCase):
     def test_parse_rule(self):
         input = dedent("""\
             rule foo:
-                build: echo hi
                 export: out/
             """)
         result = parse_string(input)
@@ -33,7 +32,6 @@ class ParserTest(unittest.TestCase):
         rule = result.scope["foo"]
         self.assertIsInstance(rule, Rule)
         self.assertEqual(rule.name, "foo")
-        self.assertEqual(rule.build_command, "echo hi")
         self.assertEqual(rule.export, "out/")
 
     def test_parse_module(self):
@@ -55,7 +53,6 @@ class ParserTest(unittest.TestCase):
     def test_parse_module_default_rule(self):
         input = dedent("""\
             git module bar:
-                build: foo
                 export: bar
             """)
         result = parse_string(input)
@@ -63,7 +60,6 @@ class ParserTest(unittest.TestCase):
         module = result.scope["bar"]
         self.assertIsInstance(module, RemoteModule)
         self.assertIsInstance(module.default_rule, Rule)
-        self.assertEqual(module.default_rule.build_command, "foo")
         self.assertEqual(module.default_rule.export, "bar")
 
     def test_parse_toplevel_imports(self):
@@ -160,5 +156,17 @@ class ParserTest(unittest.TestCase):
             parse_string(input)
         except ParserError as e:
             assert '4567' in e.message
+        else:
+            assert False, 'expected ParserError'
+
+    def test_build_field_deprecated_message(self):
+        input = dedent('''\
+            rule foo:
+                build: shell command
+            ''')
+        try:
+            parse_string(input)
+        except ParserError as e:
+            assert 'The "build" field is no longer supported.' in e.message
         else:
             assert False, 'expected ParserError'

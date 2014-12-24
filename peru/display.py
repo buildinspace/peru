@@ -49,9 +49,6 @@ class BaseDisplay:
         self.outstanding_jobs.add(job_id)
         return _DisplayHandle(self, job_id)
 
-    def get_printing_handle(self):
-        return _PrintingDisplayHandle(self)
-
     # FancyDisplay overrides print() to avoid conflicting with redraws.
     def print(self, *args, **kwargs):
         print(*args, file=self.output, **kwargs)
@@ -245,18 +242,3 @@ class _DisplayHandle:
         self._display._handle_finish(self._job_id)
         self._job_id = None
         self._closed = True
-
-
-class _PrintingDisplayHandle:
-    '''Implements the interface of a real display handle, but just prints.'''
-    def __init__(self, display):
-        self._display = display
-
-    def write(self, string):
-        self._display.print(string, end='')
-
-    def __enter__(self):
-        pass
-
-    def __exit__(self, *args):
-        pass
