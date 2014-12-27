@@ -36,6 +36,16 @@ class ParserTest(unittest.TestCase):
         self.assertEqual(rule.build_command, "echo hi")
         self.assertEqual(rule.export, "out/")
 
+    def test_parse_invalid_module(self):
+        input = dedent("""\
+            sometype module foo:
+                missingkey
+            """)
+        with self.assertRaises(ParserError) as cm:
+            parse_string(input)
+        e = cm.exception
+        self.assertEqual(e.message, "Invalid rule entry: missingkey")
+
     def test_parse_module(self):
         input = dedent("""\
             sometype module foo:

@@ -66,6 +66,8 @@ def _extract_named_rules(blob, scope):
 
 def _extract_rule(name, blob):
     _validate_name(name)
+    if not isinstance(blob, dict):
+        raise ParserError("Invalid rule entry: " + blob)
     build_command = blob.pop('build', None)
     export = blob.pop('export', None)
     files = _extract_maybe_list_field(blob, 'files')
