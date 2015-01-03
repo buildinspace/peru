@@ -1,25 +1,18 @@
 from textwrap import dedent
 import unittest
 
-from peru.parser import build_imports, parse_string, ParserError
+from peru.parser import parse_string, ParserError, build_imports
 from peru.module import Module
 from peru.rule import Rule
-
-import shared
 
 
 class ParserTest(unittest.TestCase):
 
     def test_parse_empty_file(self):
         result = parse_string('')
-        self.assertDictEqual(result.scope, {})
-        self.assertEqual(result.local_module.imports, build_imports({}))
-        self.assertEqual(result.local_module.root, '.')
-
-    def test_parse_with_project_root(self):
-        project_root = shared.create_dir()
-        result = parse_string('', project_root=project_root)
-        self.assertEqual(result.local_module.root, project_root)
+        self.assertDictEqual(result.modules, {})
+        self.assertDictEqual(result.rules, {})
+        self.assertEqual(result.imports, build_imports({}))
 
     def test_parse_rule(self):
         input = dedent("""\
@@ -27,8 +20,8 @@ class ParserTest(unittest.TestCase):
                 export: out/
             """)
         result = parse_string(input)
-        self.assertIn("foo", result.scope)
-        rule = result.scope["foo"]
+        self.assertIn("foo", result.rules)
+        rule = result.rules["foo"]
         self.assertIsInstance(rule, Rule)
         self.assertEqual(rule.name, "foo")
         self.assertEqual(rule.export, "out/")
@@ -40,8 +33,8 @@ class ParserTest(unittest.TestCase):
                 rev: abcdefg
             """)
         result = parse_string(input)
-        self.assertIn("foo", result.scope)
-        module = result.scope["foo"]
+        self.assertIn("foo", result.modules)
+        module = result.modules["foo"]
         self.assertIsInstance(module, Module)
         self.assertEqual(module.name, "foo")
         self.assertEqual(module.type, "sometype")
@@ -55,8 +48,8 @@ class ParserTest(unittest.TestCase):
                 export: bar
             """)
         result = parse_string(input)
-        self.assertIn("bar", result.scope)
-        module = result.scope["bar"]
+        self.assertIn("bar", result.modules)
+        module = result.modules["bar"]
         self.assertIsInstance(module, Module)
         self.assertIsInstance(module.default_rule, Rule)
         self.assertEqual(module.default_rule.export, "bar")
@@ -67,9 +60,9 @@ class ParserTest(unittest.TestCase):
                 foo: bar/
             """)
         result = parse_string(input)
-        self.assertDictEqual(result.scope, {})
-        self.assertEqual(result.local_module.imports, build_imports(
-            {'foo': 'bar/'}))
+        self.assertDictEqual(result.modules, {})
+        self.assertDictEqual(result.rules, {})
+        self.assertEqual(result.imports, build_imports({'foo': 'bar/'}))
 
     def test_parse_list_imports(self):
         input = dedent('''\
@@ -77,17 +70,18 @@ class ParserTest(unittest.TestCase):
                 - foo: bar/
             ''')
         result = parse_string(input)
-        self.assertDictEqual(result.scope, {})
-        self.assertEqual(result.local_module.imports, build_imports(
-            {'foo': 'bar/'}))
+        self.assertDictEqual(result.modules, {})
+        self.assertDictEqual(result.rules, {})
+        self.assertEqual(result.imports, build_imports({'foo': 'bar/'}))
 
     def test_parse_empty_imports(self):
         input = dedent('''\
             imports:
             ''')
         result = parse_string(input)
-        self.assertDictEqual(result.scope, {})
-        self.assertEqual(result.local_module.imports, build_imports({}))
+        self.assertDictEqual(result.modules, {})
+        self.assertDictEqual(result.rules, {})
+        self.assertEqual(result.imports, build_imports({}))
 
     def test_parse_wrong_type_imports_throw(self):
         with self.assertRaises(ParserError):
@@ -124,15 +118,21 @@ class ParserTest(unittest.TestCase):
             parse_string("git module:")
 
     def test_duplicate_names_throw(self):
-        input = dedent("""
-            git module {}:
-            rule {}:
-            """)
-        # Should be fine with different names...
-        parse_string(input.format("foo", "bar"))
-        # But should fail with duplicates.
+        # Modules and rules should not conflict.
+        ok_input = dedent('''
+            rule foo:
+            git module foo:
+            ''')
+        parse_string(ok_input)
+        # But duplicate modules should fail. (Duplicate rules are a not
+        # currently possible, because their YAML keys would be exact
+        # duplicates.)
+        bad_input = dedent('''
+            git module foo:
+            hg module foo:
+            ''')
         with self.assertRaises(ParserError):
-            parse_string(input.format("foo", "foo"))
+            parse_string(bad_input)
 
     def test_non_string_module_field_name(self):
         input = dedent('''\

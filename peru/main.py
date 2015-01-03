@@ -10,9 +10,9 @@ import docopt
 from . import async
 from . import compat
 from .error import PrintableError
-from . import parser
+from . import imports
+from .parser import build_imports
 from .runtime import Runtime
-from . import resolver
 
 __doc__ = """\
 Usage:
@@ -85,15 +85,14 @@ class Main:
 
     @command("sync")
     def do_sync(self):
-        yield from self.runtime.local_module.apply_imports(self.runtime)
+        yield from imports.checkout(self.runtime)
 
     @command('reup')
     def do_reup(self):
         if not self.args['<modules>']:
-            modules = resolver.get_all_modules(self.runtime)
+            modules = self.runtime.modules.values()
         else:
-            modules = resolver.get_modules(
-                self.runtime, self.args['<modules>'])
+            modules = self.runtime.get_modules(self.args['<modules>'])
         futures = [module.reup(self.runtime) for module in modules]
         yield from async.stable_gather(*futures)
         if not self.args['--nosync']:
@@ -121,7 +120,7 @@ class Main:
             dest = tempfile.mkdtemp(prefix='peru_copy_')
         else:
             dest = self.args['<dest>']
-        tree = yield from resolver.get_tree(
+        tree = yield from imports.get_tree(
             self.runtime, self.args['<target>'])
         self.runtime.cache.export_tree(tree, dest, force=self.runtime.force)
         if not self.args['<dest>']:
@@ -129,9 +128,8 @@ class Main:
 
     @command('clean')
     def do_clean(self):
-        # Apply empty imports.
-        yield from self.runtime.local_module.apply_imports(
-            self.runtime, parser.build_imports({}))
+        empty_imports = build_imports({})
+        yield from imports.checkout(self.runtime, imports=empty_imports)
 
 
 def get_version():

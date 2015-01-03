@@ -23,10 +23,8 @@ class Runtime:
             'PERU_DIR', os.path.join(self.root, '.peru'))
         compat.makedirs(self.peru_dir)
 
-        parse_result = parser.parse_file(
-            self.peru_file, peru_dir=self.peru_dir)
-        self.scope = parse_result.scope
-        self.local_module = parse_result.local_module
+        self.modules, self.rules, self.imports = \
+            parser.parse_file(self.peru_file)
 
         cache_dir = env.get('PERU_CACHE', os.path.join(self.peru_dir, 'cache'))
         self.cache = cache.Cache(cache_dir)
@@ -91,6 +89,22 @@ class Runtime:
             parallelism_semaphore=self.fetch_semaphore,
             plugin_cache_locks=self.plugin_cache_locks,
             tmp_root=self._tmp_root)
+
+    def get_rules(self, rule_names):
+        rules = []
+        for name in rule_names:
+            if name not in self.rules:
+                raise PrintableError('rule "{}" does not exist'.format(name))
+            rules.append(self.rules[name])
+        return rules
+
+    def get_modules(self, names):
+        modules = []
+        for name in names:
+            if name not in self.modules:
+                raise PrintableError('module "{}" does not exist'.format(name))
+            modules.append(self.modules[name])
+        return modules
 
 
 def find_peru_file(start_dir, name):

@@ -1,11 +1,9 @@
 import collections
-import os
 import re
 import textwrap
 import yaml
 
 from .error import PrintableError
-from .local_module import LocalModule
 from .module import Module
 from .rule import Rule
 
@@ -15,53 +13,50 @@ class ParserError(PrintableError):
 
 
 ParseResult = collections.namedtuple(
-    "ParseResult", ["scope", "local_module"])
+    "ParseResult", ["modules", "rules", "imports"])
 
 
-def parse_file(file_path, **local_module_kwargs):
-    project_root = os.path.dirname(file_path)
+def parse_file(file_path):
     with open(file_path) as f:
-        return parse_string(f.read(), project_root, **local_module_kwargs)
+        return parse_string(f.read())
 
 
-def parse_string(yaml_str, project_root='.', **local_module_kwargs):
+def parse_string(yaml_str):
     try:
         blob = yaml.safe_load(yaml_str)
     except yaml.scanner.ScannerError as e:
         raise PrintableError("YAML parser error:\n\n" + str(e)) from e
     if blob is None:
         blob = {}
-    return _parse_toplevel(blob, root=project_root, **local_module_kwargs)
+    return _parse_toplevel(blob)
 
 
-def _parse_toplevel(blob, **local_module_kwargs):
-    scope = {}
-    _extract_named_rules(blob, scope)
-    _extract_modules(blob, scope)
-    local_module = _build_local_module(blob, **local_module_kwargs)
-    return ParseResult(scope, local_module)
-
-
-def _build_local_module(blob, **local_module_kwargs):
+def _parse_toplevel(blob):
+    modules = _extract_modules(blob)
+    rules = _extract_named_rules(blob)
     imports = _extract_imports(blob)
     if blob:
         raise ParserError("Unknown toplevel fields: " +
                           ", ".join(blob.keys()))
-    return LocalModule(imports, **local_module_kwargs)
+    return ParseResult(modules, rules, imports)
 
 
-def _extract_named_rules(blob, scope):
+def _extract_named_rules(blob):
+    scope = {}
     for field in list(blob.keys()):
         parts = field.split(' ')
         if len(parts) == 2 and parts[0] == "rule":
             _, name = parts
+            if name in scope:
+                raise ParserError('Rule "{}" already exists.'.format(name))
             inner_blob = blob.pop(field)  # remove the field from blob
             inner_blob = {} if inner_blob is None else inner_blob
             rule = _extract_rule(name, inner_blob)
             if inner_blob:
                 raise ParserError("Unknown rule fields: " +
                                   ", ".join(inner_blob.keys()))
-            _add_to_scope(scope, name, rule)
+            scope[name] = rule
+    return scope
 
 
 build_deprecation_warning = '''\
@@ -87,16 +82,20 @@ def _extract_default_rule(blob):
     return _extract_rule("<default>", blob)
 
 
-def _extract_modules(blob, scope):
+def _extract_modules(blob):
+    scope = {}
     for field in list(blob.keys()):
         parts = field.split(' ')
-        if len(parts) == 3 and parts[1] == "module":
+        if len(parts) == 3 and parts[1] == 'module':
             type, _, name = parts
+            if name in scope:
+                raise ParserError('Module "{}" already exists.'.format(name))
             inner_blob = blob.pop(field)  # remove the field from blob
             inner_blob = {} if inner_blob is None else inner_blob
             yaml_name = field
             module = _build_module(name, type, inner_blob, yaml_name)
-            _add_to_scope(scope, name, module)
+            scope[name] = module
+    return scope
 
 
 def _build_module(name, type, blob, yaml_name):
@@ -184,12 +183,6 @@ def _validate_name(name):
     if re.search(r"[\s:.]", name):
         raise ParserError("Invalid name: " + repr(name))
     return name
-
-
-def _add_to_scope(scope, name, obj):
-    if name in scope:
-        raise ParserError('"{}" is defined more than once'.format(name))
-    scope[name] = obj
 
 
 def _extract_maybe_list_field(blob, name):

@@ -5,12 +5,14 @@ from .cache import compute_key, MergeConflictError
 
 def merge_imports_tree(cache, imports, target_trees, base_tree=None):
     '''Take an Imports struct and a dictionary of resolved trees and merge the
-    unified imports tree. If base_tree is supplied, merge that too. There are
-    a couple reasons for structuring this function the way it is:
+    unified imports tree. If base_tree is supplied, merge that too. There are a
+    couple reasons for structuring this function the way it is:
         - We want to cache merged trees, so that we don't have to do expensive
           git operations just to check whether a module is in cache.
         - We want tree merging to know about target names, so that it can write
           good error messages when there are conflicts.
+        - We need to use this for both toplevel imports and recursive module
+          imports.
     '''
     key = _cache_key(imports, target_trees, base_tree)
     if key in cache.keyval:
