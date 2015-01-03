@@ -4,7 +4,6 @@ import os
 from .cache import compute_key
 from .error import PrintableError
 from .edit_yaml import set_module_field_in_file
-from .local_module import LocalModule
 from .plugin import plugin_fetch, plugin_get_reup_fields
 
 
@@ -69,5 +68,4 @@ class Module:
             raise PrintableError(
                 "override path for module '{}' is not a directory: {}".format(
                     self.name, path))
-        override_module = LocalModule(None, self.default_rule, path)
-        return override_module.get_tree(runtime)
+        return runtime.cache.import_tree(path)

@@ -44,11 +44,10 @@ def _parse_toplevel(blob, **local_module_kwargs):
 
 def _build_local_module(blob, **local_module_kwargs):
     imports = _extract_imports(blob)
-    default_rule = _extract_default_rule(blob)
     if blob:
         raise ParserError("Unknown toplevel fields: " +
                           ", ".join(blob.keys()))
-    return LocalModule(imports, default_rule, **local_module_kwargs)
+    return LocalModule(imports, **local_module_kwargs)
 
 
 def _extract_named_rules(blob, scope):

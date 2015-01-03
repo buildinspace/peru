@@ -14,7 +14,6 @@ class ParserTest(unittest.TestCase):
         result = parse_string('')
         self.assertDictEqual(result.scope, {})
         self.assertEqual(result.local_module.imports, build_imports({}))
-        self.assertEqual(result.local_module.default_rule, None)
         self.assertEqual(result.local_module.root, '.')
 
     def test_parse_with_project_root(self):

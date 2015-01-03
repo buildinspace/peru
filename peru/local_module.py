@@ -7,9 +7,8 @@ from . import resolver
 
 
 class LocalModule:
-    def __init__(self, imports, default_rule, root='.', peru_dir=None):
+    def __init__(self, imports, root='.', peru_dir=None):
         self.imports = imports
-        self.default_rule = default_rule
         self.root = root
 
         # The toplevel module might relocate its own .peru directory with the
@@ -53,6 +52,3 @@ class LocalModule:
         compat.makedirs(os.path.dirname(self._last_imports_path()))
         with open(self._last_imports_path(), 'w') as f:
             f.write(tree)
-
-    def get_tree(self, runtime):
-        return runtime.cache.import_tree(self.root)
