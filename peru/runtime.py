@@ -74,6 +74,8 @@ class Runtime:
         self.overrides[name] = path
 
     def get_override(self, name):
+        if name not in self.overrides:
+            return None
         path = self.overrides[name]
         if not os.path.isabs(path):
             # Relative paths are stored relative to the project root.

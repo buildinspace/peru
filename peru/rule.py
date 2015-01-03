@@ -38,8 +38,8 @@ class Rule:
     def get_tree(self, runtime, input_tree):
         key = self._cache_key(input_tree)
 
-        # As with RemoteModule, take a lock on the cache key to avoid running
-        # the same rule (or identical rules) twice with the same input.
+        # As with Module, take a lock on the cache key to avoid running the
+        # same rule (or identical rules) twice with the same input.
         cache_lock = runtime.cache_key_locks[key]
         with (yield from cache_lock):
             if key in runtime.cache.keyval:

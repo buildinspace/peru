@@ -54,6 +54,5 @@ class LocalModule:
         with open(self._last_imports_path(), 'w') as f:
             f.write(tree)
 
-    @asyncio.coroutine
     def get_tree(self, runtime):
         return runtime.cache.import_tree(self.root)

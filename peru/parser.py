@@ -6,7 +6,7 @@ import yaml
 
 from .error import PrintableError
 from .local_module import LocalModule
-from .remote_module import RemoteModule
+from .module import Module
 from .rule import Rule
 
 
@@ -37,7 +37,7 @@ def parse_string(yaml_str, project_root='.', **local_module_kwargs):
 def _parse_toplevel(blob, **local_module_kwargs):
     scope = {}
     _extract_named_rules(blob, scope)
-    _extract_remote_modules(blob, scope)
+    _extract_modules(blob, scope)
     local_module = _build_local_module(blob, **local_module_kwargs)
     return ParseResult(scope, local_module)
 
@@ -88,7 +88,7 @@ def _extract_default_rule(blob):
     return _extract_rule("<default>", blob)
 
 
-def _extract_remote_modules(blob, scope):
+def _extract_modules(blob, scope):
     for field in list(blob.keys()):
         parts = field.split(' ')
         if len(parts) == 3 and parts[1] == "module":
@@ -96,11 +96,11 @@ def _extract_remote_modules(blob, scope):
             inner_blob = blob.pop(field)  # remove the field from blob
             inner_blob = {} if inner_blob is None else inner_blob
             yaml_name = field
-            module = _build_remote_module(name, type, inner_blob, yaml_name)
+            module = _build_module(name, type, inner_blob, yaml_name)
             _add_to_scope(scope, name, module)
 
 
-def _build_remote_module(name, type, blob, yaml_name):
+def _build_module(name, type, blob, yaml_name):
     _validate_name(name)
     default_rule = _extract_default_rule(blob)
     plugin_fields = blob
@@ -114,7 +114,7 @@ def _build_remote_module(name, type, blob, yaml_name):
             'Module field names and values must be strings: ' +
             ', '.join(repr(pair) for pair in non_string_fields))
 
-    module = RemoteModule(name, type, default_rule, plugin_fields, yaml_name)
+    module = Module(name, type, default_rule, plugin_fields, yaml_name)
     return module
 
 

@@ -6,17 +6,12 @@ from .cache import compute_key, MergeConflictError
 def merge_imports_tree(cache, imports, target_trees, base_tree=None):
     '''Take an Imports struct and a dictionary of resolved trees and merge the
     unified imports tree. If base_tree is supplied, merge that too. There are
-    several reasons for structuring this function the way it is:
+    a couple reasons for structuring this function the way it is:
         - We want to cache merged trees, so that we don't have to do expensive
           git operations just to check whether a module is in cache.
         - We want tree merging to know about target names, so that it can write
           good error messages when there are conflicts.
-        - LocalModule and RemoteModule need to share this code.
-        - This function doesn't do any fetching, so that a remote module can
-          fetch its imports in parallel with itself before calling this. If
-          this was a generator that fetched imports for you, the remote module
-          would have to do the final base_tree merge itself, and it wouldn't be
-          able to give good error messages for conflicts.'''
+    '''
     key = _cache_key(imports, target_trees, base_tree)
     if key in cache.keyval:
         return cache.keyval[key]

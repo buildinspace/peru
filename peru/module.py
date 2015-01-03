@@ -1,12 +1,14 @@
 import asyncio
+import os
 
 from .cache import compute_key
+from .error import PrintableError
 from .edit_yaml import set_module_field_in_file
 from .local_module import LocalModule
 from .plugin import plugin_fetch, plugin_get_reup_fields
 
 
-class RemoteModule:
+class Module:
     def __init__(self, name, type, default_rule, plugin_fields, yaml_name):
         self.name = name
         self.type = type
@@ -16,6 +18,10 @@ class RemoteModule:
 
     @asyncio.coroutine
     def get_tree(self, runtime):
+        override_path = runtime.get_override(self.name)
+        if override_path is not None:
+            return self._get_override_tree(runtime, override_path)
+
         key = compute_key({
             "type": self.type,
             "plugin_fields": self.plugin_fields,
@@ -54,5 +60,14 @@ class RemoteModule:
             for line in output_lines:
                 runtime.display.print(line)
 
-    def get_local_override(self, path):
-        return LocalModule(None, self.default_rule, path)
+    def _get_override_tree(self, runtime, path):
+        if not os.path.exists(path):
+            raise PrintableError(
+                "override path for module '{}' does not exist: {}".format(
+                    self.name, path))
+        if not os.path.isdir(path):
+            raise PrintableError(
+                "override path for module '{}' is not a directory: {}".format(
+                    self.name, path))
+        override_module = LocalModule(None, self.default_rule, path)
+        return override_module.get_tree(runtime)

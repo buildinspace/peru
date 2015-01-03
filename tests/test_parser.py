@@ -2,7 +2,7 @@ from textwrap import dedent
 import unittest
 
 from peru.parser import build_imports, parse_string, ParserError
-from peru.remote_module import RemoteModule
+from peru.module import Module
 from peru.rule import Rule
 
 import shared
@@ -43,7 +43,7 @@ class ParserTest(unittest.TestCase):
         result = parse_string(input)
         self.assertIn("foo", result.scope)
         module = result.scope["foo"]
-        self.assertIsInstance(module, RemoteModule)
+        self.assertIsInstance(module, Module)
         self.assertEqual(module.name, "foo")
         self.assertEqual(module.type, "sometype")
         self.assertDictEqual(module.plugin_fields,
@@ -58,7 +58,7 @@ class ParserTest(unittest.TestCase):
         result = parse_string(input)
         self.assertIn("bar", result.scope)
         module = result.scope["bar"]
-        self.assertIsInstance(module, RemoteModule)
+        self.assertIsInstance(module, Module)
         self.assertIsInstance(module.default_rule, Rule)
         self.assertEqual(module.default_rule.export, "bar")
 

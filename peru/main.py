@@ -26,7 +26,7 @@ Usage:
 Commands:
   sync      fetch imports and copy them to your project
   reup      update the version information for your modules
-  override  replace a remote module with a local directory
+  override  read from a local directory instead of fetching a module
   copy      copy all the files from a module
   clean     delete imports from your project
 
