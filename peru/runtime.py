@@ -40,8 +40,7 @@ class Runtime:
         self.force = args['--force']
         if args['--quiet'] and args['--verbose']:
             raise PrintableError(
-                "Peru can't be quiet and loud at the same time.\n"
-                "Have you tried using <blink>?")
+                "Peru can't be quiet and verbose at the same time.")
         self.quiet = args['--quiet']
         self.verbose = args['--verbose']
 
