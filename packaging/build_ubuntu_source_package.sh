@@ -1,6 +1,6 @@
 #! /usr/bin/env bash
 
-# $ build_debian_source_package.sh [series [package-version]]
+# $ build_ubuntu_source_package.sh [series [package-version [source-version]]]
 # Generates a Debian source package suitable for upload to a Launchpad PPA. This
 # script only builds the package artifacts, it does NOT upload them. Use dput to
 # upload to a PPA after building.
@@ -19,11 +19,16 @@ if [ -n "$(git status --porcelain)" ] ; then
   exit 1
 fi
 
-# Get the current version from the repo. Get the series and package version from
-# the command line, otherwise assume "utopic" and version "1".
-peru_version=$(<peru/VERSION)
-package_version="${2:-1}"
+# Get the series and package version from the command line, otherwise assume
+# "utopic" and version "1".  Get the current version from the repo and append
+# package versioning information. Launchpad will reject changes to uploads for
+# the same version as derived from the source tarball. Bump the source version
+# to upload changes for the same version of peru (do not bump the package
+# version for this).
 series="${1:-utopic}"
+package_version="${2:-1}"
+source_version="${3:-"$package_version"}"  # Default to package version.
+peru_version="$(<peru/VERSION)"ubuntu~"$series""$source_version"
 
 # Create a temporary directory for the build.
 tmp=/tmp/peru/ppa
