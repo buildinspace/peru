@@ -1,6 +1,7 @@
 import collections
 import os
 import re
+import sys
 import yaml
 
 from .error import PrintableError
@@ -64,8 +65,15 @@ def _extract_named_rules(blob, scope):
             _add_to_scope(scope, name, rule)
 
 
+build_deprecation_warning = '''\
+Warning: The "build" field is no longer supported. If you need to untar/unzip
+         a curl module, use the "unpack" field.'''
+
+
 def _extract_rule(name, blob):
     _validate_name(name)
+    if 'build' in blob:
+        print(build_deprecation_warning, file=sys.stderr)
     build_command = blob.pop('build', None)
     export = blob.pop('export', None)
     files = _extract_maybe_list_field(blob, 'files')
