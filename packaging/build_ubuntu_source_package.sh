@@ -1,6 +1,6 @@
 #! /usr/bin/env bash
 
-# $ build_ubuntu_source_package.sh [series [package-version [source-version]]]
+# $ build_ubuntu_source_package.sh [series [package-version]]
 # Generates a Debian source package suitable for upload to a Launchpad PPA. This
 # script only builds the package artifacts, it does NOT upload them. Use dput to
 # upload to a PPA after building.
@@ -22,19 +22,16 @@ fi
 # Get the series and package version from the command line, otherwise assume
 # "utopic" and version "1".  Get the current version from the repo and append
 # package versioning information. Launchpad will reject changes to uploads for
-# the same version as derived from the source tarball. Bump the source version
-# to upload changes for the same version of peru (do not bump the package
-# version for this).
+# the same version as derived from the source tarball. Bump the package version
+# to upload changes for the same version of peru.
 series="${1:-utopic}"
-package_version="${2:-1}"
-source_version="${3:-"$package_version"}"  # Default to package version.
-peru_version="$(<peru/VERSION)"ubuntu~"$series""$source_version"
+version="$(<peru/VERSION)"ubuntu~"$series""${2:-1}"
 
 # Create a temporary directory for the build.
 tmp=/tmp/peru/ppa
 mkdir -p "$tmp"
 build_root=`mktemp -d "$tmp"/XXXXXX`
-export_root="$build_root"/peru-"$peru_version"
+export_root="$build_root"/peru-"$version"
 
 echo "Building Debian source package at ${build_root}"
 
@@ -47,11 +44,11 @@ cp -R "$export_root"/packaging/debian "$export_root"/debian
 cd "$export_root"
 
 # Update the changelog version and prompt for a change description.
-dch --no-conf -v "$peru_version"-"$package_version" -D "$series"
+dch --no-conf -v "$version" -D "$series"
 
 # Pack the original tarball.
 tar cfhJ \
-  "$build_root"/peru_"$peru_version".orig.tar.xz \
+  "$build_root"/peru_"$version".orig.tar.xz \
   ../$(basename "$export_root")
 
 # Build a source package. Note that other package types could easily be built at
