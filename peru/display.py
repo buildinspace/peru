@@ -129,7 +129,9 @@ class FancyDisplay(BaseDisplay):
         output = io.StringIO()
         print(*args, file=output, **kwargs)
         self._to_print.append(output.getvalue())
-        self._draw_later()
+        # If we use _draw_later, the program might exit before the draw timer
+        # fires. Drawing right now ensures that output never gets dropped.
+        self._draw()
 
     def _clear(self, *, flush=True):
         # Erase everything we printed before.

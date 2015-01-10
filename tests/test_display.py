@@ -69,7 +69,9 @@ class DisplayTest(unittest.TestCase):
         self.assertEqual(expected3, output.getlines())
 
         disp.print('stuff above')
-        disp._draw()
+        # Calling _draw() should not be necessary after print(). This ensures
+        # that we won't lose output if the program exits before _draw_later()
+        # gets another chance to fire.
         expected4 = textwrap.dedent('''\
             stuff above
             ┌ title1: something1 
