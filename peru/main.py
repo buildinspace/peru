@@ -11,7 +11,7 @@ from . import async
 from . import compat
 from .error import PrintableError
 from . import imports
-from .parser import build_imports
+from .parser import parse_file, build_imports
 from .runtime import Runtime
 
 __doc__ = """\
@@ -75,6 +75,7 @@ class Main:
         matching_command = find_matching_command(self.args)
         if matching_command:
             self.runtime = Runtime(self.args, env)
+            self.scope, self.imports = parse_file(self.runtime.peru_file)
             async.run_task(matching_command(self))
         else:
             if self.args["--version"]:
@@ -85,14 +86,16 @@ class Main:
 
     @command("sync")
     def do_sync(self):
-        yield from imports.checkout(self.runtime)
+        yield from imports.checkout(
+            self.runtime, self.scope, self.imports, self.runtime.root)
 
     @command('reup')
     def do_reup(self):
-        if not self.args['<modules>']:
-            modules = self.runtime.modules.values()
+        names = self.args['<modules>']
+        if not names:
+            modules = self.scope.modules.values()
         else:
-            modules = self.runtime.get_modules(self.args['<modules>'])
+            modules = self.scope.get_modules_for_reup(names)
         futures = [module.reup(self.runtime) for module in modules]
         yield from async.stable_gather(*futures)
         if not self.args['--nosync']:
@@ -121,7 +124,7 @@ class Main:
         else:
             dest = self.args['<dest>']
         tree = yield from imports.get_tree(
-            self.runtime, self.args['<target>'])
+            self.runtime, self.scope, self.args['<target>'])
         self.runtime.cache.export_tree(tree, dest, force=self.runtime.force)
         if not self.args['<dest>']:
             print(dest)
@@ -129,7 +132,8 @@ class Main:
     @command('clean')
     def do_clean(self):
         empty_imports = build_imports({})
-        yield from imports.checkout(self.runtime, imports=empty_imports)
+        yield from imports.checkout(
+            self.runtime, self.scope, empty_imports, self.runtime.root)
 
 
 def get_version():

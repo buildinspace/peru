@@ -6,6 +6,7 @@ import yaml
 from .error import PrintableError
 from .module import Module
 from .rule import Rule
+from .scope import Scope
 
 
 DEFAULT_PERU_FILE_NAME = 'peru.yaml'
@@ -13,10 +14,6 @@ DEFAULT_PERU_FILE_NAME = 'peru.yaml'
 
 class ParserError(PrintableError):
     pass
-
-
-ParseResult = collections.namedtuple(
-    "ParseResult", ["modules", "rules", "imports"])
 
 
 def parse_file(file_path, name_prefix=""):
@@ -41,7 +38,7 @@ def _parse_toplevel(blob, name_prefix):
     if blob:
         raise ParserError("Unknown toplevel fields: " +
                           ", ".join(blob.keys()))
-    return ParseResult(modules, rules, imports)
+    return Scope(modules, rules), imports
 
 
 def _extract_named_rules(blob, name_prefix):

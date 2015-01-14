@@ -9,19 +9,19 @@ from peru.rule import Rule
 class ParserTest(unittest.TestCase):
 
     def test_parse_empty_file(self):
-        result = parse_string('')
-        self.assertDictEqual(result.modules, {})
-        self.assertDictEqual(result.rules, {})
-        self.assertEqual(result.imports, build_imports({}))
+        scope, imports = parse_string('')
+        self.assertDictEqual(scope.modules, {})
+        self.assertDictEqual(scope.rules, {})
+        self.assertEqual(imports, build_imports({}))
 
     def test_parse_rule(self):
         input = dedent("""\
             rule foo:
                 export: out/
             """)
-        result = parse_string(input)
-        self.assertIn("foo", result.rules)
-        rule = result.rules["foo"]
+        scope, imports = parse_string(input)
+        self.assertIn("foo", scope.rules)
+        rule = scope.rules["foo"]
         self.assertIsInstance(rule, Rule)
         self.assertEqual(rule.name, "foo")
         self.assertEqual(rule.export, "out/")
@@ -32,9 +32,9 @@ class ParserTest(unittest.TestCase):
                 url: http://www.example.com/
                 rev: abcdefg
             """)
-        result = parse_string(input)
-        self.assertIn("foo", result.modules)
-        module = result.modules["foo"]
+        scope, imports = parse_string(input)
+        self.assertIn("foo", scope.modules)
+        module = scope.modules["foo"]
         self.assertIsInstance(module, Module)
         self.assertEqual(module.name, "foo")
         self.assertEqual(module.type, "sometype")
@@ -47,9 +47,9 @@ class ParserTest(unittest.TestCase):
             git module bar:
                 export: bar
             """)
-        result = parse_string(input)
-        self.assertIn("bar", result.modules)
-        module = result.modules["bar"]
+        scope, imports = parse_string(input)
+        self.assertIn("bar", scope.modules)
+        module = scope.modules["bar"]
         self.assertIsInstance(module, Module)
         self.assertIsInstance(module.default_rule, Rule)
         self.assertEqual(module.default_rule.export, "bar")
@@ -59,29 +59,29 @@ class ParserTest(unittest.TestCase):
             imports:
                 foo: bar/
             """)
-        result = parse_string(input)
-        self.assertDictEqual(result.modules, {})
-        self.assertDictEqual(result.rules, {})
-        self.assertEqual(result.imports, build_imports({'foo': 'bar/'}))
+        scope, imports = parse_string(input)
+        self.assertDictEqual(scope.modules, {})
+        self.assertDictEqual(scope.rules, {})
+        self.assertEqual(imports, build_imports({'foo': 'bar/'}))
 
     def test_parse_list_imports(self):
         input = dedent('''\
             imports:
                 - foo: bar/
             ''')
-        result = parse_string(input)
-        self.assertDictEqual(result.modules, {})
-        self.assertDictEqual(result.rules, {})
-        self.assertEqual(result.imports, build_imports({'foo': 'bar/'}))
+        scope, imports = parse_string(input)
+        self.assertDictEqual(scope.modules, {})
+        self.assertDictEqual(scope.rules, {})
+        self.assertEqual(imports, build_imports({'foo': 'bar/'}))
 
     def test_parse_empty_imports(self):
         input = dedent('''\
             imports:
             ''')
-        result = parse_string(input)
-        self.assertDictEqual(result.modules, {})
-        self.assertDictEqual(result.rules, {})
-        self.assertEqual(result.imports, build_imports({}))
+        scope, imports = parse_string(input)
+        self.assertDictEqual(scope.modules, {})
+        self.assertDictEqual(scope.rules, {})
+        self.assertEqual(imports, build_imports({}))
 
     def test_parse_wrong_type_imports_throw(self):
         with self.assertRaises(ParserError):
@@ -178,8 +178,8 @@ class ParserTest(unittest.TestCase):
             rule bar:
                 export: more stuff
             ''')
-        result = parse_string(input, name_prefix='x')
+        scope, imports = parse_string(input, name_prefix='x')
         # Lookup keys should be unaffected, but the names that modules and
         # rules give for themselves should have the prefix.
-        assert result.modules['foo'].name == 'xfoo'
-        assert result.rules['bar'].name == 'xbar'
+        assert scope.modules['foo'].name == 'xfoo'
+        assert scope.rules['bar'].name == 'xbar'
