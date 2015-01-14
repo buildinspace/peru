@@ -16,24 +16,24 @@ ParseResult = collections.namedtuple(
     "ParseResult", ["modules", "rules", "imports"])
 
 
-def parse_file(file_path):
+def parse_file(file_path, name_prefix=""):
     with open(file_path) as f:
-        return parse_string(f.read())
+        return parse_string(f.read(), name_prefix)
 
 
-def parse_string(yaml_str):
+def parse_string(yaml_str, name_prefix=""):
     try:
         blob = yaml.safe_load(yaml_str)
     except yaml.scanner.ScannerError as e:
         raise PrintableError("YAML parser error:\n\n" + str(e)) from e
     if blob is None:
         blob = {}
-    return _parse_toplevel(blob)
+    return _parse_toplevel(blob, name_prefix)
 
 
-def _parse_toplevel(blob):
-    modules = _extract_modules(blob)
-    rules = _extract_named_rules(blob)
+def _parse_toplevel(blob, name_prefix):
+    modules = _extract_modules(blob, name_prefix)
+    rules = _extract_named_rules(blob, name_prefix)
     imports = _extract_imports(blob)
     if blob:
         raise ParserError("Unknown toplevel fields: " +
@@ -41,7 +41,7 @@ def _parse_toplevel(blob):
     return ParseResult(modules, rules, imports)
 
 
-def _extract_named_rules(blob):
+def _extract_named_rules(blob, name_prefix):
     scope = {}
     for field in list(blob.keys()):
         parts = field.split(' ')
@@ -51,7 +51,7 @@ def _extract_named_rules(blob):
                 raise ParserError('Rule "{}" already exists.'.format(name))
             inner_blob = blob.pop(field)  # remove the field from blob
             inner_blob = {} if inner_blob is None else inner_blob
-            rule = _extract_rule(name, inner_blob)
+            rule = _extract_rule(name_prefix + name, inner_blob)
             if inner_blob:
                 raise ParserError("Unknown rule fields: " +
                                   ", ".join(inner_blob.keys()))
@@ -82,7 +82,7 @@ def _extract_default_rule(blob):
     return _extract_rule("<default>", blob)
 
 
-def _extract_modules(blob):
+def _extract_modules(blob, name_prefix):
     scope = {}
     for field in list(blob.keys()):
         parts = field.split(' ')
@@ -93,7 +93,8 @@ def _extract_modules(blob):
             inner_blob = blob.pop(field)  # remove the field from blob
             inner_blob = {} if inner_blob is None else inner_blob
             yaml_name = field
-            module = _build_module(name, type, inner_blob, yaml_name)
+            module = _build_module(name_prefix + name, type, inner_blob,
+                                   yaml_name)
             scope[name] = module
     return scope
 

@@ -169,3 +169,17 @@ class ParserTest(unittest.TestCase):
             assert 'The "build" field is no longer supported.' in e.message
         else:
             assert False, 'expected ParserError'
+
+    def test_name_prefix(self):
+        input = dedent('''\
+            git module foo:
+                url: fun stuff
+
+            rule bar:
+                export: more stuff
+            ''')
+        result = parse_string(input, name_prefix='x')
+        # Lookup keys should be unaffected, but the names that modules and
+        # rules give for themselves should have the prefix.
+        assert result.modules['foo'].name == 'xfoo'
+        assert result.rules['bar'].name == 'xbar'
