@@ -196,14 +196,22 @@ class Cache:
                 '\n'.join(existing_added_files))
 
     def read_file(self, tree, path):
+        # TODO: Make this handle symlinks in the tree.
+
         # --full-tree makes ls-tree ignore the cwd
         ls_output = self._git('ls-tree', '--full-tree', '-z', tree, path)
         ls_lines = ls_output.strip('\x00').split('\x00')
-        assert len(ls_lines) > 0, 'Nothing for path "{}" in tree {}.'.format(
-            path, tree)
-        assert len(ls_lines) == 1, 'Path "{}" in tree {} is a dir.'.format(
-            path, tree)
-        sha1 = ls_lines[0].split()[2]
+        # Remove empty lines.
+        ls_lines = list(filter(None, ls_lines))
+        if len(ls_lines) == 0:
+            raise FileNotFoundError('Path "{}" not found in tree {}.'
+                                    .format(path, tree))
+        assert len(ls_lines) == 1
+        mode, type, sha1, name = ls_lines[0].split()
+        if type == 'tree':
+            raise IsADirectoryError('Path "{}" in tree {} is a directory.'
+                                    .format(path, tree))
+        assert type == 'blob'
         file_bytes = self._git('cat-file', '-p', sha1, text=False)
         return file_bytes
 

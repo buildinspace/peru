@@ -182,6 +182,10 @@ class CacheTest(unittest.TestCase):
             b'foo', self.cache.read_file(self.content_tree, 'a'))
         self.assertEqual(
             b'bar', self.cache.read_file(self.content_tree, 'b/c'))
+        with self.assertRaises(FileNotFoundError):
+            self.cache.read_file(self.content_tree, 'nonexistent')
+        with self.assertRaises(IsADirectoryError):
+            self.cache.read_file(self.content_tree, 'b')
 
     # A helper method for several tests below below.
     def do_excludes_and_files_test(self, excludes, files, expected):
