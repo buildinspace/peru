@@ -52,7 +52,7 @@ type's fields, and how the executable(s) should be invoked. Here's the
 `plugin.yaml` from `peru/resources/plugins/git`:
 
 ```yaml
-fetch exe: git_plugin.py
+sync exe: git_plugin.py
 reup exe: git_plugin.py
 required fields:
     - url
@@ -65,10 +65,10 @@ cache fields:
 
 - The name of the plugin directory determines the name of the module
   type.
-- `fetch exe` is required, and it tells peru what to execute when it
-  wants the plugin to fetch.
+- `sync exe` is required, and it tells peru what to execute when it
+  wants the plugin to sync.
 - `reup exe` is optional; it declares that the plugin supports reup and
-  how to execute it. This can be the same script as `fetch exe`, as it
+  how to execute it. This can be the same script as `sync exe`, as it
   is here, in which case the script should decide what to do based on
   the `PERU_PLUGIN_COMMAND` environment variable described below.
 - `required fields` is required, and it tells peru which fields are
@@ -89,7 +89,7 @@ The other part of a plugin definition is the executable script(s). These
 are invoked with no arguments, and several environment variables are
 defined to tell the plugin what to do:
 
-- `PERU_PLUGIN_COMMAND` is either `fetch` or `reup`, depending on what
+- `PERU_PLUGIN_COMMAND` is either `sync` or `reup`, depending on what
   peru needs the plugin to do.
 - `PERU_PLUGIN_CACHE` points to the plugin's cache directory. If
   `plugin.yaml` doesn't include `cache fields`, this path will be
@@ -100,8 +100,8 @@ defined to tell the plugin what to do:
   form. For example, the git plugin gets its `url` field as
   `PERU_MODULE_URL`. The variables for optional fields that aren't
   present in the module are defined but empty.
-- `PERU_FETCH_DEST` points to the temporary directory where the plugin
-  should put the files it downloads. This is only defined for fetch
+- `PERU_SYNC_DEST` points to the temporary directory where the plugin
+  should put the files it downloads. This is only defined for sync
   jobs.
 - `PERU_REUP_OUTPUT` points to the temporary file where the plugin
   should write updated field values, formatted as YAML. This is only

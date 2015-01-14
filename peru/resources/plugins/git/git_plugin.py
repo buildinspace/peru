@@ -124,8 +124,8 @@ def checkout_subrepos(repo_path, rev, work_tree):
         checkout_tree(sub_url, sub_rev, sub_full_path)
 
 
-def plugin_fetch():
-    checkout_tree(URL, REV, os.environ['PERU_FETCH_DEST'])
+def plugin_sync():
+    checkout_tree(URL, REV, os.environ['PERU_SYNC_DEST'])
 
 
 def plugin_reup():
@@ -137,8 +137,8 @@ def plugin_reup():
         print('rev:', output.strip(), file=out_file)
 
 command = os.environ['PERU_PLUGIN_COMMAND']
-if command == 'fetch':
-    plugin_fetch()
+if command == 'sync':
+    plugin_sync()
 elif command == 'reup':
     plugin_reup()
 else:

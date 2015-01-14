@@ -39,7 +39,7 @@ def remote_head_rev(url):
     sys.exit(1)
 
 
-def plugin_fetch():
+def plugin_sync():
     # Just fetch the target revision and strip the metadata.
     # Plugin-level caching for Subversion is futile.
     svn(
@@ -48,7 +48,7 @@ def plugin_fetch():
         '--revision',
         os.environ['PERU_MODULE_REV'] or 'HEAD',
         os.environ['PERU_MODULE_URL'],
-        os.environ['PERU_FETCH_DEST'])
+        os.environ['PERU_SYNC_DEST'])
 
 
 def plugin_reup():
@@ -61,8 +61,8 @@ def plugin_reup():
 
 
 command = os.environ['PERU_PLUGIN_COMMAND']
-if command == 'fetch':
-    plugin_fetch()
+if command == 'sync':
+    plugin_sync()
 elif command == 'reup':
     plugin_reup()
 else:

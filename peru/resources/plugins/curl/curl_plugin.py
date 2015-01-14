@@ -67,9 +67,9 @@ def download_file(request, output_file, stdout=sys.stdout):
     return digest.hexdigest()
 
 
-def plugin_fetch(url, sha1):
+def plugin_sync(url, sha1):
     unpack = os.environ['PERU_MODULE_UNPACK']
-    dest = os.environ['PERU_FETCH_DEST']
+    dest = os.environ['PERU_SYNC_DEST']
     if unpack:
         # Download to the tmp dir for later unpacking.
         download_dir = os.environ['PERU_PLUGIN_TMP']
@@ -123,8 +123,8 @@ def main():
     url = os.environ['PERU_MODULE_URL']
     sha1 = os.environ['PERU_MODULE_SHA1']
     command = os.environ['PERU_PLUGIN_COMMAND']
-    if command == 'fetch':
-        plugin_fetch(url, sha1)
+    if command == 'sync':
+        plugin_sync(url, sha1)
     elif command == 'reup':
         plugin_reup(url, sha1)
     else:

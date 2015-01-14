@@ -1,2 +1,2 @@
-fetch exe: empty_plugin.py
+sync exe: empty_plugin.py
 required fields: []

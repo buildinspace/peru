@@ -21,7 +21,7 @@ DEBUG_PARALLEL_MAX = 0
 
 PluginDefinition = namedtuple(
     'PluginDefinition',
-    ['type', 'fetch_exe', 'reup_exe', 'fields', 'required_fields',
+    ['type', 'sync_exe', 'reup_exe', 'fields', 'required_fields',
      'optional_fields', 'cache_fields'])
 
 PluginContext = namedtuple(
@@ -33,8 +33,8 @@ PluginContext = namedtuple(
 @asyncio.coroutine
 def plugin_fetch(plugin_context, module_type, module_fields, dest,
                  display_handle):
-    env = {'PERU_FETCH_DEST': dest}
-    yield from _plugin_job(plugin_context, module_type, module_fields, 'fetch',
+    env = {'PERU_SYNC_DEST': dest}
+    yield from _plugin_job(plugin_context, module_type, module_fields, 'sync',
                            env, display_handle)
 
 
@@ -112,8 +112,8 @@ def _plugin_job(plugin_context, module_type, module_fields, command, env,
 
 
 def _get_plugin_exe(definition, command):
-    if command == 'fetch':
-        exe = definition.fetch_exe
+    if command == 'sync':
+        exe = definition.sync_exe
     elif command == 'reup':
         exe = definition.reup_exe
     else:
@@ -170,7 +170,7 @@ def _plugin_env(plugin_context, plugin_definition, module_fields, command,
     # be careful about this.
     env['PYTHONUNBUFFERED'] = 'true'
 
-    # For plugins that use the same exe for fetch and reup, make the command
+    # For plugins that use the same exe for sync and reup, make the command
     # name available in the environment.
     env['PERU_PLUGIN_COMMAND'] = command
 
@@ -227,7 +227,7 @@ def _get_plugin_definition(module_type, module_fields, command):
     # Read the metadata document.
     with open(metadata_path) as metafile:
         metadoc = yaml.safe_load(metafile) or {}
-    fetch_exe = os.path.join(root, metadoc.pop('fetch exe'))
+    sync_exe = os.path.join(root, metadoc.pop('sync exe'))
     reup_exe = (None if 'reup exe' not in metadoc
                 else os.path.join(root, metadoc.pop('reup exe')))
     required_fields = frozenset(metadoc.pop('required fields'))
@@ -249,7 +249,7 @@ def _get_plugin_definition(module_type, module_fields, command):
             str(invalid))
 
     definition = PluginDefinition(
-        module_type, fetch_exe, reup_exe, fields, required_fields,
+        module_type, sync_exe, reup_exe, fields, required_fields,
         optional_fields, cache_fields)
     _validate_plugin_definition(definition, module_fields)
     return definition

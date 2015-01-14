@@ -82,8 +82,8 @@ def already_has_rev(repo, rev):
     return output.split()[0] == rev
 
 
-def plugin_fetch():
-    dest = os.environ['PERU_FETCH_DEST']
+def plugin_sync():
+    dest = os.environ['PERU_SYNC_DEST']
     clone_if_needed(URL, verbose=True)
     if not already_has_rev(CACHE_PATH, REV):
         hg_pull(URL, CACHE_PATH)
@@ -104,8 +104,8 @@ def plugin_reup():
 
 
 command = os.environ['PERU_PLUGIN_COMMAND']
-if command == 'fetch':
-    plugin_fetch()
+if command == 'sync':
+    plugin_sync()
 elif command == 'reup':
     plugin_reup()
 else:

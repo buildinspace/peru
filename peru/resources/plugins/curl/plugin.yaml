@@ -1,4 +1,4 @@
-fetch exe: curl_plugin.py
+sync exe: curl_plugin.py
 reup exe: curl_plugin.py
 required fields:
     - url

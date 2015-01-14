@@ -6,5 +6,5 @@ import os
 
 distutils.dir_util.copy_tree(
     os.environ['PERU_MODULE_PATH'],
-    os.environ['PERU_FETCH_DEST'],
+    os.environ['PERU_SYNC_DEST'],
     preserve_symlinks=True)

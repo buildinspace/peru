@@ -227,7 +227,7 @@ example implemented in Bash.
 
 ## Creating New Module Types
 Module type plugins are as-dumb-as-possible scripts that only know how to
-fetch, and optionally reup. Peru shells out to them and then handles most of
+sync, and optionally reup. Peru shells out to them and then handles most of
 the caching magic itself, though plugins can also do their own caching as
 appropriate.  For example, the git and hg plugins keep track of repos they
 clone. Peru itself doesn't need to know how to do that. For all the details,

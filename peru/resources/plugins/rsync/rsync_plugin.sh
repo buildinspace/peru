@@ -17,4 +17,4 @@ fi
 
 # Do the copy. Always append a trailing slash to the path, so that the
 # contents are copied rather than the directory itself.
-rsync -r "$PERU_MODULE_PATH/" "$PERU_FETCH_DEST"
+rsync -r "$PERU_MODULE_PATH/" "$PERU_SYNC_DEST"

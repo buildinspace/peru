@@ -1,4 +1,4 @@
-fetch exe: hg_plugin.py
+sync exe: hg_plugin.py
 reup exe: hg_plugin.py
 required fields:
     - url

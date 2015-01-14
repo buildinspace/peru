@@ -1,4 +1,4 @@
-fetch exe: git_plugin.py
+sync exe: git_plugin.py
 reup exe: git_plugin.py
 required fields:
     - url

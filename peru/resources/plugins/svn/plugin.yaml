@@ -1,4 +1,4 @@
-fetch exe: svn_plugin.py
+sync exe: svn_plugin.py
 reup exe: svn_plugin.py
 required fields:
     - url

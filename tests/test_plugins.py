@@ -343,7 +343,7 @@ class PluginsTest(unittest.TestCase):
                 print("name: val", file=open(outfile, 'w'))
                 '''),
             plugin_yaml_file: textwrap.dedent('''\
-                fetch exe: fetch.py
+                sync exe: fetch.py
                 reup exe: reup.py
                 required fields: []
                 ''')})
