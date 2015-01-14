@@ -5,6 +5,7 @@ from .cache import compute_key
 from .error import PrintableError
 from .edit_yaml import set_module_field_in_file
 from .plugin import plugin_fetch, plugin_get_reup_fields
+from . import scope
 
 
 class Module:
@@ -18,7 +19,7 @@ class Module:
         self.peru_file = peru_file  # for recursive module definitions
 
     @asyncio.coroutine
-    def get_tree(self, runtime):
+    def _get_base_tree(self, runtime):
         override_path = runtime.get_override(self.name)
         if override_path is not None:
             return self._get_override_tree(runtime, override_path)
@@ -44,6 +45,23 @@ class Module:
                 tree = runtime.cache.import_tree(tmp_dir)
             runtime.cache.keyval[key] = tree
         return tree
+
+    @asyncio.coroutine
+    def get_tree(self, runtime):
+        # TODO: recursive imports
+        return (yield from self._get_base_tree(runtime))
+
+    @asyncio.coroutine
+    def parse_peru_file(self, runtime):
+        from . import parser  # avoid circular imports
+        tree = yield from self._get_base_tree(runtime)
+        try:
+            yaml = runtime.cache.read_file(tree, self.peru_file)
+        except FileNotFoundError:
+            # This module is not a peru project.
+            return (None, None)
+        prefix = self.name + scope.SCOPE_SEPARATOR
+        return parser.parse_string(yaml, name_prefix=prefix)
 
     @asyncio.coroutine
     def reup(self, runtime):

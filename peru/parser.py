@@ -88,6 +88,7 @@ def _extract_modules(blob, name_prefix):
         parts = field.split(' ')
         if len(parts) == 3 and parts[1] == 'module':
             type, _, name = parts
+            _validate_name(name)
             if name in scope:
                 raise ParserError('Module "{}" already exists.'.format(name))
             inner_blob = blob.pop(field)  # remove the field from blob
@@ -100,7 +101,6 @@ def _extract_modules(blob, name_prefix):
 
 
 def _build_module(name, type, blob, yaml_name):
-    _validate_name(name)
     peru_file = blob.pop('peru file', DEFAULT_PERU_FILE_NAME)
     default_rule = _extract_default_rule(blob)
     plugin_fields = blob

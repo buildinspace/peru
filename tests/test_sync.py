@@ -115,6 +115,39 @@ class SyncTest(unittest.TestCase):
         self.write_yaml(empty_yaml)
         self.do_integration_test(['sync'], {})
 
+    def test_import_module_defined_in_another_module(self):
+        # Project B contains project A
+        dir_a = shared.create_dir({'afile': 'stuff'})
+        dir_b = shared.create_dir()
+        # Create the peru.yaml file for B.
+        self.write_yaml('''\
+            cp module a:
+                path: {}
+            ''', dir_a, dir=dir_b)
+        # Now create the peru.yaml file in the actual test project.
+        self.write_yaml('''\
+            imports:
+                b.a: a_via_b/
+
+            cp module b:
+                path: {}
+            ''', dir_b)
+        self.do_integration_test(['sync'], {'a_via_b/afile': 'stuff'})
+        # Test the error message from an invalid module.
+        self.write_yaml('''\
+            imports:
+                b.missing_module: some_path
+
+            cp module b:
+                path: {}
+            ''', dir_b)
+        try:
+            self.do_integration_test(['sync'], {})
+        except peru.error.PrintableError as e:
+            assert 'b.missing_module' in e.message
+        else:
+            assert False, 'should throw invalid module error'
+
     def test_module_rules(self):
         module_dir = shared.create_dir({'a/b': '', 'c/d': ''})
         yaml = '''\
