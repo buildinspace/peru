@@ -8,12 +8,19 @@ from .merge import merge_imports_tree
 
 @asyncio.coroutine
 def checkout(runtime, scope, imports, path):
-    target_trees = yield from get_trees(runtime, scope, imports.targets)
-    imports_tree = merge_imports_tree(runtime.cache, imports, target_trees)
+    imports_tree = yield from get_imports_tree(runtime, scope, imports)
     last_imports_tree = _get_last_imports(runtime)
     runtime.cache.export_tree(imports_tree, path, last_imports_tree,
                               force=runtime.force)
     _set_last_imports(runtime, imports_tree)
+
+
+@asyncio.coroutine
+def get_imports_tree(runtime, scope, imports, base_tree=None):
+    target_trees = yield from get_trees(runtime, scope, imports.targets)
+    imports_tree = merge_imports_tree(runtime.cache, imports, target_trees,
+                                      base_tree)
+    return imports_tree
 
 
 @asyncio.coroutine

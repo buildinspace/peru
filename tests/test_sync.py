@@ -148,6 +148,29 @@ class SyncTest(unittest.TestCase):
         else:
             assert False, 'should throw invalid module error'
 
+    def test_recursive_imports(self):
+        # Project B contains project A
+        dir_a = shared.create_dir({'afile': 'stuff'})
+        dir_b = shared.create_dir()
+        # Create the peru.yaml file for B.
+        self.write_yaml('''\
+            imports:
+                a: b_imports/where_b_put_a
+            cp module a:
+                path: {}
+            ''', dir_a, dir=dir_b)
+        # Now create the peru.yaml file in the actual test project.
+        self.write_yaml('''\
+            imports:
+                b: where_c_put_b
+
+            cp module b:
+                path: {}
+                export: b_imports  # omit the peru.yaml file from b
+            ''', dir_b)
+        self.do_integration_test(
+            ['sync'], {'where_c_put_b/where_b_put_a/afile': 'stuff'})
+
     def test_module_rules(self):
         module_dir = shared.create_dir({'a/b': '', 'c/d': ''})
         yaml = '''\

@@ -4,6 +4,7 @@ import os
 from .cache import compute_key
 from .error import PrintableError
 from .edit_yaml import set_module_field_in_file
+from . import imports
 from .plugin import plugin_fetch, plugin_get_reup_fields
 from . import scope
 
@@ -48,8 +49,14 @@ class Module:
 
     @asyncio.coroutine
     def get_tree(self, runtime):
-        # TODO: recursive imports
-        return (yield from self._get_base_tree(runtime))
+        # TODO: memoize the tree or something
+        base_tree = yield from self._get_base_tree(runtime)
+        scope, _imports = yield from self.parse_peru_file(runtime)
+        if not scope:
+            return base_tree
+        recursive_tree = yield from imports.get_imports_tree(
+            runtime, scope, _imports, base_tree=base_tree)
+        return recursive_tree
 
     @asyncio.coroutine
     def parse_peru_file(self, runtime):
