@@ -8,6 +8,9 @@ from .module import Module
 from .rule import Rule
 
 
+DEFAULT_PERU_FILE_NAME = 'peru.yaml'
+
+
 class ParserError(PrintableError):
     pass
 
@@ -101,6 +104,7 @@ def _extract_modules(blob, name_prefix):
 
 def _build_module(name, type, blob, yaml_name):
     _validate_name(name)
+    peru_file = blob.pop('peru file', DEFAULT_PERU_FILE_NAME)
     default_rule = _extract_default_rule(blob)
     plugin_fields = blob
 
@@ -113,7 +117,8 @@ def _build_module(name, type, blob, yaml_name):
             'Module field names and values must be strings: ' +
             ', '.join(repr(pair) for pair in non_string_fields))
 
-    module = Module(name, type, default_rule, plugin_fields, yaml_name)
+    module = Module(name, type, default_rule, plugin_fields, yaml_name,
+                    peru_file)
     return module
 
 

@@ -14,7 +14,8 @@ from . import plugin
 
 class Runtime:
     def __init__(self, args, env):
-        peru_file_name = env.get('PERU_FILE_NAME', 'peru.yaml')
+        peru_file_name = env.get('PERU_FILE_NAME',
+                                 parser.DEFAULT_PERU_FILE_NAME)
         self.peru_file = find_peru_file(os.getcwd(), peru_file_name)
 
         self.root = os.path.dirname(self.peru_file)

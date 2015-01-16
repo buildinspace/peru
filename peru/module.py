@@ -8,12 +8,14 @@ from .plugin import plugin_fetch, plugin_get_reup_fields
 
 
 class Module:
-    def __init__(self, name, type, default_rule, plugin_fields, yaml_name):
+    def __init__(self, name, type, default_rule, plugin_fields, yaml_name,
+                 peru_file):
         self.name = name
         self.type = type
         self.default_rule = default_rule
         self.plugin_fields = plugin_fields
         self.yaml_name = yaml_name  # used by reup to edit the markup
+        self.peru_file = peru_file  # for recursive module definitions
 
     @asyncio.coroutine
     def get_tree(self, runtime):
@@ -22,8 +24,9 @@ class Module:
             return self._get_override_tree(runtime, override_path)
 
         key = compute_key({
-            "type": self.type,
-            "plugin_fields": self.plugin_fields,
+            'type': self.type,
+            'plugin_fields': self.plugin_fields,
+            'peru_file': self.peru_file,
         })
         # Use a lock to prevent the same module from being double fetched. The
         # lock is taken on the cache key, not the module itself, so two
