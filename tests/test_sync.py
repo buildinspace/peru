@@ -6,6 +6,7 @@ import peru.cache
 import peru.compat
 import peru.error
 import peru.main
+from peru.parser import DEFAULT_PERU_FILE_NAME
 import peru.rule
 
 import shared
@@ -28,7 +29,7 @@ class SyncTest(unittest.TestCase):
         yaml = textwrap.dedent(unformatted_yaml.format(*format_args))
         if dir is None:
             dir = self.test_dir
-        with open(os.path.join(dir, 'peru.yaml'), 'w') as f:
+        with open(os.path.join(dir, DEFAULT_PERU_FILE_NAME), 'w') as f:
             f.write(yaml)
 
     def do_integration_test(self, args, expected, *, cwd=None,
@@ -37,7 +38,7 @@ class SyncTest(unittest.TestCase):
             cwd = self.test_dir
         run_peru_command(args, cwd, **peru_cmd_kwargs)
         assert_contents(self.test_dir, expected,
-                        excludes=['peru.yaml', '.peru'])
+                        excludes=[DEFAULT_PERU_FILE_NAME, '.peru'])
 
     def test_basic_sync(self):
         module_dir = shared.create_dir({'foo': 'bar'})
@@ -170,6 +171,25 @@ class SyncTest(unittest.TestCase):
             ''', dir_b)
         self.do_integration_test(
             ['sync'], {'where_c_put_b/where_b_put_a/afile': 'stuff'})
+
+    def test_peru_file_field(self):
+        # Project B contains project A
+        dir_a = shared.create_dir({'afile': 'stuff'})
+        # Create project B with an unusual YAML filename.
+        dir_b = shared.create_dir({'alternate.yaml': textwrap.dedent('''\
+            cp module a:
+                path: {}
+            '''.format(dir_a))})
+        # Now create the peru.yaml file in the actual test project.
+        self.write_yaml('''\
+            imports:
+                b.a: a_via_b/
+
+            cp module b:
+                path: {}
+                peru file: alternate.yaml
+            ''', dir_b)
+        self.do_integration_test(['sync'], {'a_via_b/afile': 'stuff'})
 
     def test_module_rules(self):
         module_dir = shared.create_dir({'a/b': '', 'c/d': ''})
