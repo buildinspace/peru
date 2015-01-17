@@ -377,6 +377,22 @@ class SyncTest(unittest.TestCase):
         self.do_integration_test(['copy', '--force', 'foo', '.'],
                                  {'foo': 'bar'})
 
+    def test_copy_nested(self):
+        # Project B contains project A
+        dir_a = shared.create_dir({'afile': 'stuff'})
+        dir_b = shared.create_dir()
+        # Create the peru.yaml file for B.
+        self.write_yaml('''\
+            cp module a:
+                path: {}
+            ''', dir_a, dir=dir_b)
+        # Now create the peru.yaml file in the actual test project.
+        self.write_yaml('''\
+            cp module b:
+                path: {}
+            ''', dir_b)
+        self.do_integration_test(['copy', 'b.a', '.'], {'afile': 'stuff'})
+
     def test_clean(self):
         module_dir = shared.create_dir({'foo': 'bar'})
         self.write_yaml('''\
