@@ -4,6 +4,7 @@ python:
   - "3.4"
 install:
   - pip install -r ./requirements-dev.txt
+  - pip install coveralls
 script:
   - ./test.py --with-coverage -v
 after_success:
