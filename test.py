@@ -35,8 +35,8 @@ def main():
     env = os.environ.copy()
     env['PYTHONPATH'] = REPO_ROOT
     args = sys.argv[1:]
-    if len(args) > 0 and args[0] == '--with-coverage':
-        args.pop(0)
+    if len(args) > 0 and '--with-coverage' in args:
+        args.remove('--with-coverage')
         command_start = ['coverage', 'run']
     else:
         command_start = [sys.executable]

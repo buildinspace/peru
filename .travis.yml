@@ -8,4 +8,4 @@ install:
 script:
   - ./test.py --with-coverage -v
 after_success:
-  coveralls
+  cd tests && coveralls
