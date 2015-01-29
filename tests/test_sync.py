@@ -213,7 +213,8 @@ class SyncTest(unittest.TestCase):
         self.write_yaml(yaml_different)
         self.do_integration_test(['sync'], {'d': ''})
 
-    def test_rule_with_files(self):
+    # TODO: Remove these tests when the `files` field is removed.
+    def test_rule_with_legacy_files(self):
         content = {name: '' for name in [
             'foo',
             'bar',
@@ -243,7 +244,7 @@ class SyncTest(unittest.TestCase):
         ]}
         self.do_integration_test(['sync'], filtered_content)
 
-    def test_rule_with_files_that_dont_match(self):
+    def test_rule_with_legacy_files_that_do_not_exist(self):
         module_dir = shared.create_dir({'foo': 'bar'})
         self.write_yaml('''\
             cp module foo:
@@ -254,6 +255,100 @@ class SyncTest(unittest.TestCase):
             ''', module_dir)
         with self.assertRaises(peru.rule.NoMatchingFilesError):
             self.do_integration_test(['sync'], {})
+
+    def test_rule_with_legacy_files_and_picked_files(self):
+        content = {name: '' for name in [
+            'foo',
+            'bar',
+            'baz/bing',
+            'baz/boo/a',
+            'baz/boo/b'
+        ]}
+        module_dir = shared.create_dir(content)
+        self.write_yaml('''\
+            cp module foo:
+                path: {}
+
+            rule filter:
+                pick: baz/bing
+                files: boo/*
+                export: baz
+
+            imports:
+                foo|filter: ./
+            ''', module_dir)
+        filtered_content = {name: '' for name in [
+            'bing',
+            'boo/a',
+            'boo/b',
+        ]}
+        self.do_integration_test(['sync'], filtered_content)
+
+    def test_rule_with_picked_files(self):
+        content = {name: '' for name in [
+            'foo',
+            'bar',
+            'special',
+            'baz/bing',
+            'baz/boo/a',
+            'baz/boo/b'
+        ]}
+        module_dir = shared.create_dir(content)
+        self.write_yaml('''\
+            cp module foo:
+                path: {}
+
+            rule filter:
+                pick:
+                  - "**/*oo"
+                  - special
+
+            imports:
+                foo|filter: ./
+            ''', module_dir)
+        filtered_content = {name: '' for name in [
+            'foo',
+            'special',
+            'baz/boo/a',
+            'baz/boo/b',
+        ]}
+        self.do_integration_test(['sync'], filtered_content)
+
+    def test_rule_with_picked_files_that_do_not_exist(self):
+        module_dir = shared.create_dir({'foo': 'bar'})
+        self.write_yaml('''\
+            cp module foo:
+                path: {}
+                pick: idontexist
+            imports:
+                foo: ./
+            ''', module_dir)
+        with self.assertRaises(peru.rule.NoMatchingFilesError) as cm:
+            self.do_integration_test(['sync'], {})
+        self.assertTrue('No matches for' in cm.exception.message)
+
+    def test_rule_with_picked_files_that_are_not_exported(self):
+        content = {name: '' for name in [
+            'foo',
+            'bar',
+            'baz/bing',
+            'baz/boo/a',
+            'baz/boo/b'
+        ]}
+        module_dir = shared.create_dir(content)
+        self.write_yaml('''\
+            cp module foo:
+                path: {}
+                pick: foo
+                export: baz/
+
+            imports:
+                foo: ./
+            ''', module_dir)
+        with self.assertRaises(peru.rule.NoMatchingFilesError) as cm:
+            self.do_integration_test(['sync'], {})
+        self.assertTrue(
+            'none are beneath the export path' in cm.exception.message)
 
     def test_alternate_cache(self):
         module_dir = shared.create_dir({'foo': 'bar'})

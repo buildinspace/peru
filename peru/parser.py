@@ -1,5 +1,6 @@
 import collections
 import re
+import sys
 import textwrap
 import yaml
 
@@ -59,11 +60,6 @@ def _extract_named_rules(blob, name_prefix):
     return scope
 
 
-build_deprecation_warning = '''\
-Warning: The "build" field is no longer supported. If you need to untar/unzip
-         a curl module, use the "unpack" field.'''
-
-
 def _extract_rule(name, blob):
     _validate_name(name)
     if 'build' in blob:
@@ -71,10 +67,16 @@ def _extract_rule(name, blob):
             The "build" field is no longer supported. If you need to
             untar/unzip a curl module, use the "unpack" field.'''))
     export = blob.pop('export', None)
+    # TODO: Remove the `files` field. Until this is done, print a deprecation
+    # message.
     files = _extract_maybe_list_field(blob, 'files')
-    if not export and not files:
+    if files:
+        print('Warning: The `files` field is deprecated. Use `pick` instead.',
+              file=sys.stderr)
+    pick = _extract_maybe_list_field(blob, 'pick')
+    if not export and not files and not pick:
         return None
-    rule = Rule(name, export, files)
+    rule = Rule(name, export, files, pick)
     return rule
 
 

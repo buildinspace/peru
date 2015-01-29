@@ -243,12 +243,18 @@ after it's fetched. These made an appearance in the fancy example above:
   run there.</s> [Deprecated for security and portability reasons. This will go
   away soon. The untarring/unzipping use case will be handled with the new
   `unpack` field in the curl type.]
+- `pick`: A file or directory, or a list of files and directories, to include
+  in the module. Everything else is dropped, though the root of the module tree
+  is not changed. Paths can contain `*` or `**` globs, powered by Python's
+  pathlib. Applies before `export`, so paths are always relative to the root of
+  the module.
 - `export`: A subdirectory that peru should treat as the root of the module
   tree. Everything else is dropped, including parent directories.
-- `files`: A file or directory, or a list of files and directories, to
+- <s>`files`: A file or directory, or a list of files and directories, to
   include in the module. Everything else is dropped, though the root of the
   module tree is not changed. These can have `*` or `**` globs, powered by
-  Python's pathlib. Applies after `export`.
+  Python's pathlib. Applies after `export`.</s> [Deprecated in favor of a
+  consistent set of fields for file manipulation. Use `pick` instead.]
 
 Besides using those fields in your modules, you can also use them in "named
 rules", which let you transform one module in multiple ways. For example, say
