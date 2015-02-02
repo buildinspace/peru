@@ -101,7 +101,7 @@ imports:
 git module dircolors:
     url: https://github.com/seebi/dircolors-solarized
     # Only copy this file. Can be a list of files. Accepts * and ** globs.
-    files: dircolors.ansi-dark
+    pick: dircolors.ansi-dark
 
 curl module pathogen:
     url: https://codeload.github.com/tpope/vim-pathogen/tar.gz/v2.3
@@ -155,7 +155,7 @@ index 15c758d..7f0e26b 100644
 @@ -6,12 +6,14 @@ imports:
  git module dircolors:
      url: https://github.com/seebi/dircolors-solarized
-     files: dircolors.ansi-dark
+     pick: dircolors.ansi-dark
 +    rev: a5e130c642e45323a22226f331cb60fd37ce564f
 
  curl module pathogen:
@@ -274,7 +274,7 @@ rule asyncio:
     export: asyncio/
 
 rule license:
-    files: COPYING
+    pick: COPYING
 ```
 
 As in the example above, named rules are declared a lot like modules and then
