@@ -122,62 +122,32 @@ def _build_module(name, type, blob, yaml_name):
     return module
 
 
-# Module imports can come from a dictionary or a list (of key-val pairs), and
-# the Imports struct is here to hide that from other code. `pairs` is a list of
-# target-path tuples, which could contain the same target or path more than
-# once. `targets` is a list of targets with no duplicates. Both should have a
-# deterministic order, which is the same as the original list order if the
-# imports came from a list (modulo removing duplicates from `targets`).
-Imports = collections.namedtuple('Imports', ['targets', 'pairs'])
-
-
-def build_imports(dict_or_list):
-    '''Imports can be a map:
+def build_imports(multimap):
+    '''Import values can be a scalar or a list:
         imports:
-            a: path/
-            b: path/
-    Or a list (to allow duplicate keys):
-        imports
-            - a: path/
-            - b: path/
+          a: foo/
+          b:
+            - bar/
+            - baz/
     We need to parse both.'''
-    if isinstance(dict_or_list, dict):
-        return _imports_from_dict(dict_or_list)
-    elif isinstance(dict_or_list, list):
-        return _imports_from_list(dict_or_list)
-    elif dict_or_list is None:
-        return Imports((), ())
-    else:
-        raise ParserError(
-            'Imports must be a map or a list of key-value pairs.')
-
-
-def _imports_from_dict(imports_dict):
-    # We need to make sure the sort order is deterministic.
-    targets = tuple(sorted(imports_dict.keys()))
-    return Imports(
-        targets,
-        tuple((target, imports_dict[target]) for target in targets))
-
-
-def _imports_from_list(imports_list):
-    # We need to keep the given sort order, but discard duplicates from the
-    # list of targets.
-    targets = []
-    pairs = []
-    for pair in imports_list:
-        if not isinstance(pair, dict) or len(pair) != 1:
-            raise ParserError(
-                'Elements of an imports list must be key-value pairs.')
-        target, path = list(pair.items())[0]
-        # Build up the list of unique targets. Note that this is a string
-        # comparison. If it ever becomes possible to write the same target in
-        # more than one way (like with flexible whitespace), we will need to
-        # canonicalize these strings.
-        if target not in targets:
-            targets.append(target)
-        pairs.append((target, path))
-    return Imports(tuple(targets), tuple(pairs))
+    message = ('Imports must be a map whose values are either a string or '
+               'list of strings.')
+    # We use an `OrderedDict` here to ensure that imports happen in determinist
+    # order. This prevents obscure bugs caused by imports occuring differently
+    # at different times.
+    imports = collections.OrderedDict()
+    if not multimap:
+        return imports
+    elif not isinstance(multimap, dict):
+        raise ParserError(message)
+    # Sort by key so that imports occur in convenient lexographical order. This
+    # keeps things deterministic in a simple way.
+    for target, value in sorted(multimap.items()):
+        paths = _optional_list(value)
+        if paths is None:
+            raise ParserError(message)
+        imports[target] = paths  # Remembers order.
+    return imports
 
 
 def _extract_imports(blob):
@@ -194,12 +164,20 @@ def _validate_name(name):
 def _extract_maybe_list_field(blob, name):
     '''Handle optional fields that can be either a string or a list of
     strings.'''
-    raw_value = blob.pop(name, [])
-    if isinstance(raw_value, str):
-        value = (raw_value,)
-    elif isinstance(raw_value, list):
-        value = tuple(raw_value)
-    else:
+    value = _optional_list(blob.pop(name, []))
+    if value is None:
         raise ParserError('"{}" field must be a string or a list.'
                           .format(name))
     return value
+
+
+def _optional_list(value):
+    '''Convert a value that may be a scalar (str) or list into a tuple. This
+    produces uniform output for fields that may supply a single value or list
+    of values, like the `imports` field.'''
+    if isinstance(value, str):
+        return (value,)
+    elif isinstance(value, list):
+        return tuple(value)
+
+    return None  # Let callers raise errors.

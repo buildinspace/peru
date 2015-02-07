@@ -30,13 +30,14 @@ class MergeTest(unittest.TestCase):
         expected_content = {'path1/a': 'a', 'path2/a': 'a'}
         assert_contents(merged_dir, expected_content)
 
-    def test_merge_from_list(self):
+    def test_merge_from_multimap(self):
         # This represents a list of key-value pairs in YAML, for example:
         #     imports:
-        #         - foo: path1
-        #         - foo: path2
-        imports_list = [{'foo': 'path1'}, {'foo': 'path2'}]
-        imports = build_imports(imports_list)
+        #         foo:
+        #           - path1
+        #           - path2
+        multimap = {'foo': ['path1', 'path2']}
+        imports = build_imports(multimap)
         target_trees = {'foo': self.content_tree}
 
         merged_tree = merge_imports_tree(self.cache, imports, target_trees)

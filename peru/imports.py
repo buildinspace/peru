@@ -17,7 +17,7 @@ def checkout(runtime, scope, imports, path):
 
 @asyncio.coroutine
 def get_imports_tree(runtime, scope, imports, base_tree=None):
-    target_trees = yield from get_trees(runtime, scope, imports.targets)
+    target_trees = yield from get_trees(runtime, scope, imports.keys())
     imports_tree = merge_imports_tree(runtime.cache, imports, target_trees,
                                       base_tree)
     return imports_tree

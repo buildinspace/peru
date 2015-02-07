@@ -64,10 +64,11 @@ class ParserTest(unittest.TestCase):
         self.assertDictEqual(scope.rules, {})
         self.assertEqual(imports, build_imports({'foo': 'bar/'}))
 
-    def test_parse_list_imports(self):
+    def test_parse_multimap_imports(self):
         input = dedent('''\
             imports:
-                - foo: bar/
+                foo:
+                  - bar/
             ''')
         scope, imports = parse_string(input)
         self.assertDictEqual(scope.modules, {})
@@ -86,15 +87,6 @@ class ParserTest(unittest.TestCase):
     def test_parse_wrong_type_imports_throw(self):
         with self.assertRaises(ParserError):
             parse_string('imports: 5')
-
-    def test_parse_bad_list_imports_throw(self):
-        input = dedent('''\
-            imports:
-                - a: foo
-                  b: bar
-        ''')
-        with self.assertRaises(ParserError):
-            parse_string(input)
 
     def test_bad_toplevel_field_throw(self):
         with self.assertRaises(ParserError):
