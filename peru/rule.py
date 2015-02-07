@@ -1,6 +1,7 @@
 import asyncio
 from pathlib import Path
 import os
+import shutil
 import stat
 
 from .cache import compute_key
@@ -8,11 +9,12 @@ from .error import PrintableError
 
 
 class Rule:
-    def __init__(self, name, export, files, pick, executable):
+    def __init__(self, name, export, files, pick, move, executable):
         self.name = name
         self.export = export
         self.files = files
         self.pick = pick
+        self.move = move
         self.executable = executable
 
     def _cache_key(self, input_tree):
@@ -21,6 +23,7 @@ class Rule:
             'export': self.export,
             'files': self.files,
             'pick': self.pick,
+            'move': self.move,
             'executable': self.executable,
         })
 
@@ -52,6 +55,7 @@ class Rule:
 
             with runtime.tmp_dir() as tmp_dir:
                 runtime.cache.export_tree(input_tree, tmp_dir)
+                self._move_files(tmp_dir)
                 self._chmod_executables(tmp_dir)
                 export_path = self._get_export_path(runtime, tmp_dir)
                 files = self._get_files(export_path) or set()
@@ -61,6 +65,17 @@ class Rule:
             runtime.cache.keyval[key] = tree
 
         return tree
+
+    def _move_files(self, module_root):
+        # TODO: This needs to do a lot more validation to avoid e.g. absolute
+        # paths in the destination.
+        for src, dest in self.move.items():
+            try:
+                shutil.move(os.path.join(module_root, src),
+                            os.path.join(module_root, dest))
+            except OSError as e:
+                raise PrintableError('move "{}" -> "{}" failed: {}'.format(
+                    src, dest, e.strerror))
 
     def _chmod_executables(self, module_root):
         root_path = Path(module_root)

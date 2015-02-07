@@ -75,9 +75,10 @@ def _extract_rule(name, blob):
               file=sys.stderr)
     pick = _extract_maybe_list_field(blob, 'pick')
     executable = _extract_maybe_list_field(blob, 'executable')
-    if not export and not files and not pick and not executable:
+    move = _extract_map_field('move', blob)
+    if not any((export, files, pick, move, executable)):
         return None
-    rule = Rule(name, export, files, pick, executable)
+    rule = Rule(name, export, files, pick, move, executable)
     return rule
 
 
@@ -181,3 +182,14 @@ def _optional_list(value):
         return tuple(value)
 
     return None  # Let callers raise errors.
+
+
+def _extract_map_field(name, blob):
+    contents = blob.pop(name, {})
+    if not isinstance(contents, dict):
+        raise ParserError('"{}" must be a map.'.format(name))
+    for key, val in contents.items():
+        if not isinstance(key, str) or not isinstance(val, str):
+            raise ParserError('"{}" keys and values must be strings.'.format(
+                name))
+    return contents

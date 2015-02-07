@@ -369,6 +369,35 @@ class SyncTest(unittest.TestCase):
             assert mode & stat.S_IXGRP
             assert mode & stat.S_IXOTH
 
+    def test_rule_with_move(self):
+        module_dir = shared.create_dir({'a': 'foo', 'b/c': 'bar'})
+        self.write_yaml('''\
+            cp module foo:
+                path: {}
+                move:
+                    a: newa
+                    b: newb
+            imports:
+                foo: ./
+            ''', module_dir)
+        self.do_integration_test(['sync'], {'newa': 'foo', 'newb/c': 'bar'})
+
+    def test_rule_with_move_error(self):
+        module_dir = shared.create_dir()
+        self.write_yaml('''\
+            cp module foo:
+                path: {}
+                move:
+                    doesntexist: also_nonexistent
+            imports:
+                foo: ./
+            ''', module_dir)
+        try:
+            self.do_integration_test(['sync'],
+                                     {'newa': 'foo', 'newb/c': 'bar'})
+        except peru.error.PrintableError as e:
+            assert 'doesntexist' in e.message
+
     def test_alternate_cache(self):
         module_dir = shared.create_dir({'foo': 'bar'})
         self.write_yaml('''\
