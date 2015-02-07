@@ -1,24 +1,27 @@
 import asyncio
 from pathlib import Path
 import os
+import stat
 
 from .cache import compute_key
 from .error import PrintableError
 
 
 class Rule:
-    def __init__(self, name, export, files, pick):
+    def __init__(self, name, export, files, pick, executable):
         self.name = name
         self.export = export
         self.files = files
         self.pick = pick
+        self.executable = executable
 
     def _cache_key(self, input_tree):
         return compute_key({
             'input_tree': input_tree,
             'export': self.export,
             'files': self.files,
-            'pick': self.pick
+            'pick': self.pick,
+            'executable': self.executable,
         })
 
     def _get_export_path(self, runtime, module_root):
@@ -49,6 +52,7 @@ class Rule:
 
             with runtime.tmp_dir() as tmp_dir:
                 runtime.cache.export_tree(input_tree, tmp_dir)
+                self._chmod_executables(tmp_dir)
                 export_path = self._get_export_path(runtime, tmp_dir)
                 files = self._get_files(export_path) or set()
                 files |= self._get_picked_files(tmp_dir, export_path) or set()
@@ -57,6 +61,22 @@ class Rule:
             runtime.cache.keyval[key] = tree
 
         return tree
+
+    def _chmod_executables(self, module_root):
+        root_path = Path(module_root)
+        for glob in self.executable:
+            paths = root_path.glob(glob)
+            if not paths:
+                raise NoMatchingFilesError(
+                    'No matches for executable path "{}".'.format(glob))
+            for path in paths:
+                # We don't check whether the path is a file or a directory.
+                # `chmod +x` on a directory should generally be a no-op, and in
+                # any case git doesn't represent directory permissions in
+                # trees.
+                new_mode = (path.stat().st_mode | stat.S_IXUSR | stat.S_IXGRP |
+                            stat.S_IXOTH)
+                path.chmod(new_mode)
 
     def _get_files(self, export_path):
         if not self.files:

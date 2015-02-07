@@ -255,6 +255,8 @@ after it's fetched. These made an appearance in the fancy example above:
   module tree is not changed. These can have `*` or `**` globs, powered by
   Python's pathlib. Applies after `export`.</s> [Deprecated in favor of a
   consistent set of fields for file manipulation. Use `pick` instead.]
+- `executable`: A file or list of files to make executable, as if
+  calling `chmod +x`. Also accepts globs.
 
 Besides using those fields in your modules, you can also use them in "named
 rules", which let you transform one module in multiple ways. For example, say

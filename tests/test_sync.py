@@ -1,4 +1,6 @@
 import os
+from pathlib import Path
+import stat
 import textwrap
 import unittest
 
@@ -349,6 +351,23 @@ class SyncTest(unittest.TestCase):
             self.do_integration_test(['sync'], {})
         self.assertTrue(
             'none are beneath the export path' in cm.exception.message)
+
+    def test_rule_with_executable(self):
+        contents = {'a.txt': '', 'b.txt': '', 'c.foo': ''}
+        module_dir = shared.create_dir(contents)
+        self.write_yaml('''\
+            cp module foo:
+                path: {}
+                executable: "*.txt"
+            imports:
+                foo: ./
+            ''', module_dir)
+        self.do_integration_test(['sync'], contents)
+        for f in ('a.txt', 'b.txt'):
+            mode = (Path(self.test_dir) / f).stat().st_mode
+            assert mode & stat.S_IXUSR
+            assert mode & stat.S_IXGRP
+            assert mode & stat.S_IXOTH
 
     def test_alternate_cache(self):
         module_dir = shared.create_dir({'foo': 'bar'})

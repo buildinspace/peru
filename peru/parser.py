@@ -74,9 +74,10 @@ def _extract_rule(name, blob):
         print('Warning: The `files` field is deprecated. Use `pick` instead.',
               file=sys.stderr)
     pick = _extract_maybe_list_field(blob, 'pick')
-    if not export and not files and not pick:
+    executable = _extract_maybe_list_field(blob, 'executable')
+    if not export and not files and not pick and not executable:
         return None
-    rule = Rule(name, export, files, pick)
+    rule = Rule(name, export, files, pick, executable)
     return rule
 
 
