@@ -1,0 +1,13 @@
+imports:
+  docopt: peru/third_party
+  pyyaml: peru/third_party/yaml
+
+git module docopt:
+  url: https://github.com/docopt/docopt
+  rev: 944641a7357376a43151bd4a3ca44f9c07c4d1ae  # 0.6.2
+  pick: docopt.py
+
+hg module pyyaml:
+  url: https://bitbucket.org/xi/pyyaml
+  rev: b361458ecb13099f4ab0bcfd0a25da018e4db719  # 3.11
+  export: lib3/yaml

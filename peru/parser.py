@@ -2,7 +2,8 @@ import collections
 import re
 import sys
 import textwrap
-import yaml
+
+from .third_party import yaml
 
 from .error import PrintableError
 from .module import Module

@@ -55,7 +55,9 @@ def main():
 
     # Run the linter.
     try:
-        subprocess.check_call(['flake8', 'peru', 'tests'], cwd=REPO_ROOT)
+        subprocess.check_call(
+            ['flake8', 'peru', 'tests', '--exclude', 'third_party'],
+            cwd=REPO_ROOT)
     except:
         sys.exit(1)
 

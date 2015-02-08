@@ -1,7 +1,7 @@
 from textwrap import dedent
 import unittest
 
-import yaml
+from peru.third_party import yaml
 
 from peru import edit_yaml
 import shared

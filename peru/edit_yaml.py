@@ -1,4 +1,4 @@
-import yaml
+from .third_party import yaml
 
 
 def set_module_field_in_file(yaml_file_path, module_name, field_name, new_val):

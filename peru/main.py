@@ -5,7 +5,7 @@ import os
 import sys
 import tempfile
 
-import docopt
+from .third_party import docopt
 
 from . import async
 from . import compat

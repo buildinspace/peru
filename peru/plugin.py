@@ -6,7 +6,7 @@ import subprocess
 import tempfile
 import textwrap
 
-import yaml
+from .third_party import yaml
 
 from .async import create_subprocess_with_handle
 from . import cache

@@ -28,13 +28,14 @@ def get_all_resources_filepaths():
 
 
 def get_install_requires():
-    dependencies = ['docopt', 'PyYAML']
-    # Python 3.3 needs extra libs that aren't installed by default.
     if sys.version_info < (3, 3):
         raise RuntimeError('The minimum supported Python version is 3.3.')
     elif (3, 3) <= sys.version_info < (3, 4):
-        dependencies.extend(['asyncio', 'pathlib'])
-    return dependencies
+        # Python 3.3 needs extra libs that aren't installed by default.
+        return ['asyncio', 'pathlib']
+    else:
+        # All of our regular dependencies are included in the peru module.
+        return []
 
 
 setuptools.setup(

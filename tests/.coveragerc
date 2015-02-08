@@ -1,2 +1,7 @@
 [run]
 source = ../peru
+
+[report]
+omit =
+    ../peru/resources
+    ../peru/third_party
