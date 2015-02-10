@@ -238,11 +238,6 @@ Some fields (like `url` and `rev`) are specific to certain module types. There
 are also fields you can use in any module, which modify the the tree of files
 after it's fetched. These made an appearance in the fancy example above:
 
-- <s>`build`: A shell command to run on the fetched files. Fetching happens
-  somewhere in outer space (a temporary directory), and this command will be
-  run there.</s> [Deprecated for security and portability reasons. This will go
-  away soon. The untarring/unzipping use case will be handled with the new
-  `unpack` field in the curl type.]
 - `copy`: A multimap of source and destination paths to copy. Follows the
   semantics of Python's `shutil.copy2` when the source is a file and
   `shutil.copytree` when the source is a directory.
