@@ -1,7 +1,7 @@
 from textwrap import dedent
 import unittest
 
-from peru.parser import parse_string, ParserError, build_imports
+from peru.parser import parse_string, ParserError
 from peru.module import Module
 from peru.rule import Rule
 
@@ -12,7 +12,7 @@ class ParserTest(unittest.TestCase):
         scope, imports = parse_string('')
         self.assertDictEqual(scope.modules, {})
         self.assertDictEqual(scope.rules, {})
-        self.assertEqual(imports, build_imports({}))
+        self.assertEqual(imports, {})
 
     def test_parse_rule(self):
         input = dedent("""\
@@ -62,7 +62,7 @@ class ParserTest(unittest.TestCase):
         scope, imports = parse_string(input)
         self.assertDictEqual(scope.modules, {})
         self.assertDictEqual(scope.rules, {})
-        self.assertEqual(imports, build_imports({'foo': 'bar/'}))
+        self.assertEqual(imports, {'foo': ('bar/',)})
 
     def test_parse_multimap_imports(self):
         input = dedent('''\
@@ -73,7 +73,7 @@ class ParserTest(unittest.TestCase):
         scope, imports = parse_string(input)
         self.assertDictEqual(scope.modules, {})
         self.assertDictEqual(scope.rules, {})
-        self.assertEqual(imports, build_imports({'foo': 'bar/'}))
+        self.assertEqual(imports, {'foo': ('bar/',)})
 
     def test_parse_empty_imports(self):
         input = dedent('''\
@@ -82,7 +82,7 @@ class ParserTest(unittest.TestCase):
         scope, imports = parse_string(input)
         self.assertDictEqual(scope.modules, {})
         self.assertDictEqual(scope.rules, {})
-        self.assertEqual(imports, build_imports({}))
+        self.assertEqual(imports, {})
 
     def test_parse_wrong_type_imports_throw(self):
         with self.assertRaises(ParserError):

@@ -398,6 +398,33 @@ class SyncTest(unittest.TestCase):
         except peru.error.PrintableError as e:
             assert 'doesntexist' in e.message
 
+    def test_rule_with_copied_files(self):
+        content = {
+            'foo': 'foo',
+            'bar/baz': 'baz'
+        }
+        module_dir = shared.create_dir(content)
+        self.write_yaml('''\
+            cp module foo:
+                path: {}
+                copy:
+                    foo: foo-copy
+                    bar:
+                      - bar-copy-1
+                      - bar-copy-2
+
+            imports:
+                foo: ./
+            ''', module_dir)
+        copied_content = {
+            'foo': 'foo',
+            'bar/baz': 'baz',
+            'foo-copy': 'foo',
+            'bar-copy-1/baz': 'baz',
+            'bar-copy-2/baz': 'baz'
+        }
+        self.do_integration_test(['sync'], copied_content)
+
     def test_alternate_cache(self):
         module_dir = shared.create_dir({'foo': 'bar'})
         self.write_yaml('''\

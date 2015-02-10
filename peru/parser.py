@@ -35,7 +35,7 @@ def parse_string(yaml_str, name_prefix=""):
 def _parse_toplevel(blob, name_prefix):
     modules = _extract_modules(blob, name_prefix)
     rules = _extract_named_rules(blob, name_prefix)
-    imports = _extract_imports(blob)
+    imports = _extract_multimap_field(blob, 'imports')
     if blob:
         raise ParserError("Unknown toplevel fields: " +
                           ", ".join(blob.keys()))
@@ -66,19 +66,20 @@ def _extract_rule(name, blob):
         raise ParserError(textwrap.dedent('''\
             The "build" field is no longer supported. If you need to
             untar/unzip a curl module, use the "unpack" field.'''))
+    copy = _extract_multimap_field(blob, 'copy')
+    move = _extract_map_field('move', blob)
+    executable = _extract_optional_list_field(blob, 'executable')
+    pick = _extract_optional_list_field(blob, 'pick')
     export = blob.pop('export', None)
     # TODO: Remove the `files` field. Until this is done, print a deprecation
     # message.
-    files = _extract_maybe_list_field(blob, 'files')
+    files = _extract_optional_list_field(blob, 'files')
     if files:
         print('Warning: The `files` field is deprecated. Use `pick` instead.',
               file=sys.stderr)
-    pick = _extract_maybe_list_field(blob, 'pick')
-    executable = _extract_maybe_list_field(blob, 'executable')
-    move = _extract_map_field('move', blob)
-    if not any((export, files, pick, move, executable)):
+    if not any((copy, move, executable, pick, export, files)):
         return None
-    rule = Rule(name, export, files, pick, move, executable)
+    rule = Rule(name, copy, move, executable, pick, export, files)
     return rule
 
 
@@ -123,46 +124,13 @@ def _build_module(name, type, blob, yaml_name):
     return module
 
 
-def build_imports(multimap):
-    '''Import values can be a scalar or a list:
-        imports:
-          a: foo/
-          b:
-            - bar/
-            - baz/
-    We need to parse both.'''
-    message = ('Imports must be a map whose values are either a string or '
-               'list of strings.')
-    # We use an `OrderedDict` here to ensure that imports happen in determinist
-    # order. This prevents obscure bugs caused by imports occuring differently
-    # at different times.
-    imports = collections.OrderedDict()
-    if not multimap:
-        return imports
-    elif not isinstance(multimap, dict):
-        raise ParserError(message)
-    # Sort by key so that imports occur in convenient lexographical order. This
-    # keeps things deterministic in a simple way.
-    for target, value in sorted(multimap.items()):
-        paths = _optional_list(value)
-        if paths is None:
-            raise ParserError(message)
-        imports[target] = paths  # Remembers order.
-    return imports
-
-
-def _extract_imports(blob):
-    importsblob = blob.pop('imports', {})
-    return build_imports(importsblob)
-
-
 def _validate_name(name):
     if re.search(r"[\s:.]", name):
         raise ParserError("Invalid name: " + repr(name))
     return name
 
 
-def _extract_maybe_list_field(blob, name):
+def _extract_optional_list_field(blob, name):
     '''Handle optional fields that can be either a string or a list of
     strings.'''
     value = _optional_list(blob.pop(name, []))
@@ -170,6 +138,33 @@ def _extract_maybe_list_field(blob, name):
         raise ParserError('"{}" field must be a string or a list.'
                           .format(name))
     return value
+
+
+def _extract_multimap_field(blob, name):
+    '''Extracts multimap fields. Values can either be a scalar string or a list
+    of strings. We need to parse both. For example:
+        example:
+          a: foo/
+          b:
+            - bar/
+            - baz/'''
+    message = ('"{}" field must be a map whose values are either a string or '
+               'list of strings.'.format(name))
+    raw_map = blob.pop(name, {}) or {}
+    if not isinstance(raw_map, dict):
+        raise ParserError(message)
+    # We use an `OrderedDict` to ensure that multimap fields are processed in a
+    # determinist order. This prevents obscure bugs caused by subtly different
+    # behavior.
+    multimap = collections.OrderedDict()
+    # Sort by key so that processing occurs in convenient lexographical order.
+    # This keeps things deterministic in a simple way.
+    for key, raw_value in sorted(raw_map.items()):
+        value = _optional_list(raw_value)
+        if value is None:
+            raise ParserError(message)
+        multimap[key] = value  # Remembers order.
+    return multimap
 
 
 def _optional_list(value):

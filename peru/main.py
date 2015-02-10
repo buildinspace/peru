@@ -11,7 +11,7 @@ from . import async
 from . import compat
 from .error import PrintableError
 from . import imports
-from .parser import parse_file, build_imports
+from .parser import parse_file
 from .runtime import Runtime
 
 __doc__ = """\
@@ -131,9 +131,8 @@ class Main:
 
     @command('clean')
     def do_clean(self):
-        empty_imports = build_imports({})
         yield from imports.checkout(
-            self.runtime, self.scope, empty_imports, self.runtime.root)
+            self.runtime, self.scope, {}, self.runtime.root)
 
 
 def get_version():

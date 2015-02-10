@@ -2,7 +2,6 @@ import unittest
 
 from peru.cache import Cache
 from peru.merge import merge_imports_tree
-from peru.parser import build_imports
 
 from shared import create_dir, assert_contents
 
@@ -18,9 +17,8 @@ class MergeTest(unittest.TestCase):
         content_dir = create_dir(content)
         self.content_tree = self.cache.import_tree(content_dir)
 
-    def test_merge_from_dict(self):
-        imports_dict = {'foo': 'path1', 'bar': 'path2'}
-        imports = build_imports(imports_dict)
+    def test_merge_from_map(self):
+        imports = {'foo': ('path1',), 'bar': ('path2',)}
         target_trees = {'foo': self.content_tree, 'bar': self.content_tree}
 
         merged_tree = merge_imports_tree(self.cache, imports, target_trees)
@@ -36,8 +34,7 @@ class MergeTest(unittest.TestCase):
         #         foo:
         #           - path1
         #           - path2
-        multimap = {'foo': ['path1', 'path2']}
-        imports = build_imports(multimap)
+        imports = {'foo': ('path1', 'path2')}
         target_trees = {'foo': self.content_tree}
 
         merged_tree = merge_imports_tree(self.cache, imports, target_trees)

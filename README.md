@@ -243,10 +243,14 @@ after it's fetched. These made an appearance in the fancy example above:
   run there.</s> [Deprecated for security and portability reasons. This will go
   away soon. The untarring/unzipping use case will be handled with the new
   `unpack` field in the curl type.]
+- `copy`: A multimap of source and destination paths to copy. Follows the
+  semantics of Python's `shutil.copy2` when the source is a file and
+  `shutil.copytree` when the source is a directory.
 - `move`: A map of source and destination paths to move. Follows the semantics
   of Python's `shutil.move()`, so for example moving a file into a directory
-  will work. This happens first, so other fields should refer to moved files at
-  their destination paths.
+  will work.
+- `executable`: A file or list of files to make executable, as if
+  calling `chmod +x`. Also accepts globs.
 - `pick`: A file or directory, or a list of files and directories, to include
   in the module. Everything else is dropped, though the root of the module tree
   is not changed. Paths can contain `*` or `**` globs, powered by Python's
@@ -259,8 +263,6 @@ after it's fetched. These made an appearance in the fancy example above:
   module tree is not changed. These can have `*` or `**` globs, powered by
   Python's pathlib. Applies after `export`.</s> [Deprecated in favor of a
   consistent set of fields for file manipulation. Use `pick` instead.]
-- `executable`: A file or list of files to make executable, as if
-  calling `chmod +x`. Also accepts globs.
 
 Besides using those fields in your modules, you can also use them in "named
 rules", which let you transform one module in multiple ways. For example, say

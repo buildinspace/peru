@@ -9,22 +9,24 @@ from .error import PrintableError
 
 
 class Rule:
-    def __init__(self, name, export, files, pick, move, executable):
+    def __init__(self, name, copy, move, executable, pick, export, files):
         self.name = name
-        self.export = export
-        self.files = files
-        self.pick = pick
+        self.copy = copy
         self.move = move
         self.executable = executable
+        self.pick = pick
+        self.export = export
+        self.files = files
 
     def _cache_key(self, input_tree):
         return compute_key({
             'input_tree': input_tree,
-            'export': self.export,
-            'files': self.files,
-            'pick': self.pick,
+            'copy': self.copy,
             'move': self.move,
             'executable': self.executable,
+            'pick': self.pick,
+            'export': self.export,
+            'files': self.files,
         })
 
     def _get_export_path(self, runtime, module_root):
@@ -55,6 +57,7 @@ class Rule:
 
             with runtime.tmp_dir() as tmp_dir:
                 runtime.cache.export_tree(input_tree, tmp_dir)
+                self._copy_files(tmp_dir)
                 self._move_files(tmp_dir)
                 self._chmod_executables(tmp_dir)
                 export_path = self._get_export_path(runtime, tmp_dir)
@@ -92,6 +95,25 @@ class Rule:
                 new_mode = (path.stat().st_mode | stat.S_IXUSR | stat.S_IXGRP |
                             stat.S_IXOTH)
                 path.chmod(new_mode)
+
+    def _copy_files(self, module_root):
+        # TODO: Do not let this operation escape its module's root. Check paths
+        # and links.
+        for src, dests in self.copy.items():
+            for dest in dests:
+                src = os.path.join(module_root, src)
+                dest = os.path.join(module_root, dest)
+                try:
+                    # By default, both `copytree` and `copy2` will expand
+                    # symlinks, copying their contents instead of the links
+                    # themselves.
+                    if Path(src).is_dir():
+                        shutil.copytree(src, dest)
+                    else:
+                        shutil.copy2(src, dest)
+                except OSError as e:
+                    raise PrintableError('copy "{}" -> "{}" failed: {}'.format(
+                        src, dest, e.strerror))
 
     def _get_files(self, export_path):
         if not self.files:
