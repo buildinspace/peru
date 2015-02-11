@@ -20,7 +20,7 @@ def merge_imports_tree(cache, imports, target_trees, base_tree=None):
     # We always want to merge imports in the same order, so that any conflicts
     # we run into will be deterministic. Sort the imports alphabetically by
     # target name.
-    unified_tree = base_tree or cache.empty_tree
+    unified_tree = base_tree or cache.get_empty_tree()
     for target, paths in imports.items():
         for path in paths:
             try:

@@ -34,14 +34,13 @@ class Cache:
         makedirs(self.tmp_path)
         self.keyval = KeyVal(os.path.join(root, 'keyval'), self.tmp_path)
         self.trees_path = os.path.join(root, "trees")
+        self._empty_tree = None
         self._init_trees()
 
     def _init_trees(self):
         if not os.path.exists(self.trees_path):
             os.makedirs(self.trees_path)
             self._git('init', '--bare')
-        self._git('read-tree', '--empty')
-        self.empty_tree = self._git('write-tree')
 
     class GitError(RuntimeError):
         def __init__(self, command, output, errorcode):
@@ -83,6 +82,12 @@ class Cache:
                 del env[var]
         env["GIT_CONFIG_NOSYSTEM"] = "true"
         return env
+
+    def get_empty_tree(self):
+        if not self._empty_tree:
+            self._git('read-tree', '--empty')
+            self._empty_tree = self._git('write-tree')
+        return self._empty_tree
 
     def import_tree(self, src, files=None, excludes=None):
         if not os.path.exists(src):
@@ -133,8 +138,8 @@ class Cache:
 
     # TODO: Use temporary index files for everything in Cache.
     def export_tree(self, tree, dest, previous_tree=None, *, force=False):
-        tree = tree or self.empty_tree
-        previous_tree = previous_tree or self.empty_tree
+        tree = tree or self.get_empty_tree()
+        previous_tree = previous_tree or self.get_empty_tree()
 
         if not os.path.exists(dest):
             os.makedirs(dest)
