@@ -1,0 +1,37 @@
+.org-header {
+  margin-bottom: 10px;
+  margin-top: 20px;
+}
+.org-header-avatar {
+  margin-right: 12px;
+  display: inline;
+  height: 64px;
+  overflow: hidden;
+  width: 64px;
+}
+.org-header-info {
+  display: inline-block;
+  vertical-align: middle;
+}
+.org-header-text {
+  font-size: 32px;
+  font-weight: 400;
+  margin: 0;
+}
+.org-header-text small {
+  font-size: 70%;
+  font-weight: 300;
+}
+.org-header-text project {
+  color: rgb(240, 124, 24);
+  font-size: inherit;
+  font-weight: 300;
+}
+.page-header.nav {
+  margin-bottom: 4px;
+  margin-top: 16px;
+}
+div#doc-pane {
+  border: 0;
+  width: 100%;
+}
