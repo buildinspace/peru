@@ -3,11 +3,16 @@
   margin-top: 20px;
 }
 .org-header-avatar {
-  margin-right: 12px;
-  display: inline;
+  display: inline-block;
   height: 64px;
+  margin-right: 12px;
   overflow: hidden;
   width: 64px;
+}
+.org-header-avatar.visible-xs-inline {
+  height: 32px;
+  margin-right: 6px;
+  width: 32px;
 }
 .org-header-info {
   display: inline-block;
