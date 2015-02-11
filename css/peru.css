@@ -31,7 +31,17 @@
   margin-bottom: 4px;
   margin-top: 16px;
 }
+#doc-nav a:focus {
+  background: inherit;
+}
+#doc-nav a.active:focus,
+#doc-nav a.active:hover,
+#doc-nav a.active:link,
+#doc-nav a.active:visited {
+  color: rgb(240, 124, 24);
+}
 div#doc-pane {
   border: 0;
+  margin-top: 16px;
   width: 100%;
 }

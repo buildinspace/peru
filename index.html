@@ -12,7 +12,13 @@
     <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.2/js/bootstrap.min.js"></script>
     <script>
       $(document).ready(function() {
-        $('#doc-pane').load('http://peru.buildinspace.com/doc/summary.html');
+        $('#doc-nav a').click(function() {
+          $('#doc-nav a').removeClass('active');
+          $(this).blur();
+          $(this).addClass('active');
+          $('#doc-pane').load('http://peru.buildinspace.com/doc/' + $(this).data('doc'));
+        });
+        $('#doc-nav a[data-doc="summary.html"]').trigger('click');
       });
     </script>
   </head>
@@ -26,12 +32,12 @@
           </div>
         </div>
         <div class="row">
-          <div class="col-sm-2">
+          <div id="doc-nav" class="col-sm-2">
             <div class="page-header nav">basics</div>
             <ul class="nav">
-              <li><a href="#" onclick="$('#doc-pane').load('http://peru.buildinspace.com/doc/summary.html');">summary</a></li>
-              <li><a href="#" onclick="$('#doc-pane').load('http://peru.buildinspace.com/doc/hack.html');">hack</a></li>
-              <li><a href="#" onclick="$('#doc-pane').load('http://peru.buildinspace.com/doc/install.html');">install</a></li>
+              <li><a href="#" data-doc="summary.html">summary</a></li>
+              <li><a href="#" data-doc="hack.html">hack</a></li>
+              <li><a href="#" data-doc="install.html">install</a></li>
             </ul>
             <div class="page-header nav">configuration</div>
             <ul class="nav">
