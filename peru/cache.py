@@ -1,7 +1,9 @@
+import collections
 import hashlib
 import json
 import os
 import pathlib
+import re
 import subprocess
 
 from .compat import makedirs
@@ -112,7 +114,7 @@ class Cache:
         # or dot-dot. Instead of './', it wants the empty string. Oblige it.
         # NOTE: This parameter *must* be forward-slash-separated, even on
         # Windows. os.path.normpath() is not correct here!
-        merge_path_obj = pathlib.Path(merge_path)
+        merge_path_obj = pathlib.PurePosixPath(merge_path)
         assert '..' not in merge_path_obj.parts
         prefix = merge_path_obj.as_posix()
         prefix = '' if prefix == '.' else prefix
@@ -227,6 +229,111 @@ class Cache:
         self._git('update-index', '--force-remove', '-z', '--stdin',
                   work_tree=workdir, input=ls_files_output)
 
+    def ls_tree(self, tree, path=None, *, recursive=False):
+        # Lines in ls-tree are of the following form (note that the wide space
+        # is a tab):
+        # 100644 blob a2b67564ae3a7cb3237ee0ef1b7d26d70f2c213f    README.md
+        entry_regex = r'(\w+) (\w+) (\w+)\t(.*)'
+        command = ['ls-tree', '-z', tree]
+        if path is not None:
+            canonical_path = str(pathlib.PurePosixPath(path))
+            command += [canonical_path]
+        if recursive:
+            # -t means tree entries are included in the listing.
+            command += ['-r', '-t']
+        output = self._git(*command)
+        if not output:
+            return {}
+        entries = {}
+        for line in output.strip('\x00').split('\x00'):
+            mode, type, hash, name = re.match(entry_regex, line).groups()
+            if (recursive and path is not None and
+                    len(name) <= len(canonical_path) and type == TREE_TYPE):
+                # In recursive mode, leave out the target directory itself and
+                # all of its parents, unless the "target directory" is actually
+                # a file.
+                continue
+            entries[name] = TreeEntry(mode, type, hash)
+        return entries
+
+    def _mktree(self, entries):
+        entry_format = '{} {} {}\t{}'
+        input = '\x00'.join(entry_format.format(mode, type, hash, name)
+                            for name, (mode, type, hash) in entries.items())
+        tree = self._git('mktree', '-z', input=input)
+        return tree
+
+    def modify_tree(self, tree, modifications):
+        '''The modifications are a map of the form, {path: TreeEntry}. The tree
+        can be None to indicate an empty starting tree. The entries can be
+        either blobs or trees, or None to indicate a deletion. The return value
+        is either the hash of the resulting tree, or None if the resulting tree
+        is empty. Modifications in parent directories are done before
+        modifications in subdirectories below them, so for example you can
+        insert a tree at a given path and also insert more new stuff beneath
+        that path, without fear of overwriting the new stuff.'''
+
+        # Read the original contents of the base tree.
+        entries = self.ls_tree(tree, '.') if tree is not None else {}
+
+        # Separate the modifications into two groups, those that refer to
+        # entries at the base of this tree (e.g. 'foo'), and those that refer
+        # to entries in subtrees (e.g. 'foo/bar').
+        modifications_at_base = dict()
+        modifications_in_subtrees = collections.defaultdict(dict)
+        for path_str, entry in modifications.items():
+            # Canonicalize paths to get rid of duplicate/trailing slashes.
+            path = pathlib.PurePosixPath(path_str)
+
+            # Check for nonsense paths.
+            # TODO: Maybe stop recursive calls from repeating these checks.
+            if len(path.parts) == 0:
+                raise ModifyTreeError('Cannot modify an empty path.')
+            elif path.parts[0] == '/':
+                raise ModifyTreeError('Cannot modify an absolute path.')
+            elif '..' in path.parts:
+                raise ModifyTreeError('.. is not allowed in tree paths.')
+
+            if len(path.parts) == 1:
+                modifications_at_base[str(path)] = entry
+            else:
+                first_dir = path.parts[0]
+                rest = str(pathlib.PurePosixPath(*path.parts[1:]))
+                modifications_in_subtrees[first_dir][rest] = entry
+
+        # Insert or delete entries in the base tree. Note that this happens
+        # before any subtree operations.
+        for name, entry in modifications_at_base.items():
+            if entry is None:
+                entries.pop(name, None)
+            else:
+                entries[name] = entry
+
+        # Recurse to compute modified subtrees. Note how we handle deletions:
+        # If 'a' is a file, inserting a new file at 'a/b' will implicitly
+        # delete 'a', but trying to delete 'a/b' will be a no-op and will not
+        # delete 'a'.
+        for name, sub_modifications in modifications_in_subtrees.items():
+            subtree_base = None
+            if name in entries and entries[name].type == TREE_TYPE:
+                subtree_base = entries[name].hash
+            new_subtree = self.modify_tree(subtree_base, sub_modifications)
+            if new_subtree is not None:
+                entries[name] = TreeEntry(TREE_MODE, TREE_TYPE, new_subtree)
+            # Delete an empty tree if it was actually a tree to begin with.
+            elif name in entries and entries[name].type == TREE_TYPE:
+                del entries[name]
+
+        # Return the resulting tree, or None if empty.
+        if entries:
+            return self._mktree(entries)
+        else:
+            return None
+
+
+class ModifyTreeError(PrintableError):
+    pass
+
 
 class DirtyWorkingCopyError(PrintableError):
     pass
@@ -234,3 +341,12 @@ class DirtyWorkingCopyError(PrintableError):
 
 class MergeConflictError(PrintableError):
     pass
+
+TreeEntry = collections.namedtuple('TreeEntry', ['mode', 'type', 'hash'])
+
+BLOB_TYPE = 'blob'
+TREE_TYPE = 'tree'
+
+NONEXECUTABLE_FILE_MODE = '100644'
+EXECUTABLE_FILE_MODE = '100755'
+TREE_MODE = '040000'

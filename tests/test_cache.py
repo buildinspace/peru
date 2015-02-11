@@ -213,3 +213,79 @@ class CacheTest(unittest.TestCase):
     def test_import_with_excludes_and_files(self):
         self.do_excludes_and_files_test(
             excludes=['b/c'], files=['b'], expected={'b/d': 'baz'})
+
+    def test_ls_tree(self):
+        # Use the recursive case to get valid entries for each file. We could
+        # hardcode these, but it would be messy and annoying to maintain.
+        entries = self.cache.ls_tree(self.content_tree, recursive=True)
+        assert entries.keys() == {'a', 'b', 'b/c', 'b/d'}
+        assert (entries['a'].type == entries['b/c'].type ==
+                entries['b/d'].type == peru.cache.BLOB_TYPE)
+        assert entries['b'].type == peru.cache.TREE_TYPE
+
+        # Check the non-recursive, non-path case.
+        self.assertDictEqual({'a': entries['a'], 'b': entries['b']},
+                             self.cache.ls_tree(self.content_tree))
+
+        # Check the single file case, and make sure paths are normalized.
+        self.assertDictEqual({'b/c': entries['b/c']},
+                             self.cache.ls_tree(self.content_tree, 'b/c//./'))
+
+        # Check the single dir case. (Trailing slash shouldn't matter, because
+        # we nomalize it, but git will do the wrong thing if we forget
+        # normalization.)
+        self.assertDictEqual({'b': entries['b']},
+                             self.cache.ls_tree(self.content_tree, 'b/'))
+
+        # Check the recursive dir case.
+        self.assertDictEqual({'b/c': entries['b/c'], 'b/d': entries['b/d']},
+                             self.cache.ls_tree(self.content_tree, 'b',
+                                                recursive=True))
+
+        # Make sure that we don't skip over a target file in recursive mode.
+        self.assertDictEqual({'b/c': entries['b/c']},
+                             self.cache.ls_tree(self.content_tree, 'b/c',
+                                                recursive=True))
+
+    def test_modify_tree(self):
+        base_dir = create_dir({'a': 'foo', 'b/c': 'bar'})
+        base_tree = self.cache.import_tree(base_dir)
+        entries = self.cache.ls_tree(base_tree, recursive=True)
+        cases = []
+
+        # Test regular deletions.
+        cases.append(({'a': None},
+                      {'b/c': 'bar'}))
+        cases.append(({'a//./': None},  # Paths should get normalized.
+                      {'b/c': 'bar'}))
+        cases.append(({'b': None},
+                      {'a': 'foo'}))
+        cases.append(({'b/c': None},
+                      {'a': 'foo'}))
+        cases.append(({'x/y/z': None},
+                      {'a': 'foo', 'b/c': 'bar'}))
+        cases.append(({'b/x': None},
+                      {'a': 'foo', 'b/c': 'bar'}))
+        # Test the case where we try to delete below a file.
+        cases.append(({'a/x': None},
+                      {'a': 'foo', 'b/c': 'bar'}))
+        # Test insertions.
+        cases.append(({'b': entries['a']},
+                      {'a': 'foo', 'b': 'foo'}))
+        cases.append(({'x': entries['a']},
+                      {'a': 'foo', 'x': 'foo', 'b/c': 'bar'}))
+        cases.append(({'x': entries['b']},
+                      {'a': 'foo', 'b/c': 'bar', 'x/c': 'bar'}))
+        cases.append(({'d/e/f': entries['a']},
+                      {'a': 'foo', 'b/c': 'bar', 'd/e/f': 'foo'}))
+        cases.append(({'d/e/f': entries['b']},
+                      {'a': 'foo', 'b/c': 'bar', 'd/e/f/c': 'bar'}))
+
+        for modifications, result in cases:
+            modified_tree = self.cache.modify_tree(base_tree, modifications)
+            modified_dir = create_dir()
+            self.cache.export_tree(modified_tree, modified_dir)
+            error_msg = ('modify_tree failed to give result {} '
+                         'for modifications {}'.format(
+                             repr(result), repr(modifications)))
+            assert_contents(modified_dir, result, message=error_msg)
