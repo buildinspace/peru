@@ -7,58 +7,88 @@
     <link href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.2/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.2/css/bootstrap-theme.min.css" rel="stylesheet">
     <link href="css/peru.css" rel="stylesheet">
-    <link href="https://fonts.googleapis.com/css?family=Lato:300,400,700|Source+Code+Pro:300,400,700|Noto+Sans:400,700,400italic,700italic" rel="stylesheet" type="text/css">
+    <link href="https://fonts.googleapis.com/css?family=Lato:300,400,700|Source+Code+Pro:300,400,700|Noto+Sans:400,600,700,400italic,700italic" rel="stylesheet" type="text/css">
     <script src="https://code.jquery.com/jquery-1.11.2.min.js"></script>
     <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.2/js/bootstrap.min.js"></script>
-    <script>
-      $(document).ready(function() {
-        $('#doc-nav a').click(function() {
-          $('#doc-nav a').removeClass('active');
-          $(this).blur();
-          $(this).addClass('active');
-          $('#doc-pane').load('http://peru.buildinspace.com/doc/' + $(this).data('doc'));
-        });
-        $('#doc-nav a[data-doc="summary.html"]').trigger('click');
-      });
-    </script>
   </head>
-  <body style="font-family: Lato, sans-serif;">
-    <div class="content">
+  <body>
+    <nav class="navbar navbar-default navbar-static-top">
       <div class="container">
-        <div class="org-header">
-          <img class="org-header-avatar visible-xs-inline" src="https://avatars2.githubusercontent.com/u/8107815?v=3&s=32"></img>
-          <img class="org-header-avatar hidden-xs" src="https://avatars2.githubusercontent.com/u/8107815?v=3&s=64"></img>
-          <div class="org-header-info">
-            <h1 class="org-header-text">build<small>in</small>space | <project>peru</project></h1>
-          </div>
+        <div class="navbar-header">
+          <button type="button" class="btn btn-sm navbar-toggle collapsed pull-left" data-toggle="collapse" data-target="#nav-menu-1">
+            <span class="glyphicon glyphicon-menu-hamburger" style="margin: 0 4px 0 4px;"></span>
+          </button>
         </div>
-        <div class="row">
-          <div id="doc-nav" class="col-sm-2">
-            <div class="page-header nav">basics</div>
-            <ul class="nav">
-              <li><a href="#" data-doc="summary.html">summary</a></li>
-              <li><a href="#" data-doc="hack.html">hack</a></li>
-              <li><a href="#" data-doc="install.html">install</a></li>
-            </ul>
-            <div class="page-header nav">configuration</div>
-            <ul class="nav">
-              <li><a href="#">modules</a></li>
-              <li><a href="#">rules</a></li>
-              <li><a href="#">imports</a></li>
-            </ul>
-            <div class="page-header nav">commands</div>
-            <ul class="nav">
-              <li><a href="#">sync</a></li>
-              <li><a href="#">clean</a></li>
-              <li><a href="#">reup</a></li>
-              <li><a href="#">override</a></li>
-            </ul>
-          </div>
-          <div class="col-sm-10">
-            <div id="doc-pane"></div>
-          </div>
+        <div class="collapse navbar-collapse" id="nav-menu-1">
+          <ul class="nav navbar-nav">
+            <li class="active"><a href="#">peru</a></li>
+            <li><a href="https://github.com/buildinspace/peru" target="_blank">hack</a></li>
+            <li><a href="#">install</a></li>
+            <li><a href="#">docs</a></li>
+          </ul>
+        </div>
+      </div>
+    </nav>
+    <div class="header">
+      <div class="header-logo">
+        <span class="header-logo-graphic"></span>
+        <h1 class="header-logo-text">build<small>in</small>space | <bright>peru</bright></h1>
+      </div>
+      <div class="header-tagline hidden-xs">
+        <h1 class="header-tagline-text">fetch code for your projects and tools, from JavaScript to VimL<h1>
+        <button type="button" class="btn btn-lg">
+          <span class="glyphicon glyphicon-download-alt" style="margin-right: 12px;"></span>download tarball
+        </button>
+        <button type="button" class="btn btn-lg">
+          <span class="glyphicon glyphicon-th-large" style="margin-right: 12px;"></span>browse packages
+        </button>
+      </div>
+    </div>
+    <div class="splash visible-lg">
+      <div class="splash-preview">
+        <img src="img/peru.gif" class="splash-preview"></img>
+      </div>
+    </div>
+    <div class="container">
+      <div class="row">
+        <div class="col-md-12">
+          <div class="blurb">Peru is a flexible command line tool for fetching other people's code and merging it into your project. Unlike many other tools, peru is generic, recursive, and doesn't get in the way of your other tools or workflow.</div>
+        </div>
+      </div>
+      <div class="row">
+        <div class="col-md-6 feature-column">
+          <h2>&gt; configurable</h2>
+          <p>Peru consumes a simple YAML file that describes what to fetch, how to fetch it, and where to put it. Normally, this file is called <code>peru.yaml</code> and is checked in with your project. Peru can fetch specific revisions, tags, and branches, and can even hash non-version-controlled files and poll for updates (see the <code>reup</code> command).</p>
+          <p>For example, if you wanted to fetch a project <code>foo</code> from GitHub at tag <code>0.1.0</code>, you could use the following YAML.</p>
+          <pre class="pre-scrollable">imports:<br/>  foo: third-party/ # Place in third-party/.<br/><br/>git module foo: # Fetch from git.<br/>  url: https://github.com/example/foo.git<br/>  rev: 0.1.0</pre>
+          <p>The YAML can also define reusable rules, which apply fields to arbitrary modules by chaining or piping them together.</p>
+        </div>
+        <div class="col-md-6 feature-column">
+          <h2>&gt; portable</h2>
+          <p>Peru is written in Python 3 and runs everywhere Python does, including Linux, Mac OS, and Windows (see packages).</p>
+          <p>Powered by <code>pathlib</code> and <code>shutil</code>, file operations are abstracted by peru and exposed as fields in YAML, so moving and copying files Just Works&trade; on every platform.</p>
+          <p>Of course, peru is available via <code>pip</code> and is hosted on <a href="https://pypi.python.org/pypi/peru" target="_blank">PyPI</a>, so installation is easy.</p>
+          <pre>$ pip install peru</pre>
+        </div>
+      </div>
+      <div class="row">
+        <div class="col-md-6 feature-column">
+          <h2>&gt; fast</h2>
+          <p>Built atop Python 3's <code>asyncio</code>, peru operates on modules in parallel to fetch code effeciently. Coupled with aggressive caching, <code>peru sync</code> is fast and avoids unnecessary network traffic.</p>
+          <p>For constrained environments, parallelism can be controlled or completely disabled. The cache can be placed in a custom directory, and can be purged at any time.</p>
+        </div>
+        <div class="col-md-6 feature-column">
+          <h2>&gt; extensible</h2>
+          <p>Out of the box, peru supports many popular and practical module types, including <code>git</code>, <code>hg</code>, <code>curl</code>, and <code>cp</code>. However, projects may need support for something not already in this toolbox.</p>
+          <p>Peru interacts with module code via a simple extension interface, shelling out to scripts to fetch and update files. Even peru's core modules are built this way, and it's trivial to extend peru with new module types as needed.</p>
+          <p>Extensions are simple scripts that can be written with any language, like Bash, Python, or C.</p>
+        </div>
+      </div>
+      <div class="row">
+        <div class="col-md-12 feature-column">
         </div>
       </div>
     </div>
+    <div class="footer"></div>
   </body>
 </html>

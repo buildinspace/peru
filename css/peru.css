@@ -1,52 +1,172 @@
-.org-header {
-  margin-bottom: 10px;
-  margin-top: 20px;
+html {
+  position: relative;
+  min-height: 100%;
 }
-.org-header-avatar {
+body {
+  color: rgb(96, 96, 96);
+  font-family: 'Lato' sans-serif;
+  margin-bottom: 40px;
+}
+small {
+  font-size: 65%;
+  font-weight: 200;
+}
+pre {
+  border-radius: 0;
+  font-family: 'Source Code Pro';
+}
+code {
+  background-color: rgb(240, 234, 230);
+  color: rgb(230, 60, 60);
+  font-family: 'Source Code Pro';
+}
+.header {
+  background-color: rgb(240, 234, 230);
+  display: block;
+  padding: 32px 0 32px 0;
+  width: 100%;
+}
+.header-logo {
+  margin: 0 auto 0 auto;
+  text-align: center;
+}
+.header-logo-graphic {
+  background-image: url('../img/rocket.png');
+  background-size: contain;
   display: inline-block;
-  height: 64px;
-  margin-right: 12px;
+  height: 96px;
+  margin-right: 0;
   overflow: hidden;
-  width: 64px;
+  vertical-align: middle;
+  width: 96px;
 }
-.org-header-avatar.visible-xs-inline {
-  height: 32px;
-  margin-right: 6px;
-  width: 32px;
-}
-.org-header-info {
+.header-logo-text {
+  color: rgb(80, 100, 32);
   display: inline-block;
+  font-size: 40px;
+  font-weight: 300;
+  margin: 0;
   vertical-align: middle;
 }
-.org-header-text {
-  font-size: 32px;
-  font-weight: 400;
-  margin: 0;
+.header-logo-text small {
+  font-size: 65%;
+  font-weight: 200;
 }
-.org-header-text small {
-  font-size: 70%;
-  font-weight: 300;
-}
-.org-header-text project {
-  color: rgb(240, 124, 24);
+.header-logo-text bright {
+  color: rgb(230, 60, 60);
   font-size: inherit;
-  font-weight: 300;
+  font-weight: 200;
 }
-.page-header.nav {
-  margin-bottom: 4px;
-  margin-top: 16px;
+.header-tagline {
+  text-align: center;
 }
-#doc-nav a:focus {
-  background: inherit;
+.header-tagline-text {
+  color: rgb(80, 100, 32);
+  font-family: 'Lato' sans-serif;
+  font-size: 28px;
+  font-weight: 600;
+  margin-left: 80px;
+  margin-right: 80px;
+  vertical-align: middle;
 }
-#doc-nav a.active:focus,
-#doc-nav a.active:hover,
-#doc-nav a.active:link,
-#doc-nav a.active:visited {
-  color: rgb(240, 124, 24);
-}
-div#doc-pane {
-  border: 0;
-  margin-top: 16px;
+.splash {
+  background-color: rgb(240, 234, 230);
+  text-align: center;
   width: 100%;
+}
+.splash-preview {
+  display: inline-block;
+}
+img.splash-preview {
+  border-bottom: none;
+  display: inline-block;
+}
+.footer {
+  background-color: rgb(80, 100, 32);
+  bottom: 0;
+  height: 40px;
+  position: absolute;
+  width: 100%;
+}
+div.blurb {
+  font-size: 20px;
+  font-weight: 400;
+  padding: 40px 40px 0 40px;
+}
+div.feature-column {
+  font-size: 15px;
+  font-weight: 400;
+  padding: 30px 10px 0 10px;
+}
+.feature-column > h2 {
+  border-bottom: 1px solid rgb(80, 100, 32);
+  color: rgb(80, 100, 32);
+  font-weight: 700;
+  padding: 0 4px 8px 4px;
+}
+.feature-column > p {
+  margin-top: 20px;
+}
+.feature-column > pre {
+  margin-top: 20px;
+}
+
+@media (min-width: 1200px) {
+  .container {
+    max-width: 1000px;
+  }
+}
+@media (min-width: 992px) {
+  .container {
+    max-width: 880px;
+  }
+}
+.btn {
+  border-radius: 0;
+}
+nav.navbar {
+  background-color: rgb(80, 100, 32);
+  background-image: none;
+  border: none;
+  box-shadow: none;
+  -webkit-box-shadow: none;
+  font-family: 'Noto Sans' sans-serif;
+  height: 40px;
+  margin: 0;
+  min-height: 40px;
+}
+.navbar-header {
+  height: 40px;
+}
+.navbar-collapse {
+  background-color: rgb(80, 100, 32);
+  border: none;
+  box-shadow: none;
+  -webkit-box-shadow: none;
+}
+button.navbar-toggle {
+  color: rgb(240, 240, 240) !important;
+  font-weight: 700;
+  margin: 6px;
+  padding: 4px;
+}
+.navbar-nav > li > a {
+  background-image: none !important;
+  box-shadow: none !important;
+  -webkit-box-shadow: none !important;
+  color: rgb(240, 240, 240) !important;
+  font-size: 14px;
+  font-weight: 700;
+  padding: 10px;
+  text-decoration: none;
+  text-shadow: none;
+  vertical-align: middle;
+}
+.navbar-nav > li > a:hover {
+  color: rgb(255, 190, 100) !important;
+}
+.navbar-nav > .active > a,
+.navbar-nav > .active > a:hover {
+  background-color: rgb(240, 234, 230) !important;
+  color: rgb(230, 60, 60) !important;
 }
