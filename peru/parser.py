@@ -112,8 +112,8 @@ def _build_module(name, type, blob, yaml_name):
 
     # Do some validation on the module fields.
     non_string_fields = [(key, val) for key, val in plugin_fields.items()
-                         if not isinstance(key, str)
-                         or not isinstance(val, str)]
+                         if not isinstance(key, str) or
+                         not isinstance(val, str)]
     if non_string_fields:
         raise ParserError(
             'Module field names and values must be strings: ' +
