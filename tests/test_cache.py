@@ -9,9 +9,9 @@ class CacheTest(unittest.TestCase):
     def setUp(self):
         self.cache = peru.cache.Cache(create_dir())
         self.content = {
-            "a": "foo",
-            "b/c": "bar",
-            "b/d": "baz",
+            'a': 'foo',
+            'b/c': 'bar',
+            'b/d': 'baz',
         }
         self.content_dir = create_dir(self.content)
         self.content_tree = self.cache.import_tree(self.content_dir)
@@ -23,7 +23,7 @@ class CacheTest(unittest.TestCase):
 
     def test_export_force_with_preexisting_files(self):
         # Create a working tree with a conflicting file.
-        dirty_content = {"a": "junk"}
+        dirty_content = {'a': 'junk'}
         export_dir = create_dir(dirty_content)
         # Export should fail by default.
         with self.assertRaises(peru.cache.DirtyWorkingCopyError):
@@ -37,8 +37,8 @@ class CacheTest(unittest.TestCase):
         export_dir = create_dir()
         self.cache.export_tree(self.content_tree, export_dir)
         # If we dirty a file, a resync should fail.
-        with open(os.path.join(export_dir, "a"), "w") as f:
-            f.write("dirty")
+        with open(os.path.join(export_dir, 'a'), 'w') as f:
+            f.write('dirty')
         with self.assertRaises(peru.cache.DirtyWorkingCopyError):
             self.cache.export_tree(self.content_tree, export_dir,
                                    previous_tree=self.content_tree)
@@ -48,7 +48,7 @@ class CacheTest(unittest.TestCase):
         assert_contents(export_dir, self.content)
 
     def test_multiple_imports(self):
-        new_content = {"fee/fi": "fo fum"}
+        new_content = {'fee/fi': 'fo fum'}
         new_tree = self.cache.import_tree(create_dir(new_content))
         export_dir = create_dir()
         self.cache.export_tree(new_tree, export_dir)
@@ -56,7 +56,7 @@ class CacheTest(unittest.TestCase):
 
     def test_import_with_gitignore(self):
         # Make sure our git imports don't get confused by .gitignore files.
-        new_content = {"fee/fi": "fo fum", ".gitignore": "fee/"}
+        new_content = {'fee/fi': 'fo fum', '.gitignore': 'fee/'}
         new_tree = self.cache.import_tree(create_dir(new_content))
         export_dir = create_dir()
         self.cache.export_tree(new_tree, export_dir)
@@ -76,7 +76,7 @@ class CacheTest(unittest.TestCase):
 
     def test_export_with_existing_files(self):
         # Create a dir with an existing file that doesn't conflict.
-        more_content = {"untracked": "stuff"}
+        more_content = {'untracked': 'stuff'}
         export_dir = create_dir(more_content)
         self.cache.export_tree(self.content_tree, export_dir)
         expected_content = self.content.copy()
@@ -91,7 +91,7 @@ class CacheTest(unittest.TestCase):
         # By default, git's checkout safety doesn't protect files that are
         # .gitignore'd. Make sure we still throw the right errors in the
         # presence of a .gitignore file.
-        with open(os.path.join(export_dir, '.gitignore'), "w") as f:
+        with open(os.path.join(export_dir, '.gitignore'), 'w') as f:
             f.write('*\n')  # .gitignore everything
         with self.assertRaises(peru.cache.DirtyWorkingCopyError):
             self.cache.export_tree(self.content_tree, export_dir)
@@ -101,8 +101,8 @@ class CacheTest(unittest.TestCase):
 
         # Create some new content.
         new_content = self.content.copy()
-        new_content["a"] += " different"
-        new_content["newfile"] = "newfile stuff"
+        new_content['a'] += ' different'
+        new_content['newfile'] = 'newfile stuff'
         new_dir = create_dir(new_content)
         new_tree = self.cache.import_tree(new_dir)
 
@@ -115,7 +115,7 @@ class CacheTest(unittest.TestCase):
         # Now do the same thing again, but use a dirty working copy. This
         # should cause an error.
         dirty_content = self.content.copy()
-        dirty_content["a"] += " dirty"
+        dirty_content['a'] += ' dirty'
         dirty_dir = create_dir(dirty_content)
         with self.assertRaises(peru.cache.DirtyWorkingCopyError):
             self.cache.export_tree(new_tree, dirty_dir,
@@ -129,7 +129,7 @@ class CacheTest(unittest.TestCase):
         # Make sure we get an error even if the dirty file is unchanged between
         # the previous tree and the new one.
         no_conflict_dirty_content = self.content.copy()
-        no_conflict_dirty_content["b/c"] += " dirty"
+        no_conflict_dirty_content['b/c'] += ' dirty'
         no_conflict_dirty_dir = create_dir(no_conflict_dirty_content)
         with self.assertRaises(peru.cache.DirtyWorkingCopyError):
             self.cache.export_tree(new_tree, no_conflict_dirty_dir,
@@ -152,17 +152,17 @@ class CacheTest(unittest.TestCase):
     def test_merge_trees(self):
         merged_tree = self.cache.merge_trees(self.content_tree,
                                              self.content_tree,
-                                             "subdir")
+                                             'subdir')
         expected_content = dict(self.content)
         for path, content in self.content.items():
-            expected_content[os.path.join("subdir", path)] = content
+            expected_content[os.path.join('subdir', path)] = content
         export_dir = create_dir()
         self.cache.export_tree(merged_tree, export_dir)
         assert_contents(export_dir, expected_content)
 
         with self.assertRaises(peru.cache.MergeConflictError):
             # subdir/ is already populated, so this merge should throw.
-            self.cache.merge_trees(merged_tree, self.content_tree, "subdir")
+            self.cache.merge_trees(merged_tree, self.content_tree, 'subdir')
 
     def test_merge_with_deep_prefix(self):
         '''This test was inspired by a bug on Windows where we would give git a
