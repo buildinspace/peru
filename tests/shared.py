@@ -66,7 +66,7 @@ def _format_contents(contents):
             for file in sorted(contents.keys())]
 
 
-def assert_contents(dir, expected_contents, excludes=()):
+def assert_contents(dir, expected_contents, *, message='', excludes=()):
     dir = Path(dir)
     expected_contents = {Path(key): val for key, val
                          in expected_contents.items()}
@@ -81,10 +81,13 @@ def assert_contents(dir, expected_contents, excludes=()):
         raise AssertionError('EXPECTED FILES WERE EXCLUDED FROM THE TEST: {}'
                              .format(excluded_missing))
     # Make a diff against expected and throw.
-    raise AssertionError("Contents didn't match:\n" + ''.join(
+    assertion_msg = "Contents didn't match:\n" + ''.join(
         difflib.unified_diff(_format_contents(expected_contents),
                              _format_contents(actual_contents),
-                             fromfile='expected', tofile='actual')).strip())
+                             fromfile='expected', tofile='actual')).strip()
+    if message:
+        assertion_msg += '\n' + message
+    raise AssertionError(assertion_msg)
 
 
 def assert_clean_tmp(peru_dir):
