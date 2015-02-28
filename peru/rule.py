@@ -1,10 +1,9 @@
 import asyncio
-from pathlib import Path
+from pathlib import Path, PurePosixPath
 import os
-import shutil
 import stat
 
-from .cache import compute_key
+from .cache import compute_key, TREE_TYPE
 from .error import PrintableError
 
 
@@ -55,10 +54,13 @@ class Rule:
             if key in runtime.cache.keyval:
                 return runtime.cache.keyval[key]
 
+            tree = input_tree
+            if self.copy:
+                tree = copy_files(runtime.cache, tree, self.copy)
+            if self.move:
+                tree = move_files(runtime.cache, tree, self.move)
             with runtime.tmp_dir() as tmp_dir:
-                runtime.cache.export_tree(input_tree, tmp_dir)
-                self._copy_files(tmp_dir)
-                self._move_files(tmp_dir)
+                runtime.cache.export_tree(tree, tmp_dir)
                 self._chmod_executables(tmp_dir)
                 export_path = self._get_export_path(runtime, tmp_dir)
                 files = self._get_files(export_path) or set()
@@ -68,17 +70,6 @@ class Rule:
             runtime.cache.keyval[key] = tree
 
         return tree
-
-    def _move_files(self, module_root):
-        # TODO: This needs to do a lot more validation to avoid e.g. absolute
-        # paths in the destination.
-        for src, dest in self.move.items():
-            try:
-                shutil.move(os.path.join(module_root, src),
-                            os.path.join(module_root, dest))
-            except OSError as e:
-                raise PrintableError('move "{}" -> "{}" failed: {}'.format(
-                    src, dest, e.strerror))
 
     def _chmod_executables(self, module_root):
         root_path = Path(module_root)
@@ -95,25 +86,6 @@ class Rule:
                 new_mode = (path.stat().st_mode | stat.S_IXUSR | stat.S_IXGRP |
                             stat.S_IXOTH)
                 path.chmod(new_mode)
-
-    def _copy_files(self, module_root):
-        # TODO: Do not let this operation escape its module's root. Check paths
-        # and links.
-        for src, dests in self.copy.items():
-            for dest in dests:
-                src = os.path.join(module_root, src)
-                dest = os.path.join(module_root, dest)
-                try:
-                    # By default, both `copytree` and `copy2` will expand
-                    # symlinks, copying their contents instead of the links
-                    # themselves.
-                    if Path(src).is_dir():
-                        shutil.copytree(src, dest)
-                    else:
-                        shutil.copy2(src, dest)
-                except OSError as e:
-                    raise PrintableError('copy "{}" -> "{}" failed: {}'.format(
-                        src, dest, e.strerror))
 
     def _get_files(self, export_path):
         if not self.files:
@@ -147,6 +119,51 @@ class Rule:
                     'path "{}".'.format(glob, export_path))
             files |= matches
         return files
+
+
+def _copy_files_modifications(_cache, tree, paths_multimap):
+    modifications = {}
+    for source in paths_multimap:
+        source_info_dict = _cache.ls_tree(tree, source)
+        if not source_info_dict:
+            raise NoMatchingFilesError(
+                'Path "{}" does not exist.'.format(source))
+        source_info = list(source_info_dict.items())[0][1]
+        for dest in paths_multimap[source]:
+            # If dest is a directory, put the source inside dest instead of
+            # overwriting dest entirely.
+            dest_is_dir = False
+            dest_info_dict = _cache.ls_tree(tree, dest)
+            if dest_info_dict:
+                dest_info = list(dest_info_dict.items())[0][1]
+                dest_is_dir = (dest_info.type == TREE_TYPE)
+            adjusted_dest = dest
+            if dest_is_dir:
+                adjusted_dest = str(PurePosixPath(dest) /
+                                    PurePosixPath(source).name)
+            modifications[adjusted_dest] = source_info
+    return modifications
+
+
+def copy_files(_cache, tree, paths_multimap):
+    modifications = _copy_files_modifications(_cache, tree, paths_multimap)
+    return _cache.modify_tree(tree, modifications)
+
+
+def move_files(_cache, tree, paths_multimap):
+    # First obtain the copies from the original tree. Moves are not ordered but
+    # happen all at once, so if you move a->b and b->c, the contents of c will
+    # always end up being b rather than a.
+    modifications = _copy_files_modifications(_cache, tree, paths_multimap)
+    # Now add in deletions, but be careful not to delete a file that just got
+    # moved. Note that if "a" gets moved into "dir", it will end up at "dir/a",
+    # even if "dir" is deleted (because modify_tree always modifies parents
+    # before decending into children, and deleting a dir is a modification of
+    # that dir's parent).
+    for source in paths_multimap:
+        if source not in modifications:
+            modifications[source] = None
+    return _cache.modify_tree(tree, modifications)
 
 
 class NoMatchingFilesError(PrintableError):

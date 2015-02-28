@@ -67,7 +67,7 @@ def _extract_rule(name, blob):
             The "build" field is no longer supported. If you need to
             untar/unzip a curl module, use the "unpack" field.'''))
     copy = _extract_multimap_field(blob, 'copy')
-    move = _extract_map_field('move', blob)
+    move = _extract_multimap_field(blob, 'move')
     executable = _extract_optional_list_field(blob, 'executable')
     pick = _extract_optional_list_field(blob, 'pick')
     export = typesafe_pop(blob, 'export', None)
@@ -177,17 +177,6 @@ def _optional_list(value):
         return tuple(value)
 
     return None  # Let callers raise errors.
-
-
-def _extract_map_field(name, blob):
-    contents = typesafe_pop(blob, name, {})
-    if not isinstance(contents, dict):
-        raise ParserError('"{}" must be a map.'.format(name))
-    for key, val in contents.items():
-        if not isinstance(key, str) or not isinstance(val, str):
-            raise ParserError('"{}" keys and values must be strings.'.format(
-                name))
-    return contents
 
 
 def typesafe_pop(d, field, default=object()):

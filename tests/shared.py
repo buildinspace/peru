@@ -94,6 +94,12 @@ def assert_contents(dir, expected_contents, *, message='', excludes=()):
     raise AssertionError(assertion_msg)
 
 
+def assert_tree_contents(cache, tree, expected_contents, **kwargs):
+    export_dir = create_dir()
+    cache.export_tree(tree, export_dir)
+    assert_contents(export_dir, expected_contents, **kwargs)
+
+
 def assert_clean_tmp(peru_dir):
     tmp_root = os.path.join(peru_dir, 'tmp')
     if os.path.exists(tmp_root):
