@@ -238,9 +238,9 @@ class CacheTest(unittest.TestCase):
                              self.cache.ls_tree(self.content_tree, 'b/'))
 
         # Check the recursive dir case.
-        self.assertDictEqual({'b/c': entries['b/c'], 'b/d': entries['b/d']},
-                             self.cache.ls_tree(self.content_tree, 'b',
-                                                recursive=True))
+        self.assertDictEqual(
+            {'b': entries['b'], 'b/c': entries['b/c'], 'b/d': entries['b/d']},
+            self.cache.ls_tree(self.content_tree, 'b', recursive=True))
 
         # Make sure that we don't skip over a target file in recursive mode.
         self.assertDictEqual({'b/c': entries['b/c']},

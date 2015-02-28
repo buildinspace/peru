@@ -1,7 +1,31 @@
-import pathlib
+from pathlib import PurePosixPath
 import re
 
 from .error import PrintableError
+
+
+UNESCAPED_STAR_EXPR = (
+    r'(?<!\\)'    # negative lookbehind assertion for more backslashes
+    r'(?:\\\\)*'  # non-capturing group of an even number of backslashes
+    r'\*'         # literal *
+)
+
+
+def contains_unescaped_stars(glob):
+    return re.search(UNESCAPED_STAR_EXPR, glob) is not None
+
+
+def unglobbed_prefix(glob):
+    '''Returns all the path components, starting from the beginning, up to the
+    first one with any kind of glob. So for example, if glob is 'a/b/c*/d',
+    return 'a/b'.'''
+    parts = []
+    for part in PurePosixPath(glob).parts:
+        if contains_unescaped_stars(part):
+            break
+        else:
+            parts.append(part)
+    return str(PurePosixPath(*parts)) if parts else ''
 
 
 def _split_on_indices(s, indices):
@@ -20,13 +44,8 @@ def split_on_stars_interpreting_backslashes(s):
     *'s and \'s, and leave them in as literals (to be regex-escaped in the next
     step).'''
 
-    unescaped_star_expr = (
-        r'(?<!\\)'    # negative lookbehind assertion for more backslashes
-        r'(?:\\\\)*'  # non-capturing group of an even number of backslashes
-        r'\*'         # literal *
-    )
     star_indices = [match.end() - 1 for match in
-                    re.finditer(unescaped_star_expr, s)]
+                    re.finditer(UNESCAPED_STAR_EXPR, s)]
     literalized_parts = [part.replace(r'\*', '*').replace(r'\\', '\\')
                          for part in _split_on_indices(s, star_indices)]
     return literalized_parts
@@ -40,7 +59,7 @@ def glob_to_path_regex(glob):
     converted, so duplicate and trailing slashes get dropped. You should make
     sure the other paths you try to match are in canonical form as well.'''
 
-    canonical_glob = str(pathlib.Path(glob))
+    canonical_glob = str(PurePosixPath(glob))
 
     # The final regex starts with ^ and ends with $ to force it to match the
     # whole path.

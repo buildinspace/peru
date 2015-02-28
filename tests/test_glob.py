@@ -2,7 +2,7 @@ import collections
 import re
 import unittest
 
-import peru.glob
+import peru.glob as glob
 
 
 class GlobTest(unittest.TestCase):
@@ -24,7 +24,7 @@ class GlobTest(unittest.TestCase):
         for input, output in cases:
             self.assertEqual(
                 output,
-                peru.glob.split_on_stars_interpreting_backslashes(input),
+                glob.split_on_stars_interpreting_backslashes(input),
                 'Failed split for input {}'.format(input))
 
     def test_glob_to_path_regex(self):
@@ -68,7 +68,7 @@ class GlobTest(unittest.TestCase):
                  excludes=['a', 'b'])
         ]
         for case in cases:
-            regex = peru.glob.glob_to_path_regex(case.glob)
+            regex = glob.glob_to_path_regex(case.glob)
             for m in case.matches:
                 assert re.match(regex, m), \
                     'Glob {} (regex: {} ) should match path {}'.format(
@@ -86,5 +86,11 @@ class GlobTest(unittest.TestCase):
             'a/b/**c/d',
         ]
         for bad_glob in bad_globs:
-            with self.assertRaises(peru.glob.GlobError):
-                peru.glob.glob_to_path_regex(bad_glob)
+            with self.assertRaises(glob.GlobError):
+                glob.glob_to_path_regex(bad_glob)
+
+    def test_unglobbed_prefix(self):
+        assert glob.unglobbed_prefix('a/b/c*/d') == 'a/b'
+        assert glob.unglobbed_prefix('a/b/**/d') == 'a/b'
+        assert glob.unglobbed_prefix('/a/b/*/d') == '/a/b'
+        assert glob.unglobbed_prefix('*/a/b') == ''

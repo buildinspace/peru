@@ -248,10 +248,8 @@ class Cache:
         for line in output.strip('\x00').split('\x00'):
             mode, type, hash, name = re.match(entry_regex, line).groups()
             if (recursive and path is not None and
-                    len(name) <= len(canonical_path) and type == TREE_TYPE):
-                # In recursive mode, leave out the target directory itself and
-                # all of its parents, unless the "target directory" is actually
-                # a file.
+                    len(name) < len(canonical_path) and type == TREE_TYPE):
+                # In recursive mode, leave out the parents of the target dir.
                 continue
             entries[name] = TreeEntry(mode, type, hash)
         return entries

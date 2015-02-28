@@ -272,7 +272,9 @@ class SyncTest(unittest.TestCase):
                 path: {}
 
             rule filter:
-                pick: baz/bing
+                pick:
+                  - baz/bing
+                  - baz/boo/a
                 files: boo/*
                 export: baz
 
@@ -280,9 +282,7 @@ class SyncTest(unittest.TestCase):
                 foo|filter: ./
             ''', module_dir)
         filtered_content = {name: '' for name in [
-            'bing',
             'boo/a',
-            'boo/b',
         ]}
         self.do_integration_test(['sync'], filtered_content)
 
@@ -325,11 +325,10 @@ class SyncTest(unittest.TestCase):
             imports:
                 foo: ./
             ''', module_dir)
-        with self.assertRaises(peru.rule.NoMatchingFilesError) as cm:
+        with self.assertRaises(peru.rule.NoMatchingFilesError):
             self.do_integration_test(['sync'], {})
-        self.assertTrue('No matches for' in cm.exception.message)
 
-    def test_rule_with_picked_files_that_are_not_exported(self):
+    def test_rule_with_exported_files_that_are_not_picked(self):
         content = {name: '' for name in [
             'foo',
             'bar',
@@ -347,10 +346,8 @@ class SyncTest(unittest.TestCase):
             imports:
                 foo: ./
             ''', module_dir)
-        with self.assertRaises(peru.rule.NoMatchingFilesError) as cm:
+        with self.assertRaises(peru.rule.NoMatchingFilesError):
             self.do_integration_test(['sync'], {})
-        self.assertTrue(
-            'none are beneath the export path' in cm.exception.message)
 
     def test_rule_with_executable(self):
         contents = {'a.txt': '', 'b.txt': '', 'c.foo': ''}

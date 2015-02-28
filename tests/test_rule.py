@@ -1,3 +1,4 @@
+import os
 import unittest
 
 from peru import cache
@@ -39,3 +40,23 @@ class RuleTest(unittest.TestCase):
             'a/c': 'bar',
             'b/a': 'foo',
         })
+
+    def test_pick(self):
+        pick_dir = rule.pick_files(self.cache, self.content_tree, ['b'])
+        shared.assert_tree_contents(self.cache, pick_dir, {'b/c': 'bar'})
+
+        pick_file = rule.pick_files(self.cache, self.content_tree, ['a'])
+        shared.assert_tree_contents(self.cache, pick_file, {'a': 'foo'})
+
+        globs = rule.pick_files(self.cache, self.content_tree,
+                                ['**/c', '**/a'])
+        shared.assert_tree_contents(self.cache, globs,
+                                    {'a': 'foo', 'b/c': 'bar'})
+
+    def test_executable(self):
+        exe = rule.make_files_executable(self.cache, self.content_tree,
+                                         ['b/*'])
+        new_content_dir = shared.create_dir()
+        self.cache.export_tree(exe, new_content_dir)
+        assert not shared.is_executable(os.path.join(new_content_dir, 'a'))
+        assert shared.is_executable(os.path.join(new_content_dir, 'b/c'))

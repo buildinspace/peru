@@ -1,10 +1,11 @@
 import asyncio
 from pathlib import Path, PurePosixPath
 import os
-import stat
+import re
 
-from .cache import compute_key, TREE_TYPE
+from . import cache
 from .error import PrintableError
+from . import glob
 
 
 class Rule:
@@ -18,7 +19,7 @@ class Rule:
         self.files = files
 
     def _cache_key(self, input_tree):
-        return compute_key({
+        return cache.compute_key({
             'input_tree': input_tree,
             'copy': self.copy,
             'move': self.move,
@@ -32,11 +33,11 @@ class Rule:
         if self.export:
             export_path = os.path.join(module_root, self.export)
             if not os.path.exists(export_path):
-                raise PrintableError(
+                raise NoMatchingFilesError(
                     "export path for rule '{}' does not exist: {}".format(
                         self.name, export_path))
             if not os.path.isdir(export_path):
-                raise PrintableError(
+                raise NoMatchingFilesError(
                     "export path for rule '{}' is not a directory: {}"
                     .format(self.name, export_path))
             return export_path
@@ -59,64 +60,32 @@ class Rule:
                 tree = copy_files(runtime.cache, tree, self.copy)
             if self.move:
                 tree = move_files(runtime.cache, tree, self.move)
+            if self.pick:
+                tree = pick_files(runtime.cache, tree, self.pick)
+            if self.executable:
+                tree = make_files_executable(
+                    runtime.cache, tree, self.executable)
             with runtime.tmp_dir() as tmp_dir:
                 runtime.cache.export_tree(tree, tmp_dir)
-                self._chmod_executables(tmp_dir)
                 export_path = self._get_export_path(runtime, tmp_dir)
                 files = self._get_files(export_path) or set()
-                files |= self._get_picked_files(tmp_dir, export_path) or set()
                 tree = runtime.cache.import_tree(export_path, files)
 
             runtime.cache.keyval[key] = tree
 
         return tree
 
-    def _chmod_executables(self, module_root):
-        root_path = Path(module_root)
-        for glob in self.executable:
-            paths = root_path.glob(glob)
-            if not paths:
-                raise NoMatchingFilesError(
-                    'No matches for executable path "{}".'.format(glob))
-            for path in paths:
-                # We don't check whether the path is a file or a directory.
-                # `chmod +x` on a directory should generally be a no-op, and in
-                # any case git doesn't represent directory permissions in
-                # trees.
-                new_mode = (path.stat().st_mode | stat.S_IXUSR | stat.S_IXGRP |
-                            stat.S_IXOTH)
-                path.chmod(new_mode)
-
     def _get_files(self, export_path):
+        # TODO: Deprecated. Delete this.
         if not self.files:
             return None
         files = set()
-        for glob in self.files:
+        for glob_str in self.files:
             matches = set(str(match.relative_to(export_path))
-                          for match in Path(export_path).glob(glob))
+                          for match in Path(export_path).glob(glob_str))
             if not matches:
                 raise NoMatchingFilesError(
-                    'No matches for "{}".'.format(glob))
-            files |= matches
-        return files
-
-    def _get_picked_files(self, module_root, export_path):
-        if not self.pick:
-            return None
-        files = set()
-        for glob in self.pick:
-            matches = set(match for match in Path(module_root).glob(glob))
-            if not matches:
-                raise NoMatchingFilesError(
-                    'No matches for "{}".'.format(glob))
-            # Exlude matches whose parents do not contain the export path.
-            matches = set(str(match.relative_to(export_path))
-                          for match in matches
-                          if Path(export_path) in match.parents)
-            if not matches:
-                raise NoMatchingFilesError(
-                    'Matches found for "{}", but none are beneath the export '
-                    'path "{}".'.format(glob, export_path))
+                    'No matches for "{}".'.format(glob_str))
             files |= matches
         return files
 
@@ -136,7 +105,7 @@ def _copy_files_modifications(_cache, tree, paths_multimap):
             dest_info_dict = _cache.ls_tree(tree, dest)
             if dest_info_dict:
                 dest_info = list(dest_info_dict.items())[0][1]
-                dest_is_dir = (dest_info.type == TREE_TYPE)
+                dest_is_dir = (dest_info.type == cache.TREE_TYPE)
             adjusted_dest = dest
             if dest_is_dir:
                 adjusted_dest = str(PurePosixPath(dest) /
@@ -164,6 +133,41 @@ def move_files(_cache, tree, paths_multimap):
         if source not in modifications:
             modifications[source] = None
     return _cache.modify_tree(tree, modifications)
+
+
+def _get_glob_entries(_cache, tree, globs_list):
+    matches = {}
+    for glob_str in globs_list:
+        # Do an in-memory match of all the paths in the tree against the
+        # glob expression. As an optimization, if the glob is something
+        # like 'a/b/**/foo', only list the paths under 'a/b'.
+        regex = glob.glob_to_path_regex(glob_str)
+        prefix = glob.unglobbed_prefix(glob_str)
+        entries = _cache.ls_tree(tree, prefix, recursive=True)
+        found = False
+        for path, entry in entries.items():
+            if re.match(regex, path):
+                matches[path] = entry
+                found = True
+        if not found:
+            raise NoMatchingFilesError(
+                '"{}" didn\'t match any files.'.format(glob_str))
+    return matches
+
+
+def pick_files(_cache, tree, globs_list):
+    picks = _get_glob_entries(_cache, tree, globs_list)
+    return _cache.modify_tree(None, picks)
+
+
+def make_files_executable(_cache, tree, globs_list):
+    entries = _get_glob_entries(_cache, tree, globs_list)
+    exes = {}
+    for path, entry in entries.items():
+        # Ignore directories.
+        if entry.type == cache.BLOB_TYPE:
+            exes[path] = entry._replace(mode=cache.EXECUTABLE_FILE_MODE)
+    return _cache.modify_tree(tree, exes)
 
 
 class NoMatchingFilesError(PrintableError):
