@@ -1,4 +1,5 @@
 import asyncio
+import atexit
 import codecs
 import io
 import os
@@ -14,6 +15,10 @@ import sys
 # TODO: Importing for side effects isn't very clean. Find a better way.
 if os.name == 'nt':
     asyncio.set_event_loop(asyncio.ProactorEventLoop())
+
+# We also need to make sure the event loop is explicitly closed, to avoid a bug
+# in _UnixSelectorEventLoop.__del__. See http://bugs.python.org/issue23548.
+atexit.register(asyncio.get_event_loop().close)
 
 
 def run_task(coro):
