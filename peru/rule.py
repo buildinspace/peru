@@ -1,6 +1,5 @@
 import asyncio
-from pathlib import Path, PurePosixPath
-import os
+from pathlib import PurePosixPath
 import re
 
 from . import cache
@@ -29,21 +28,6 @@ class Rule:
             'files': self.files,
         })
 
-    def _get_export_path(self, runtime, module_root):
-        if self.export:
-            export_path = os.path.join(module_root, self.export)
-            if not os.path.exists(export_path):
-                raise NoMatchingFilesError(
-                    "export path for rule '{}' does not exist: {}".format(
-                        self.name, export_path))
-            if not os.path.isdir(export_path):
-                raise NoMatchingFilesError(
-                    "export path for rule '{}' is not a directory: {}"
-                    .format(self.name, export_path))
-            return export_path
-        else:
-            return module_root
-
     @asyncio.coroutine
     def get_tree(self, runtime, input_tree):
         key = self._cache_key(input_tree)
@@ -65,29 +49,15 @@ class Rule:
             if self.executable:
                 tree = make_files_executable(
                     runtime.cache, tree, self.executable)
-            with runtime.tmp_dir() as tmp_dir:
-                runtime.cache.export_tree(tree, tmp_dir)
-                export_path = self._get_export_path(runtime, tmp_dir)
-                files = self._get_files(export_path) or set()
-                tree = runtime.cache.import_tree(export_path, files)
+            if self.export:
+                tree = get_export_tree(runtime.cache, tree, self.export)
+            # TODO: Deprecated. Delete this.
+            if self.files:
+                tree = pick_files(runtime.cache, tree, self.files)
 
             runtime.cache.keyval[key] = tree
 
         return tree
-
-    def _get_files(self, export_path):
-        # TODO: Deprecated. Delete this.
-        if not self.files:
-            return None
-        files = set()
-        for glob_str in self.files:
-            matches = set(str(match.relative_to(export_path))
-                          for match in Path(export_path).glob(glob_str))
-            if not matches:
-                raise NoMatchingFilesError(
-                    'No matches for "{}".'.format(glob_str))
-            files |= matches
-        return files
 
 
 def _copy_files_modifications(_cache, tree, paths_multimap):
@@ -168,6 +138,18 @@ def make_files_executable(_cache, tree, globs_list):
         if entry.type == cache.BLOB_TYPE:
             exes[path] = entry._replace(mode=cache.EXECUTABLE_FILE_MODE)
     return _cache.modify_tree(tree, exes)
+
+
+def get_export_tree(_cache, tree, export_path):
+    entries = _cache.ls_tree(tree, export_path)
+    if not entries:
+        raise NoMatchingFilesError('Export path "{}" doesn\'t exist.'
+                                   .format(export_path))
+    entry = list(entries.values())[0]
+    if entry.type != cache.TREE_TYPE:
+        raise NoMatchingFilesError('Export path "{}" is not a directory.'
+                                   .format(export_path))
+    return entry.hash
 
 
 class NoMatchingFilesError(PrintableError):

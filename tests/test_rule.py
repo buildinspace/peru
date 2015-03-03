@@ -60,3 +60,7 @@ class RuleTest(unittest.TestCase):
         self.cache.export_tree(exe, new_content_dir)
         assert not shared.is_executable(os.path.join(new_content_dir, 'a'))
         assert shared.is_executable(os.path.join(new_content_dir, 'b/c'))
+
+    def test_export(self):
+        b = rule.get_export_tree(self.cache, self.content_tree, 'b')
+        shared.assert_tree_contents(self.cache, b, {'c': 'bar'})
