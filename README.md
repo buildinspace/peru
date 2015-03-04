@@ -234,30 +234,24 @@ clone. Peru itself doesn't need to know how to do that. For all the details,
 see [Architecture: Plugins](docs/architecture.md#plugins).
 
 ## Rules
-Some fields (like `url` and `rev`) are specific to certain module types. There
-are also fields you can use in any module, which modify the the tree of files
-after it's fetched. These made an appearance in the fancy example above:
+Some fields (like `url` and `rev`) are specific to certain module types.
+There are also fields you can use in any module, which modify the the
+tree of files after it's fetched. Some of these made an appearance in
+the fancy example above:
 
-- `copy`: A multimap of source and destination paths to copy. Follows the
-  semantics of Python's `shutil.copy2` when the source is a file and
-  `shutil.copytree` when the source is a directory.
-- `move`: A map of source and destination paths to move. Follows the semantics
-  of Python's `shutil.move()`, so for example moving a file into a directory
-  will work.
+- `copy`: A map or multimap of source and destination paths to copy.
+  Works like `cp` on the command line, so if the destination is a
+  directory, it'll preserve the source filename and copy into the
+  destination directory.
+- `move`: A map or multimap of source and destination paths to move.
+  Similar to `copy` above, but removes the source.
+- `pick`: A file or directory, or a list of files and directories, to
+  include in the module. Everything else is dropped. Paths can contain
+  `*` or `**` globs.
 - `executable`: A file or list of files to make executable, as if
   calling `chmod +x`. Also accepts globs.
-- `pick`: A file or directory, or a list of files and directories, to include
-  in the module. Everything else is dropped, though the root of the module tree
-  is not changed. Paths can contain `*` or `**` globs, powered by Python's
-  pathlib. Applies before `export`, so paths are always relative to the root of
-  the module.
-- `export`: A subdirectory that peru should treat as the root of the module
-  tree. Everything else is dropped, including parent directories.
-- <s>`files`: A file or directory, or a list of files and directories, to
-  include in the module. Everything else is dropped, though the root of the
-  module tree is not changed. These can have `*` or `**` globs, powered by
-  Python's pathlib. Applies after `export`.</s> [Deprecated in favor of a
-  consistent set of fields for file manipulation. Use `pick` instead.]
+- `export`: A subdirectory that peru should treat as the root of the
+  module tree. Everything else is dropped, including parent directories.
 
 Besides using those fields in your modules, you can also use them in "named
 rules", which let you transform one module in multiple ways. For example, say
