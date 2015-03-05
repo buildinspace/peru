@@ -251,10 +251,12 @@ class PluginsTest(unittest.TestCase):
                 'not_exe.txt': 'Not executable.\n',
                 'exe.sh': 'echo Executable.\n',
             }, fetch_dir=fetch_dir)
-            assert not shared.is_executable(os.path.join(
-                fetch_dir, 'not_exe.txt'))
-            assert shared.is_executable(
-                os.path.join(fetch_dir, 'exe.sh'))
+            if os.name != 'nt':
+                # The executable flag doesn't exist on Windows.
+                assert not shared.is_executable(os.path.join(
+                    fetch_dir, 'not_exe.txt'))
+                assert shared.is_executable(
+                    os.path.join(fetch_dir, 'exe.sh'))
 
     def test_curl_plugin_fetch_evil_archive(self):
         # There are several evil archives checked in under tests/resources. The
