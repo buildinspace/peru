@@ -50,7 +50,7 @@ def _extract_named_rules(blob, name_prefix):
             _, name = parts
             if name in scope:
                 raise ParserError('Rule "{}" already exists.'.format(name))
-            inner_blob = blob.pop(field)  # remove the field from blob
+            inner_blob = typesafe_pop(blob, field)
             inner_blob = {} if inner_blob is None else inner_blob
             rule = _extract_rule(name_prefix + name, inner_blob)
             if inner_blob:
@@ -70,7 +70,7 @@ def _extract_rule(name, blob):
     move = _extract_map_field('move', blob)
     executable = _extract_optional_list_field(blob, 'executable')
     pick = _extract_optional_list_field(blob, 'pick')
-    export = blob.pop('export', None)
+    export = typesafe_pop(blob, 'export', None)
     # TODO: Remove the `files` field. Until this is done, print a deprecation
     # message.
     files = _extract_optional_list_field(blob, 'files')
@@ -96,7 +96,7 @@ def _extract_modules(blob, name_prefix):
             _validate_name(name)
             if name in scope:
                 raise ParserError('Module "{}" already exists.'.format(name))
-            inner_blob = blob.pop(field)  # remove the field from blob
+            inner_blob = typesafe_pop(blob, field)
             inner_blob = {} if inner_blob is None else inner_blob
             yaml_name = field
             module = _build_module(name_prefix + name, type, inner_blob,
@@ -106,7 +106,7 @@ def _extract_modules(blob, name_prefix):
 
 
 def _build_module(name, type, blob, yaml_name):
-    peru_file = blob.pop('peru file', DEFAULT_PERU_FILE_NAME)
+    peru_file = typesafe_pop(blob, 'peru file', DEFAULT_PERU_FILE_NAME)
     default_rule = _extract_default_rule(blob)
     plugin_fields = blob
 
@@ -133,7 +133,7 @@ def _validate_name(name):
 def _extract_optional_list_field(blob, name):
     '''Handle optional fields that can be either a string or a list of
     strings.'''
-    value = _optional_list(blob.pop(name, []))
+    value = _optional_list(typesafe_pop(blob, name, []))
     if value is None:
         raise ParserError('"{}" field must be a string or a list.'
                           .format(name))
@@ -150,7 +150,7 @@ def _extract_multimap_field(blob, name):
             - baz/'''
     message = ('"{}" field must be a map whose values are either a string or '
                'list of strings.'.format(name))
-    raw_map = blob.pop(name, {}) or {}
+    raw_map = typesafe_pop(blob, name, {}) or {}
     if not isinstance(raw_map, dict):
         raise ParserError(message)
     # We use an `OrderedDict` to ensure that multimap fields are processed in a
@@ -180,7 +180,7 @@ def _optional_list(value):
 
 
 def _extract_map_field(name, blob):
-    contents = blob.pop(name, {})
+    contents = typesafe_pop(blob, name, {})
     if not isinstance(contents, dict):
         raise ParserError('"{}" must be a map.'.format(name))
     for key, val in contents.items():
@@ -188,3 +188,13 @@ def _extract_map_field(name, blob):
             raise ParserError('"{}" keys and values must be strings.'.format(
                 name))
     return contents
+
+
+def typesafe_pop(d, field, default=object()):
+    if not isinstance(d, dict):
+        raise ParserError(
+            'Error parsing peru file: {} is not a map.'.format(repr(d)))
+    if default == typesafe_pop.__defaults__[0]:
+        return d.pop(field)
+    else:
+        return d.pop(field, default)

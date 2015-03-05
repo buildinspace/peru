@@ -175,3 +175,17 @@ class ParserTest(unittest.TestCase):
         # rules give for themselves should have the prefix.
         assert scope.modules['foo'].name == 'xfoo'
         assert scope.rules['bar'].name == 'xbar'
+
+    def test_forgotten_colon(self):
+        # There are many different permutations of this error, and this only
+        # tests the one mentioned in
+        # https://github.com/keybase/client/issues/242.
+        # TODO: A more general data validation library might help the parser do
+        # a better job of checking these things. See
+        # https://github.com/buildinspace/peru/issues/40.
+        input = dedent('''\
+            rule test:
+                pick bla
+            ''')
+        with self.assertRaises(ParserError):
+            parse_string(input)
