@@ -281,6 +281,10 @@ like `module|rule1|rule2`, with each rule applying to the output tree of the
 previous.
 
 ## Configuration
+**Note: These variables are going to [change
+substantially](https://phabricator.buildinspace.com/D197#2640) in an upcoming
+version.**
+
 - Set `PERU_CACHE` to move peru's cache somewhere besides `.peru/cache`. In
   particular, you can put it somewhere central, like `~/.peru-cache`. This lets
   you run commands like `git clean -dfx` without losing all your cloned repos,
