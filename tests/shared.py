@@ -2,6 +2,7 @@ import difflib
 import io
 import os
 from pathlib import Path
+import stat
 import subprocess
 import sys
 import tempfile
@@ -9,6 +10,9 @@ import textwrap
 
 from peru.compat import makedirs
 import peru.main
+
+
+test_resources = Path(__file__).parent.resolve() / 'resources'
 
 
 def tmp_dir():
@@ -163,3 +167,7 @@ class SvnRepo(Repo):
         self.run('svnadmin', 'create', '.')
         self.run('svn', 'import', content_dir, self.url,
                  '-m', 'initial commit')
+
+
+def is_executable(path):
+    return Path(path).stat().st_mode & stat.S_IXUSR != 0

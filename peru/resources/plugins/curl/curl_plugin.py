@@ -4,6 +4,7 @@ import hashlib
 import os
 import pathlib
 import re
+import stat
 import sys
 import tarfile
 from urllib.parse import urlsplit
@@ -90,25 +91,58 @@ def plugin_sync(url, sha1):
               .format(url, sha1, digest), file=sys.stderr)
         sys.exit(1)
 
-    if unpack == 'tar':
-        with tarfile.open(full_filepath) as t:
-            validate_filenames(info.path for info in t.getmembers())
-            t.extractall(dest)
-    elif unpack == 'zip':
-        with zipfile.ZipFile(full_filepath) as z:
-            # The zipfile library automatically strips .. and leading slashes.
-            z.extractall(dest)
-    elif unpack:
-        print('Unknown value for "unpack":', unpack, file=sys.stderr)
+    try:
+        if unpack == 'tar':
+            extract_tar(full_filepath, dest)
+        elif unpack == 'zip':
+            extract_zip(full_filepath, dest)
+        elif unpack:
+            print('Unknown value for "unpack":', unpack, file=sys.stderr)
+            sys.exit(1)
+    except EvilArchiveError as e:
+        print(e.message, file=sys.stderr)
         sys.exit(1)
+
+
+def extract_tar(archive_path, dest):
+    with tarfile.open(archive_path) as t:
+        validate_filenames(info.path for info in t.getmembers())
+        t.extractall(dest)
+
+
+def extract_zip(archive_path, dest):
+    with zipfile.ZipFile(archive_path) as z:
+        validate_filenames(z.namelist())
+        z.extractall(dest)
+        # Set file permissions. Tar does this by default, but with zip we need
+        # to do it ourselves.
+        for info in z.filelist:
+            if not info.filename.endswith('/'):
+                # This is how to get file permissions out of a zip archive,
+                # according to http://stackoverflow.com/q/434641/823869 and
+                # http://bugs.python.org/file34873/issue15795_cleaned.patch.
+                mode = (info.external_attr >> 16) & 0o777
+                # Don't copy the whole mode, just set the executable bit. Two
+                # reasons for this. 1) This is all going to end up in a git
+                # tree, which only records the executable bit anyway. 2) Zip's
+                # support for Unix file modes is nonstandard, so the mode field
+                # is often zero and could be garbage. Mistakenly setting a file
+                # executable isn't a big deal, but e.g. removing read
+                # permissions would cause an error.
+                if mode & stat.S_IXUSR:
+                    os.chmod(os.path.join(dest, info.filename), 0o755)
 
 
 def validate_filenames(names):
     for name in names:
         path = pathlib.PurePosixPath(name)
         if path.is_absolute() or '..' in path.parts:
-            print('Illegal path in archive:', name, file=sys.stderr)
-            sys.exit(1)
+            raise EvilArchiveError('Illegal path in archive: ' + name)
+
+
+class EvilArchiveError(RuntimeError):
+    def __init__(self, message):
+        self.message = message
 
 
 def plugin_reup(url, sha1):

@@ -6,10 +6,8 @@ import io
 import os
 from pathlib import Path
 import subprocess
-import tarfile
 import textwrap
 import unittest
-import zipfile
 
 import peru.async as async
 import peru.plugin as plugin
@@ -56,8 +54,9 @@ class PluginsTest(unittest.TestCase):
     def tearDown(self):
         plugin.debug_assert_clean_parallel_count()
 
-    def do_plugin_test(self, type, plugin_fields, expected_content):
-        fetch_dir = shared.create_dir()
+    def do_plugin_test(self, type, plugin_fields, expected_content, *,
+                       fetch_dir=None):
+        fetch_dir = fetch_dir or shared.create_dir()
         output = test_plugin_fetch(
             self.plugin_context, type, plugin_fields, fetch_dir)
         assert_contents(fetch_dir, expected_content)
@@ -241,42 +240,27 @@ class PluginsTest(unittest.TestCase):
         with self.assertRaises(plugin.PluginRuntimeError):
             self.do_plugin_test('curl', fields, {'newname': 'content'})
 
-    def test_curl_plugin_fetch_zip(self):
-        zip_contents = {
-            'example/foo': 'bar',
-            # Test that zipfile corrects these evil paths.
-            '../file1': 'stuff',
-            '/file2': 'stuff',
-        }
-        zip_file = make_zip(zip_contents)
-        fields = {
-            'url': Path(zip_file).as_uri(),
-            'unpack': 'zip',
-        }
-        self.do_plugin_test('curl', fields, {
-            'example/foo': 'bar',
-            'file1': 'stuff',
-            'file2': 'stuff',
-        })
+    def test_curl_plugin_fetch_archives(self):
+        for type in 'zip', 'tar':
+            fields = {
+                'url': (shared.test_resources / ('with_exe.' + type)).as_uri(),
+                'unpack': type,
+            }
+            fetch_dir = shared.create_dir()
+            self.do_plugin_test('curl', fields, {
+                'not_exe.txt': 'Not executable.\n',
+                'exe.sh': 'echo Executable.\n',
+            }, fetch_dir=fetch_dir)
+            assert not shared.is_executable(os.path.join(
+                fetch_dir, 'not_exe.txt'))
+            assert shared.is_executable(
+                os.path.join(fetch_dir, 'exe.sh'))
 
-    def test_curl_plugin_fetch_tar(self):
-        tar_contents = {
-            'example/foo': 'bar',
-        }
-        tar_file = make_tar(tar_contents)
+    def test_curl_plugin_fetch_evil_archive(self):
+        # There are several evil archives checked in under tests/resources. The
+        # others are checked directly as part of test_curl_plugin.py.
         fields = {
-            'url': Path(tar_file).as_uri(),
-            'unpack': 'tar',
-        }
-        self.do_plugin_test('curl', fields, {'example/foo': 'bar'})
-
-    def test_curl_plugin_fetch_tar_illegal_paths(self):
-        illegal_contents = {
-            '../foo': 'bar',
-        }
-        illegal_tar_file = make_tar(illegal_contents)
-        fields = {
-            'url': Path(illegal_tar_file).as_uri(),
+            'url': (shared.test_resources / '.tar').as_uri(),
             'unpack': 'tar',
         }
         with self.assertRaises(plugin.PluginRuntimeError):
@@ -386,26 +370,3 @@ def temporary_environment(name, value):
             del os.environ[name]
         else:
             os.environ[name] = old_value
-
-
-def make_zip(contents):
-    zip_dir = shared.create_dir()
-    zip_filepath = os.path.join(zip_dir, 'file.zip')
-    with zipfile.ZipFile(zip_filepath, 'w') as z:
-        for path, content in contents.items():
-            z.writestr(path, content)
-    return zip_filepath
-
-
-def make_tar(contents):
-    tar_dir = shared.create_dir()
-    tar_file = os.path.join(tar_dir, 'file.tar.xz')
-    content_file = os.path.join(tar_dir, 'content_file')
-    with tarfile.open(tar_file, 'w:xz') as t:
-        for path, content in contents.items():
-            with open(content_file, 'w') as f:
-                f.write(content)
-            with open(content_file, 'rb') as f:
-                info = t.gettarinfo(content_file, arcname=path)
-                t.addfile(info, f)
-    return tar_file

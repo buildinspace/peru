@@ -5,6 +5,7 @@ from os.path import abspath, join, dirname
 import unittest
 
 import peru
+import shared
 
 curl_plugin_path = abspath(
     join(dirname(peru.__file__), 'resources', 'plugins', 'curl',
@@ -83,3 +84,27 @@ class CurlPluginTest(unittest.TestCase):
             stdout.getvalue())
         self.assertEqual(content, output_file.getvalue())
         self.assertEqual(hashlib.sha1(content).hexdigest(), sha1)
+
+    def test_unpack_windows_zip(self):
+        '''This zip was packed on Windows, so it doesn't include any file
+        permissions. This checks that our executable-flag-restoring code
+        doesn't barf when the flag isn't there.'''
+        test_dir = shared.create_dir()
+        archive = shared.test_resources / 'from_windows.zip'
+        curl_plugin.extract_zip(str(archive), test_dir)
+        shared.assert_contents(test_dir, {'windows_test/test.txt': 'Notepad!'})
+        txt_file = join(test_dir, 'windows_test/test.txt')
+        assert not shared.is_executable(txt_file)
+
+    def test_evil_archives(self):
+        '''Even though most zip and tar utilities try to prevent absolute paths
+        and paths starting with '..', it's entirely possible to construct an
+        archive with either. These should always be an error.'''
+        dest = shared.create_dir()
+        for case in 'absolute_path', 'leading_dots':
+            zip_archive = shared.test_resources / (case + '.zip')
+            with self.assertRaises(curl_plugin.EvilArchiveError):
+                curl_plugin.extract_zip(str(zip_archive), dest)
+            tar_archive = shared.test_resources / (case + '.tar')
+            with self.assertRaises(curl_plugin.EvilArchiveError):
+                curl_plugin.extract_tar(str(tar_archive), dest)
