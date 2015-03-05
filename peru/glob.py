@@ -57,7 +57,8 @@ def glob_to_path_regex(glob):
     pathlib, because we're not talking to the actual filesystem, ** will match
     files as well as directories. Paths get canonicalized before they're
     converted, so duplicate and trailing slashes get dropped. You should make
-    sure the other paths you try to match are in canonical form as well.'''
+    sure the other paths you try to match are in canonical (Posix) form as
+    well.'''
 
     canonical_glob = str(PurePosixPath(glob))
 
