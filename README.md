@@ -280,6 +280,15 @@ there works kind of like a shell pipeline, so you can even do twisted things
 like `module|rule1|rule2`, with each rule applying to the output tree of the
 previous.
 
+## Recursion
+
+If you import a module that has a peru file of its own, peru will
+automatically sync that module's imports as part of yours. It's also
+possible to refer directly to the modules that another module defines.
+For example if your project defines module `foo`, and `foo` has a peru
+file that defines module `bar`, then in your project you can import
+`foo.bar`.
+
 ## Configuration
 **Note: These variables are going to [change
 substantially](https://phabricator.buildinspace.com/D197#2640) in an upcoming
