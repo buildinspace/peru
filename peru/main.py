@@ -21,6 +21,7 @@ Usage:
   peru override [list | add <module> <path> | delete <module>]
   peru copy [-fqv] [-j N] <target> [<dest>]
   peru clean [-fv]
+  peru list
   peru (help | --help | --version)
 
 Commands:
@@ -29,6 +30,8 @@ Commands:
   override  read from a local directory instead of fetching a module
   copy      copy all the files from a module
   clean     delete imports from your project
+  list      LISTS STUFF PROBABLY?! (Note this line doesn't actually matter
+            for parsing, but the above one does.)
 
 Options:
   -f --force     recklessly overwrite files
@@ -133,6 +136,13 @@ class Main:
     def do_clean(self):
         yield from imports.checkout(
             self.runtime, self.scope, {}, self.runtime.root)
+
+    @command('list')
+    def do_list(self):
+        names = [module.name for module in self.scope.modules.values()]
+        names.sort()
+        for name in names:
+            print(name)
 
 
 def get_version():
