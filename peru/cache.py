@@ -91,13 +91,13 @@ class Cache:
             self._empty_tree = self._git('write-tree')
         return self._empty_tree
 
-    def import_tree(self, src, files=None, excludes=None):
+    def import_tree(self, src, *, picks=None, excludes=None):
         if not os.path.exists(src):
             raise RuntimeError('import tree called on nonexistent path ' + src)
         self._git('read-tree', '--empty')  # clear the index for safety
         # Use --force to avoid .gitignore rules. We shouldn't respect them.
-        if files:
-            self._git('add', '--force', '--', *files, work_tree=src)
+        if picks:
+            self._git('add', '--force', '--', *picks, work_tree=src)
         else:
             self._git('add', '--all', '--force', work_tree=src)
         self._remove_matching_files_from_index(src, excludes)

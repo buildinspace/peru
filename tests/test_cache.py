@@ -67,7 +67,7 @@ class CacheTest(unittest.TestCase):
                        'bar': '',
                        'baz/bing': ''}
         test_dir = create_dir(all_content)
-        tree = self.cache.import_tree(test_dir, ['foo', 'baz'])
+        tree = self.cache.import_tree(test_dir, picks=['foo', 'baz'])
         expected_content = {'foo': '',
                             'baz/bing': ''}
         out_dir = create_dir()
@@ -187,32 +187,32 @@ class CacheTest(unittest.TestCase):
             self.cache.read_file(self.content_tree, 'b')
 
     # A helper method for several tests below below.
-    def do_excludes_and_files_test(self, excludes, files, expected):
+    def do_excludes_and_files_test(self, excludes, picks, expected):
         tree = self.cache.import_tree(self.content_dir, excludes=excludes,
-                                      files=files)
+                                      picks=picks)
         out_dir = create_dir()
         self.cache.export_tree(tree, out_dir)
         assert_contents(out_dir, expected)
 
     def test_import_with_specific_file(self):
         self.do_excludes_and_files_test(
-            excludes=[], files=['a'], expected={'a': 'foo'})
+            excludes=[], picks=['a'], expected={'a': 'foo'})
 
     def test_import_with_specific_dir(self):
         self.do_excludes_and_files_test(
-            excludes=[], files=['b'], expected={'b/c': 'bar', 'b/d': 'baz'})
+            excludes=[], picks=['b'], expected={'b/c': 'bar', 'b/d': 'baz'})
 
     def test_import_with_excluded_file(self):
         self.do_excludes_and_files_test(
-            excludes=['a'], files=[], expected={'b/c': 'bar', 'b/d': 'baz'})
+            excludes=['a'], picks=[], expected={'b/c': 'bar', 'b/d': 'baz'})
 
     def test_import_with_excluded_dir(self):
         self.do_excludes_and_files_test(
-            excludes=['b'], files=[], expected={'a': 'foo'})
+            excludes=['b'], picks=[], expected={'a': 'foo'})
 
     def test_import_with_excludes_and_files(self):
         self.do_excludes_and_files_test(
-            excludes=['b/c'], files=['b'], expected={'b/d': 'baz'})
+            excludes=['b/c'], picks=['b'], expected={'b/d': 'baz'})
 
     def test_ls_tree(self):
         # Use the recursive case to get valid entries for each file. We could

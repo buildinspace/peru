@@ -117,7 +117,7 @@ git module vim-solarized:
 ```
 
 The contents of the `dircolors` module are copied to the root of our repo. The
-`files` field restricts this to just one file, `dircolors.ansi-dark`.
+`pick` field restricts this to just one file, `dircolors.ansi-dark`.
 
 The `pathogen` module uses the `curl` type instead of `git`, and its URL points
 to a tarball. (This is for the sake of an example. In real life you'd probably

@@ -1,6 +1,5 @@
 import collections
 import re
-import sys
 import textwrap
 import yaml
 
@@ -66,20 +65,17 @@ def _extract_rule(name, blob):
         raise ParserError(textwrap.dedent('''\
             The "build" field is no longer supported. If you need to
             untar/unzip a curl module, use the "unpack" field.'''))
+    if 'files' in blob:
+        raise ParserError(
+            'The "files" field is no longer supported. Use "pick" instead.')
     copy = _extract_multimap_field(blob, 'copy')
     move = _extract_multimap_field(blob, 'move')
     executable = _extract_optional_list_field(blob, 'executable')
     pick = _extract_optional_list_field(blob, 'pick')
     export = typesafe_pop(blob, 'export', None)
-    # TODO: Remove the `files` field. Until this is done, print a deprecation
-    # message.
-    files = _extract_optional_list_field(blob, 'files')
-    if files:
-        print('Warning: The `files` field is deprecated. Use `pick` instead.',
-              file=sys.stderr)
-    if not any((copy, move, executable, pick, export, files)):
+    if not any((copy, move, executable, pick, export)):
         return None
-    rule = Rule(name, copy, move, executable, pick, export, files)
+    rule = Rule(name, copy, move, executable, pick, export)
     return rule
 
 

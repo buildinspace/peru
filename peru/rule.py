@@ -8,14 +8,13 @@ from . import glob
 
 
 class Rule:
-    def __init__(self, name, copy, move, executable, pick, export, files):
+    def __init__(self, name, copy, move, executable, pick, export):
         self.name = name
         self.copy = copy
         self.move = move
         self.executable = executable
         self.pick = pick
         self.export = export
-        self.files = files
 
     def _cache_key(self, input_tree):
         return cache.compute_key({
@@ -25,7 +24,6 @@ class Rule:
             'executable': self.executable,
             'pick': self.pick,
             'export': self.export,
-            'files': self.files,
         })
 
     @asyncio.coroutine
@@ -51,9 +49,6 @@ class Rule:
                     runtime.cache, tree, self.executable)
             if self.export:
                 tree = get_export_tree(runtime.cache, tree, self.export)
-            # TODO: Deprecated. Delete this.
-            if self.files:
-                tree = pick_files(runtime.cache, tree, self.files)
 
             runtime.cache.keyval[key] = tree
 
