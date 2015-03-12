@@ -479,6 +479,25 @@ class SyncTest(unittest.TestCase):
                          self.test_dir)
         self.do_integration_test(['sync'], {'b': 'override'})
 
+    def test_missing_name_errors(self):
+        self.write_yaml('''
+            imports:
+                thingabc: path
+            ''')
+        with self.assertRaises(peru.error.PrintableError) as cm:
+            self.do_integration_test(['sync'], {})
+        assert "thingabc" in cm.exception.message
+        self.write_yaml('''
+            imports:
+                thingabc|rulexyz: path
+
+            git module thingabc:
+                url: http://example.com
+            ''')
+        with self.assertRaises(peru.error.PrintableError) as cm:
+            self.do_integration_test(['sync'], {})
+        assert "rulexyz" in cm.exception.message, cm.exception.message
+
     def test_copy(self):
         module_dir = shared.create_dir({'foo': 'bar'})
         self.write_yaml('''\

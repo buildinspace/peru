@@ -38,14 +38,14 @@ class Scope:
     @asyncio.coroutine
     def _resolve_module_from_names(self, runtime, module_names,
                                    logging_target_name):
-        next_module = self.modules[module_names[0]]
+        next_module = self._get_module_checked(module_names[0])
         for name in module_names[1:]:
             next_scope = yield from _get_scope_or_fail(
                 runtime, logging_target_name, next_module)
             if name not in next_scope.modules:
                 _error(logging_target_name, 'module {} not found in {}', name,
                        next_module.name)
-            next_module = next_scope.modules[name]
+            next_module = next_scope._get_module_checked(name)
         return next_module
 
     @asyncio.coroutine
@@ -63,7 +63,7 @@ class Scope:
         if rule_name not in scope.rules:
             _error(logging_target_name, 'rule {} not found{}', rule_name,
                    location_str)
-        return scope.rules[rule_name]
+        return scope._get_rule_checked(rule_name)
 
     def get_modules_for_reup(self, names):
         for name in names:
@@ -71,10 +71,17 @@ class Scope:
                 raise PrintableError(
                     'Can\'t reup module "{}"; it belongs to another project.'
                     .format(name))
-            if name not in self.modules:
-                raise PrintableError(
-                    'Module "{}" isn\'t defined.'.format(name))
-        return [self.modules[name] for name in names]
+        return [self._get_module_checked(name) for name in names]
+
+    def _get_module_checked(self, name):
+        if name not in self.modules:
+            raise PrintableError('Module "{}" doesn\'t exist.', name)
+        return self.modules[name]
+
+    def _get_rule_checked(self, name):
+        if name not in self.rules:
+            raise PrintableError('Rule "{}" doesn\'t exist.', name)
+        return self.rules[name]
 
 
 @asyncio.coroutine
