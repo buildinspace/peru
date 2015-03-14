@@ -22,10 +22,9 @@ def hg(*args, hg_dir=None, capture_output=False):
     command.extend(args)
 
     stdout = subprocess.PIPE if capture_output else None
-    stderr = subprocess.STDOUT if capture_output else None
+    # Always let stderr print to the caller.
     process = subprocess.Popen(command, stdin=subprocess.DEVNULL,
-                               stdout=stdout, stderr=stderr,
-                               universal_newlines=True)
+                               stdout=stdout, universal_newlines=True)
     output, _ = process.communicate()
     if process.returncode != 0:
         raise RuntimeError(

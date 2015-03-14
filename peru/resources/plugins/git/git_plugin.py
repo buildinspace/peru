@@ -27,12 +27,11 @@ def git(*args, git_dir=None, capture_output=False):
     command.extend(args)
 
     stdout = subprocess.PIPE if capture_output else None
-    stderr = subprocess.STDOUT if capture_output else None
+    # Always let stderr print to the caller.
     process = subprocess.Popen(
         command,
         stdin=subprocess.DEVNULL,
         stdout=stdout,
-        stderr=stderr,
         universal_newlines=True)
     output, _ = process.communicate()
     if process.returncode != 0:
@@ -49,12 +48,11 @@ def has_clone(url):
     return os.path.exists(repo_cache_path(url))
 
 
-def clone_if_needed(url, capture_output=False):
+def clone_if_needed(url):
     repo_path = repo_cache_path(url)
     if not has_clone(url):
         try:
-            git('clone', '--mirror', '--progress', url, repo_path,
-                capture_output=capture_output)
+            git('clone', '--mirror', '--progress', url, repo_path)
         except:
             # Delete the whole thing if the clone failed to avoid confusing the
             # cache.
