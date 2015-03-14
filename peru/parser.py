@@ -1,5 +1,6 @@
 import collections
 import re
+import sys
 import textwrap
 import yaml
 
@@ -183,3 +184,61 @@ def typesafe_pop(d, field, default=object()):
         return d.pop(field)
     else:
         return d.pop(field, default)
+
+
+# Code for the duplicate keys warning
+
+DuplicatedKey = collections.namedtuple(
+    'DuplicatedKey', ['key', 'first_line', 'second_line'])
+
+
+def _get_line_indentation(line):
+    indentation = 0
+    for i in range(len(line)):
+        if line[i] == ' ':
+            indentation += 1
+        else:
+            return indentation
+
+
+def _get_duplicate_keys_approximate(yaml_text):
+    duplicates = []
+    lines = yaml_text.split('\n')
+    # Keep track of the keys that we've found, and the lines where we found
+    # them, for every indentation level we've encountered.
+    indent_to_keylines = collections.defaultdict(dict)
+    for _line_index, line in enumerate(lines):
+        line_num = _line_index + 1
+        # Ignore lines that are not dictionary keys.
+        if ':' not in line:
+            continue
+        current_indent = _get_line_indentation(line)
+        # When an indented block ends, forget all the keys that were in it.
+        for indent in list(indent_to_keylines.keys()):
+            if indent > current_indent:
+                del indent_to_keylines[indent]
+        # Check if the current key is a duplicate.
+        key = line.split(':')[0].strip()
+        if key in indent_to_keylines[current_indent]:
+            duplicates.append(DuplicatedKey(
+                key, indent_to_keylines[current_indent][key], line_num))
+        # Remember it either way.
+        indent_to_keylines[current_indent][key] = line_num
+    return duplicates
+
+
+def _warn(s, *args, **kwargs):
+    print(s.format(*args, **kwargs), file=sys.stderr)
+
+
+def warn_duplicate_keys(file_path):
+    with open(file_path) as f:
+        text = f.read()
+    duplicates = _get_duplicate_keys_approximate(text)
+    if not duplicates:
+        return
+    _warn('WARNING: Duplicate keys found in {}\n'
+          'These will overwrite each other:',
+          file_path)
+    for duplicate in duplicates:
+        _warn('  "{}" on lines {} and {}', *duplicate)

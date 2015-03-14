@@ -1,6 +1,7 @@
 from textwrap import dedent
 import unittest
 
+from peru import parser
 from peru.parser import parse_string, ParserError
 from peru.module import Module
 from peru.rule import Rule
@@ -189,3 +190,24 @@ class ParserTest(unittest.TestCase):
             ''')
         with self.assertRaises(ParserError):
             parse_string(input)
+
+    def test_duplicate_key_heuristic(self):
+        yaml = dedent('''\
+            a:
+                a: 1
+                b: 1
+            b:
+                a: 1
+                b: 1
+                a: 1
+            a : whitespace before colon
+            a: stuff
+        ''')
+        duplicates = parser._get_duplicate_keys_approximate(yaml)
+        self.assertEqual(
+            [
+                ('a', 5, 7),
+                ('a', 1, 8),
+                ('a', 8, 9),
+            ],
+            duplicates)

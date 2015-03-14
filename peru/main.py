@@ -11,7 +11,7 @@ from . import async
 from . import compat
 from .error import PrintableError
 from . import imports
-from .parser import parse_file
+from . import parser
 from .runtime import Runtime
 
 __doc__ = """\
@@ -75,7 +75,10 @@ class Main:
         matching_command = find_matching_command(self.args)
         if matching_command:
             self.runtime = Runtime(self.args, env)
-            self.scope, self.imports = parse_file(self.runtime.peru_file)
+            if not self.args["--quiet"]:
+                parser.warn_duplicate_keys(self.runtime.peru_file)
+            self.scope, self.imports = parser.parse_file(
+                self.runtime.peru_file)
             async.run_task(matching_command(self))
         else:
             if self.args["--version"]:

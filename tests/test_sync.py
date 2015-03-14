@@ -1,6 +1,8 @@
+import io
 import os
 from pathlib import Path
 import stat
+import sys
 import textwrap
 import unittest
 
@@ -10,6 +12,7 @@ import peru.error
 import peru.main
 from peru.parser import DEFAULT_PERU_FILE_NAME
 import peru.rule
+import peru.scope
 
 import shared
 from shared import run_peru_command, assert_contents
@@ -553,3 +556,27 @@ class SyncTest(unittest.TestCase):
     def test_version(self):
         version_output = run_peru_command(["--version"], self.test_dir)
         self.assertEqual(peru.main.get_version(), version_output.strip())
+
+    def test_duplicate_keys_warning(self):
+        self.write_yaml('''\
+            git module foo:
+            git module foo:
+            ''')
+        buffer = io.StringIO()
+        old_stderr = sys.stderr
+        sys.stderr = buffer
+        try:
+            run_peru_command(['sync'], self.test_dir)
+        finally:
+            sys.stderr = old_stderr
+        assert('WARNING' in buffer.getvalue())
+        assert('git module foo' in buffer.getvalue())
+        # Make sure --quiet suppresses the warning.
+        buffer = io.StringIO()
+        old_stderr = sys.stderr
+        sys.stderr = buffer
+        try:
+            run_peru_command(['sync', '--quiet'], self.test_dir)
+        finally:
+            sys.stderr = old_stderr
+        self.assertEqual('', buffer.getvalue())
