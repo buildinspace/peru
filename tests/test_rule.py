@@ -58,8 +58,9 @@ class RuleTest(unittest.TestCase):
                                          ['b/*'])
         new_content_dir = shared.create_dir()
         self.cache.export_tree(exe, new_content_dir)
-        assert not shared.is_executable(os.path.join(new_content_dir, 'a'))
-        assert shared.is_executable(os.path.join(new_content_dir, 'b/c'))
+        shared.assert_contents(new_content_dir, self.content)
+        shared.assert_not_executable(os.path.join(new_content_dir, 'a'))
+        shared.assert_executable(os.path.join(new_content_dir, 'b/c'))
 
     def test_export(self):
         b = rule.get_export_tree(self.cache, self.content_tree, 'b')

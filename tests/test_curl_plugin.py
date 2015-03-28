@@ -94,7 +94,7 @@ class CurlPluginTest(unittest.TestCase):
         curl_plugin.extract_zip(str(archive), test_dir)
         shared.assert_contents(test_dir, {'windows_test/test.txt': 'Notepad!'})
         txt_file = join(test_dir, 'windows_test/test.txt')
-        assert not shared.is_executable(txt_file)
+        shared.assert_not_executable(txt_file)
 
     def test_evil_archives(self):
         '''Even though most zip and tar utilities try to prevent absolute paths

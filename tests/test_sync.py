@@ -1,7 +1,5 @@
 import io
 import os
-from pathlib import Path
-import stat
 import sys
 import textwrap
 import unittest
@@ -292,12 +290,8 @@ class SyncTest(unittest.TestCase):
                 foo: ./
             ''', module_dir)
         self.do_integration_test(['sync'], contents)
-        if os.name != 'nt':  # The executable flag doesn't exist on Windows.
-            for f in ('a.txt', 'b.txt'):
-                mode = (Path(self.test_dir) / f).stat().st_mode
-                assert mode & stat.S_IXUSR
-                assert mode & stat.S_IXGRP
-                assert mode & stat.S_IXOTH
+        for f in ('a.txt', 'b.txt'):
+            shared.assert_executable(os.path.join(self.test_dir, f))
 
     def test_rule_with_move(self):
         module_dir = shared.create_dir({'a': 'foo', 'b/c': 'bar'})

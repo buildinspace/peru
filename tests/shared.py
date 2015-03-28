@@ -175,5 +175,22 @@ class SvnRepo(Repo):
                  '-m', 'initial commit')
 
 
-def is_executable(path):
-    return Path(path).stat().st_mode & stat.S_IXUSR != 0
+def _check_executable(path, expectation):
+    if os.name == 'nt':
+        # Windows doesn't support the executable flag. Skip the check.
+        return
+    mode = Path(path).stat().st_mode
+    is_executable = (mode & stat.S_IXUSR != 0 and
+                     mode & stat.S_IXGRP != 0 and
+                     mode & stat.S_IXOTH != 0)
+    message = 'Expected {} to be {}executable.'.format(
+        path, 'not ' if not expectation else '')
+    assert is_executable == expectation, message
+
+
+def assert_executable(path):
+    _check_executable(path, True)
+
+
+def assert_not_executable(path):
+    _check_executable(path, False)
