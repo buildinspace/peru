@@ -13,6 +13,4 @@ sys.path.insert(0, repo_root)
 
 import peru.main
 
-print("Running peru from:", os.path.dirname(peru.__file__))
-
 peru.main.main()
