@@ -573,4 +573,6 @@ class SyncTest(unittest.TestCase):
             run_peru_command(['sync', '--quiet'], self.test_dir)
         finally:
             sys.stderr = old_stderr
-        self.assertEqual('', buffer.getvalue())
+        # Don't literally check that stderr is empty, because that could get
+        # tripped up on other Python warnings (like asyncio taking too long).
+        assert('git module foo' not in buffer.getvalue())
