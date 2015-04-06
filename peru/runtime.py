@@ -14,23 +14,15 @@ from . import plugin
 
 class Runtime:
     def __init__(self, args, env):
-        peru_file_name = env.get('PERU_FILE_NAME',
-                                 parser.DEFAULT_PERU_FILE_NAME)
-        self.peru_file = find_peru_file(os.getcwd(), peru_file_name)
+        self._set_paths(args, env)
 
-        self.root = os.path.dirname(self.peru_file)
+        compat.makedirs(self.state_dir)
+        self.cache = cache.Cache(self.cache_dir)
 
-        self.peru_dir = env.get(
-            'PERU_DIR', os.path.join(self.root, '.peru'))
-        compat.makedirs(self.peru_dir)
-
-        cache_dir = env.get('PERU_CACHE', os.path.join(self.peru_dir, 'cache'))
-        self.cache = cache.Cache(cache_dir)
-
-        self._tmp_root = os.path.join(self.peru_dir, 'tmp')
+        self._tmp_root = os.path.join(self.state_dir, 'tmp')
         compat.makedirs(self._tmp_root)
 
-        self.overrides = KeyVal(os.path.join(self.peru_dir, 'overrides'),
+        self.overrides = KeyVal(os.path.join(self.state_dir, 'overrides'),
                                 self._tmp_root)
 
         self.force = args.get('--force', False)
@@ -54,6 +46,26 @@ class Runtime:
 
         self.display = get_display(args)
 
+    def _set_paths(self, args, env):
+        getter = ArgsEnvGetter(args, env)
+        explicit_peru_file = getter.get('--peru-file', 'PERU_FILE')
+        explicit_sync_dir = getter.get('--sync-dir', 'PERU_SYNC_DIR')
+        if (explicit_peru_file is None) != (explicit_sync_dir is None):
+            raise PrintableError(
+                'If the peru file or the sync dir is set, the other must also '
+                'be set.')
+        if explicit_peru_file:
+            self.peru_file = explicit_peru_file
+            self.sync_dir = explicit_sync_dir
+        else:
+            self.peru_file = find_peru_file(
+                os.getcwd(), parser.DEFAULT_PERU_FILE_NAME)
+            self.sync_dir = os.path.dirname(self.peru_file)
+        self.state_dir = (getter.get('--state-dir', 'PERU_STATE_DIR') or
+                          os.path.join(self.sync_dir, '.peru'))
+        self.cache_dir = (getter.get('--cache-dir', 'PERU_CACHE_DIR') or
+                          os.path.join(self.state_dir, 'cache'))
+
     def tmp_dir(self):
         dir = tempfile.TemporaryDirectory(dir=self._tmp_root)
         return dir
@@ -66,7 +78,7 @@ class Runtime:
             # to be relative (for example, so a whole workspace can be moved as
             # a group while preserving all the overrides). So reinterpret all
             # relative paths from the project root.
-            path = os.path.relpath(path, start=self.root)
+            path = os.path.relpath(path, start=self.sync_dir)
         self.overrides[name] = path
 
     def get_override(self, name):
@@ -77,12 +89,16 @@ class Runtime:
             # Relative paths are stored relative to the project root.
             # Reinterpret them relative to the cwd. See the above comment in
             # set_override.
-            path = os.path.relpath(os.path.join(self.root, path))
+            path = os.path.relpath(os.path.join(self.sync_dir, path))
         return path
 
     def get_plugin_context(self):
         return plugin.PluginContext(
-            cwd=self.root,
+            # Plugin cwd is always the directory containing peru.yaml, even if
+            # the sync_dir has been explicitly set elsewhere. That's because
+            # relative paths in peru.yaml should respect the location of that
+            # file.
+            cwd=os.path.dirname(self.peru_file),
             plugin_cache_root=self.cache.plugins_root,
             parallelism_semaphore=self.fetch_semaphore,
             plugin_cache_locks=self.plugin_cache_locks,
@@ -128,3 +144,16 @@ def get_display(args):
         return display.FancyDisplay()
     else:
         return display.QuietDisplay()
+
+
+class ArgsEnvGetter:
+    def __init__(self, args, env):
+        self.args = args
+        self.env = env
+
+    def get(self, flag_name, env_name):
+        if self.args.get(flag_name):
+            return self.args.get(flag_name)
+        if self.env.get(env_name):
+            return self.env.get(env_name)
+        return None

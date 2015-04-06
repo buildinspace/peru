@@ -27,9 +27,9 @@ class SharedTestCodeTest(unittest.TestCase):
         read_content = shared.read_dir(test_dir)
         self.assertDictEqual(content, read_content)
         self.assertDictEqual({Path('foo'): 'a'},
-                             shared.read_dir(test_dir, excludes=('bar')))
+                             shared.read_dir(test_dir, excludes=['bar']))
         self.assertDictEqual({Path('foo'): 'a'},
-                             shared.read_dir(test_dir, excludes=('bar/baz')))
+                             shared.read_dir(test_dir, excludes=['bar/baz']))
 
     def test_assert_contents(self):
         content = {'foo': 'a', 'bar/baz': 'b'}
@@ -38,8 +38,8 @@ class SharedTestCodeTest(unittest.TestCase):
         shared.write_files(test_dir, {'bing': 'c'})
         with self.assertRaises(AssertionError):
             shared.assert_contents(test_dir, content)
-        shared.assert_contents(test_dir, content, excludes=('bing',))
+        shared.assert_contents(test_dir, content, excludes=['bing'])
         try:
-            shared.assert_contents(test_dir, content, excludes=('foo'))
+            shared.assert_contents(test_dir, content, excludes=['foo'])
         except AssertionError as e:
             assert e.args[0].startswith('EXPECTED FILES WERE EXCLUDED')

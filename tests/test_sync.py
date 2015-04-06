@@ -360,9 +360,9 @@ class SyncTest(unittest.TestCase):
                 foo: subdir
             ''', module_dir)
         cache_dir = shared.create_dir()
-        env_vars = {'PERU_CACHE': cache_dir}
+        env = {'PERU_CACHE_DIR': cache_dir}
         self.do_integration_test(['sync'], {'subdir/foo': 'bar'},
-                                 env_vars=env_vars)
+                                 env=env)
         self.assertTrue(os.path.exists(os.path.join(cache_dir, 'plugins')))
         self.assertTrue(os.path.exists(os.path.join(cache_dir, 'trees')))
         self.assertTrue(os.path.exists(os.path.join(cache_dir, 'keyval')))

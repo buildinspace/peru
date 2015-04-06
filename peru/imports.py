@@ -42,7 +42,7 @@ def get_tree(runtime, scope, target_str):
 
 
 def _last_imports_path(runtime):
-    return os.path.join(runtime.peru_dir, 'lastimports')
+    return os.path.join(runtime.state_dir, 'lastimports')
 
 
 def _get_last_imports(runtime):

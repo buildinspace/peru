@@ -49,6 +49,8 @@ def write_files(dir, path_contents_map):
 
 
 def read_dir(startdir, excludes=()):
+    assert isinstance(excludes, list) or isinstance(excludes, tuple), \
+            "excludes must be a list or a tuple, not " + repr(type(excludes))
     startdir = Path(startdir)
     contents = {}
     for p in startdir.glob('**/*'):
@@ -111,10 +113,10 @@ def assert_clean_tmp(peru_dir):
         assert not tmpfiles, 'cache tmp dir is not clean: ' + str(tmpfiles)
 
 
-def run_peru_command(args, test_dir, *, env_vars=None):
+def run_peru_command(args, cwd, *, env=None):
     old_cwd = os.getcwd()
     old_stdout = sys.stdout
-    os.chdir(test_dir)
+    os.chdir(cwd)
     capture_stream = io.StringIO()
     sys.stdout = capture_stream
     try:
@@ -122,7 +124,7 @@ def run_peru_command(args, test_dir, *, env_vars=None):
         # the Main class. This lets us check that the right types of exceptions
         # make it up to the top, so we don't need to check specific output
         # strings.
-        peru.main.main(argv=args, env=env_vars or {}, nocatch=True)
+        peru.main.main(argv=args, env=env or {}, nocatch=True)
     finally:
         os.chdir(old_cwd)
         sys.stdout = old_stdout

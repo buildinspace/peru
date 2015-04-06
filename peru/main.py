@@ -18,7 +18,8 @@ from .runtime import Runtime
 
 __doc__ = '''\
 Usage:
-    peru [-hqv] <command> [<args>...]
+    peru [-hqv] [--peru-file=PATH] [--sync-dir=PATH] [--state-dir=PATH]
+         [--cache-dir=PATH] <command> [<args>...]
     peru [--help|--version]
 
 Commands:
@@ -27,12 +28,19 @@ Commands:
     clean     delete imports from your project
     copy      copy files directly from a module to somewhere else
     override  substitute a local directory for the contents of a module
-    help      show help for subcommands, same as --help
+    help      show help for subcommands, same as -h/--help
 
 Options:
-    -h --help     so much help
-    -q --quiet    don't print anything
-    -v --verbose  print everything
+    --cache-dir=PATH  custom location for peru's cache, normally
+                      .peru/cache
+    -h --help         so much help
+    --peru-file=PATH  explicit path to peru.yaml
+    -q --quiet        don't print anything
+    --state-dir=PATH  custom location for various peru metadata, which
+                      normally lives in .peru
+    --sync-dir=PATH   explicit path to where your imports go, normally
+                      the directory containing peru.yaml
+    -v --verbose      print everything
 '''
 
 
@@ -67,7 +75,7 @@ Options:
 ''')
 def do_sync(params):
     yield from imports.checkout(
-        params.runtime, params.scope, params.imports, params.runtime.root)
+        params.runtime, params.scope, params.imports, params.runtime.sync_dir)
 
 
 @peru_command('reup', '''\
@@ -118,7 +126,7 @@ Options:
 ''')
 def do_clean(params):
     yield from imports.checkout(
-        params.runtime, params.scope, {}, params.runtime.root)
+        params.runtime, params.scope, {}, params.runtime.sync_dir)
 
 
 @peru_command('copy', '''\
