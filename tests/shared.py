@@ -122,7 +122,7 @@ def run_peru_command(args, test_dir, *, env_vars=None):
         # the Main class. This lets us check that the right types of exceptions
         # make it up to the top, so we don't need to check specific output
         # strings.
-        peru.main.Main().run(args, env_vars or {})
+        peru.main.main(argv=args, env=env_vars or {}, nocatch=True)
     finally:
         os.chdir(old_cwd)
         sys.stdout = old_stdout

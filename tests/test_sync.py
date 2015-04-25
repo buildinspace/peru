@@ -1,3 +1,4 @@
+import contextlib
 import io
 import os
 import sys
@@ -544,8 +545,22 @@ class SyncTest(unittest.TestCase):
     def test_help(self):
         flag_output = run_peru_command(['--help'], self.test_dir)
         self.assertEqual(peru.main.__doc__, flag_output)
+
         command_output = run_peru_command(['help'], self.test_dir)
         self.assertEqual(peru.main.__doc__, command_output)
+
+        clean_help = peru.main.COMMAND_DOCS['clean']
+
+        pre_flag_output = run_peru_command(['-h', 'clean'], self.test_dir)
+        self.assertEqual(clean_help, pre_flag_output)
+
+        post_flag_output = run_peru_command(['clean', '-h'], self.test_dir)
+        self.assertEqual(clean_help, post_flag_output)
+
+        buffer = io.StringIO()
+        with redirect_stderr(buffer):
+            run_peru_command(['foobarbaz'], self.test_dir)
+        self.assertEqual(peru.main.__doc__, buffer.getvalue())
 
     def test_version(self):
         version_output = run_peru_command(["--version"], self.test_dir)
@@ -557,22 +572,24 @@ class SyncTest(unittest.TestCase):
             git module foo:
             ''')
         buffer = io.StringIO()
-        old_stderr = sys.stderr
-        sys.stderr = buffer
-        try:
+        with redirect_stderr(buffer):
             run_peru_command(['sync'], self.test_dir)
-        finally:
-            sys.stderr = old_stderr
         assert('WARNING' in buffer.getvalue())
         assert('git module foo' in buffer.getvalue())
         # Make sure --quiet suppresses the warning.
         buffer = io.StringIO()
-        old_stderr = sys.stderr
-        sys.stderr = buffer
-        try:
+        with redirect_stderr(buffer):
             run_peru_command(['sync', '--quiet'], self.test_dir)
-        finally:
-            sys.stderr = old_stderr
         # Don't literally check that stderr is empty, because that could get
         # tripped up on other Python warnings (like asyncio taking too long).
         assert('git module foo' not in buffer.getvalue())
+
+
+@contextlib.contextmanager
+def redirect_stderr(f):
+    old_stderr = sys.stderr
+    sys.stderr = f
+    try:
+        yield
+    finally:
+        sys.stderr = old_stderr

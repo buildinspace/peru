@@ -33,7 +33,7 @@ class Runtime:
         self.overrides = KeyVal(os.path.join(self.peru_dir, 'overrides'),
                                 self._tmp_root)
 
-        self.force = args['--force']
+        self.force = args.get('--force', False)
         if args['--quiet'] and args['--verbose']:
             raise PrintableError(
                 "Peru can't be quiet and verbose at the same time.")
@@ -107,10 +107,11 @@ def find_peru_file(start_dir, name):
 
 
 def _get_parallel_fetch_limit(args):
-    if args['--jobs'] is None:
+    jobs = args.get('--jobs')
+    if jobs is None:
         return plugin.DEFAULT_PARALLEL_FETCH_LIMIT
     try:
-        parallel = int(args['--jobs'])
+        parallel = int(jobs)
         if parallel <= 0:
             raise PrintableError('Argument to --jobs must be 1 or more.')
         return parallel
