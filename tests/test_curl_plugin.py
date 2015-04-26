@@ -1,5 +1,5 @@
 import hashlib
-import imp
+import importlib.machinery
 import io
 from os.path import abspath, join, dirname
 import unittest
@@ -10,7 +10,8 @@ import shared
 curl_plugin_path = abspath(
     join(dirname(peru.__file__), 'resources', 'plugins', 'curl',
          'curl_plugin.py'))
-curl_plugin = imp.load_source('_curl_plugin', curl_plugin_path)
+loader = importlib.machinery.SourceFileLoader("curl_plugin", curl_plugin_path)
+curl_plugin = loader.load_module()
 
 
 class MockRequest:

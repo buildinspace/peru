@@ -39,7 +39,7 @@ def main():
         args.remove('--with-coverage')
         command_start = ['coverage', 'run']
     else:
-        command_start = [sys.executable]
+        command_start = [sys.executable, '-W', 'all']
     command = command_start + ['-m', 'unittest'] + args
     try:
         subprocess.check_call(command, env=env, cwd=TESTS_DIR)
