@@ -50,7 +50,7 @@ def write_files(dir, path_contents_map):
 
 def read_dir(startdir, excludes=()):
     assert isinstance(excludes, list) or isinstance(excludes, tuple), \
-            "excludes must be a list or a tuple, not " + repr(type(excludes))
+        "excludes must be a list or a tuple, not " + repr(type(excludes))
     startdir = Path(startdir)
     contents = {}
     for p in startdir.glob('**/*'):
