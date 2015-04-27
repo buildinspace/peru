@@ -52,12 +52,13 @@ def read_dir(startdir, excludes=()):
     assert isinstance(excludes, list) or isinstance(excludes, tuple), \
         "excludes must be a list or a tuple, not " + repr(type(excludes))
     startdir = Path(startdir)
+    exclude_tuples = [Path(e).parts for e in excludes]
     contents = {}
     for p in startdir.glob('**/*'):
         if not p.is_file():
             continue
         relpath = p.relative_to(startdir)
-        if any(str(relpath).startswith(str(e)) for e in excludes):
+        if any(relpath.parts[:len(tup)] == tup for tup in exclude_tuples):
             continue
         with p.open() as f:
             try:
