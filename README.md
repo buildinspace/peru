@@ -290,19 +290,27 @@ file that defines module `bar`, then in your project you can import
 `foo.bar`.
 
 ## Configuration
-**Note: These variables are going to [change
-substantially](https://phabricator.buildinspace.com/D197#2640) in an upcoming
-version.**
+There are several flags and environment variables you can set, to
+control where peru puts things. Flags always take precedence.
 
-- Set `PERU_CACHE` to move peru's cache somewhere besides `.peru/cache`. In
-  particular, you can put it somewhere central, like `~/.peru-cache`. This lets
-  you run commands like `git clean -dfx` without losing all your cloned repos,
-  and it also lets you share clones between projects.
-- Set `PERU_DIR` to have peru store all of its state (including the cache, if
-  `PERU_CACHE` is not set) somewhere besides `.peru`. You should not share this
-  between projects, or peru will get very confused.
-- Set `PERU_FILE_NAME` if you absolutely must call your file something weird
-  like `peru.yml`.
+- `--peru-file=<path>` or `PERU_FILE`: The path to your peru YAML file.
+  By default peru looks for `peru.yaml` in the current directory or one
+  of its parents. This setting tells peru to use a specific file. If
+  set, the sync dir (below) must also be set.
+- `--sync-dir=<path>` or `PERU_SYNC_DIR`: The path that all `imports`
+  are interpreted relative to. That is, if you import a module to `./`,
+  the contents of that module go directly in the sync dir. By default
+  this is the directory containing your `peru.yaml` file. If set, the
+  peru file (above) must also be set.
+- `--state-dir=<path>` or `PERU_STATE_DIR`: The directory where peru
+  stashes all of its state metadata, and also the default parent
+  directory of the cache dir (below). By default this is `.peru` inside
+  the sync dir. You should not share this directory between two
+  projects, or `peru sync` will get confused.
+- `--cache-dir=<path>` or `PERU_CACHE_DIR`: The directory where peru
+  keeps everything it's fetched. If you have many copies of the same
+  project, for example on a server running automated tests, you can
+  using a shared cache to speed up syncs.
 
 ## Links
 - [Discussion and announcements (Google
