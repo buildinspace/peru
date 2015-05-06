@@ -98,3 +98,12 @@ class PathsTest(unittest.TestCase):
                 'PERU_CACHE_DIR': env_cache_dir,
             })
         self.assert_success(flag_sync_dir, flag_state_dir, flag_cache_dir)
+
+    def test_relative_paths(self):
+        '''We ran into a bug where calling os.path.dirname(peru_file) was
+        returning "", which got passed as the cwd of a plugin job and blew up.
+        This test repros that case. We've switched to pathlib.Path.parent to
+        fix the issue.'''
+        shared.run_peru_command(
+            ['--peru-file', 'peru.yaml', '--sync-dir', '.', 'sync'],
+            cwd=self.project_dir)

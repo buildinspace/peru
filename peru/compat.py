@@ -11,7 +11,9 @@ MODULE_ROOT = os.path.abspath(os.path.dirname(__file__))
 
 def makedirs(path):
     '''os.makedirs() has an exist_ok param, but it still throws errors when the
-    path exists with non-default permissions. This isn't fixed until 3.4.'''
+    path exists with non-default permissions. This isn't fixed until 3.4.
+    Pathlib won't be getting an exist_ok param until 3.5.'''
+    path = str(path)  # compatibility with pathlib
     if not os.path.exists(path):
         os.makedirs(path)
 

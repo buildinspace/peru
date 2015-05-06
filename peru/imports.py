@@ -1,5 +1,6 @@
 import asyncio
 import os
+from pathlib import Path
 
 from .async import stable_gather
 from . import compat
@@ -42,18 +43,18 @@ def get_tree(runtime, scope, target_str):
 
 
 def _last_imports_path(runtime):
-    return os.path.join(runtime.state_dir, 'lastimports')
+    return Path(runtime.state_dir) / 'lastimports'
 
 
 def _get_last_imports(runtime):
     last_imports_tree = None
-    if os.path.exists(_last_imports_path(runtime)):
-        with open(_last_imports_path(runtime)) as f:
+    if _last_imports_path(runtime).exists():
+        with _last_imports_path(runtime).open() as f:
             last_imports_tree = f.read()
     return last_imports_tree
 
 
 def _set_last_imports(runtime, tree):
-    compat.makedirs(os.path.dirname(_last_imports_path(runtime)))
-    with open(_last_imports_path(runtime), 'w') as f:
+    compat.makedirs(_last_imports_path(runtime).parent)
+    with _last_imports_path(runtime).open('w') as f:
         f.write(tree)

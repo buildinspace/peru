@@ -1,6 +1,7 @@
 import asyncio
 import collections
 import os
+from pathlib import Path
 import tempfile
 
 from . import cache
@@ -98,7 +99,7 @@ class Runtime:
             # the sync_dir has been explicitly set elsewhere. That's because
             # relative paths in peru.yaml should respect the location of that
             # file.
-            cwd=os.path.dirname(self.peru_file),
+            cwd=str(Path(self.peru_file).parent),
             plugin_cache_root=self.cache.plugins_root,
             parallelism_semaphore=self.fetch_semaphore,
             plugin_cache_locks=self.plugin_cache_locks,
