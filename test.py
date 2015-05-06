@@ -43,7 +43,8 @@ def main():
     command = command_start + ['-m', 'unittest'] + args
     try:
         subprocess.check_call(command, env=env, cwd=TESTS_DIR)
-    except:
+    except subprocess.CalledProcessError:
+        print('ERROR: unit tests returned an error code', file=sys.stderr)
         sys.exit(1)
 
     new_untracked = get_untracked_files()
@@ -56,7 +57,11 @@ def main():
     # Run the linter.
     try:
         subprocess.check_call(['flake8', 'peru', 'tests'], cwd=REPO_ROOT)
-    except:
+    except FileNotFoundError:
+        print('ERROR: flake8 not found', file=sys.stderr)
+        sys.exit(1)
+    except subprocess.CalledProcessError:
+        print('ERROR: flake8 returned an error code', file=sys.stderr)
         sys.exit(1)
 
 
