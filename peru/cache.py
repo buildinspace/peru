@@ -174,7 +174,7 @@ class Cache:
             raise DirtyWorkingCopyError(
                 'Imported files have been modified ' +
                 '(use --force to overwrite):\n\n' +
-                '\n'.join(modified))
+                _format_file_lines(modified))
 
     def _read_tree(self, tree, dest):
         # Read previous_tree into the index.
@@ -200,7 +200,7 @@ class Cache:
             raise DirtyWorkingCopyError(
                 'Imports would overwrite preexisting files '
                 '(use --force to write anyway):\n\n' +
-                '\n'.join(existing_added_files))
+                _format_file_lines(existing_added_files))
 
     def read_file(self, tree, path):
         # TODO: Make this handle symlinks in the tree.
@@ -327,6 +327,18 @@ class Cache:
             return self._mktree(entries)
         else:
             return None
+
+
+def _format_file_lines(files):
+    '''Given a list of filenames that we're about to print, limit it to a
+    reasonable number of lines.'''
+    LINES_TO_SHOW = 10
+    if len(files) <= LINES_TO_SHOW:
+        lines = '\n'.join(files)
+    else:
+        lines = ('\n'.join(files[:LINES_TO_SHOW-1]) +
+                 '\n...{} total'.format(len(files)))
+    return lines
 
 
 class ModifyTreeError(PrintableError):
