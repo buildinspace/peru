@@ -37,7 +37,7 @@ def _split_on_indices(s, indices):
 
 
 def split_on_stars_interpreting_backslashes(s):
-    r'''We don't want to do in-place substitutions of a regex for *, becuase we
+    r'''We don't want to do in-place substitutions of a regex for *, because we
     need to be able to regex-escape the rest of the string. Instead, we split
     the string on *'s, so that the rest can be regex-escaped and then rejoined
     with the right regex. While we're doing this, check for backslash-escaped
