@@ -136,8 +136,8 @@ Usage:
 
 Writes the contents of a target to a temp dir, or to a destination that
 you specify. A target is anything that you can import, so it can be just
-a module (`foo`), a module followed by named rules (`foo|bar|baz`), or
-even a module defined within another module (`foo.bing`).
+a module (foo), a module followed by named rules (foo|bar|baz), or even
+a module defined within another module (foo.bing).
 
 Options:
     -f --force     overwrite existing files
