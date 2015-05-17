@@ -107,7 +107,10 @@ def do_reup(params):
     futures = [module.reup(params.runtime) for module in modules]
     yield from async.stable_gather(*futures)
     if not params.args['--nosync']:
-        yield from do_sync(params)
+        # Do an automatic sync. Reparse peru.yaml to get the new revs.
+        new_scope, new_imports = parser.parse_file(params.runtime.peru_file)
+        new_params = params._replace(scope=new_scope, imports=new_imports)
+        yield from do_sync(new_params)
 
 
 @peru_command('clean', '''\
@@ -289,8 +292,7 @@ def main(*, argv=None, env=None, nocatch=False):
         runtime = Runtime(args, env)
         if not args['--quiet']:
             parser.warn_duplicate_keys(runtime.peru_file)
-        scope, imports = parser.parse_file(
-            runtime.peru_file)
+        scope, imports = parser.parse_file(runtime.peru_file)
         params = CommandParams(args, runtime, scope, imports)
         command_fn = COMMAND_FNS[command]
         async.run_task(command_fn(params))
