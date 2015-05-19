@@ -293,20 +293,20 @@ file that defines module `bar`, then in your project you can import
 There are several flags and environment variables you can set, to
 control where peru puts things. Flags always take precedence.
 
-- `--peru-file=<path>` or `PERU_FILE`: The path to your peru YAML file.
-  By default peru looks for `peru.yaml` in the current directory or one
-  of its parents. This setting tells peru to use a specific file. If
-  set, the sync dir (below) must also be set.
-- `--sync-dir=<path>` or `PERU_SYNC_DIR`: The path that all `imports`
-  are interpreted relative to. That is, if you import a module to `./`,
-  the contents of that module go directly in the sync dir. By default
-  this is the directory containing your `peru.yaml` file. If set, the
-  peru file (above) must also be set.
-- `--state-dir=<path>` or `PERU_STATE_DIR`: The directory where peru
-  stashes all of its state metadata, and also the default parent
-  directory of the cache dir (below). By default this is `.peru` inside
-  the sync dir. You should not share this directory between two
-  projects, or `peru sync` will get confused.
+- `--peru-file=<path>`: The path to your peru YAML file. By default peru
+  looks for `peru.yaml` in the current directory or one of its parents.
+  This setting tells peru to use a specific file. If set, the sync dir
+  (below) must also be set.
+- `--sync-dir=<path>`: The path that all `imports` are interpreted
+  relative to. That is, if you import a module to `./`, the contents of
+  that module go directly in the sync dir. By default this is the
+  directory containing your `peru.yaml` file. If set, the peru file
+  (above) must also be set.
+- `--state-dir=<path>`: The directory where peru stashes all of its
+  state metadata, and also the default parent directory of the cache dir
+  (below). By default this is `.peru` inside the sync dir. You should
+  not share this directory between two projects, or `peru sync` will get
+  confused.
 - `--cache-dir=<path>` or `PERU_CACHE_DIR`: The directory where peru
   keeps everything it's fetched. If you have many copies of the same
   project, for example on a server running automated tests, you can

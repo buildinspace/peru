@@ -48,11 +48,10 @@ class Runtime:
         self.display = get_display(args)
 
     def _set_paths(self, args, env):
-        getter = ArgsEnvGetter(args, env)
-        explicit_peru_file = getter.get('--peru-file', 'PERU_FILE')
-        explicit_sync_dir = getter.get('--sync-dir', 'PERU_SYNC_DIR')
+        explicit_peru_file = args['--peru-file']
+        explicit_sync_dir = args['--sync-dir']
         if (explicit_peru_file is None) != (explicit_sync_dir is None):
-            raise PrintableError(
+            raise CommandLineError(
                 'If the peru file or the sync dir is set, the other must also '
                 'be set.')
         if explicit_peru_file:
@@ -62,9 +61,9 @@ class Runtime:
             self.peru_file = find_peru_file(
                 os.getcwd(), parser.DEFAULT_PERU_FILE_NAME)
             self.sync_dir = os.path.dirname(self.peru_file)
-        self.state_dir = (getter.get('--state-dir', 'PERU_STATE_DIR') or
+        self.state_dir = (args['--state-dir'] or
                           os.path.join(self.sync_dir, '.peru'))
-        self.cache_dir = (getter.get('--cache-dir', 'PERU_CACHE_DIR') or
+        self.cache_dir = (args['--cache-dir'] or env.get('PERU_CACHE_DIR') or
                           os.path.join(self.state_dir, 'cache'))
 
     def tmp_dir(self):
@@ -147,14 +146,5 @@ def get_display(args):
         return display.QuietDisplay()
 
 
-class ArgsEnvGetter:
-    def __init__(self, args, env):
-        self.args = args
-        self.env = env
-
-    def get(self, flag_name, env_name):
-        if self.args.get(flag_name):
-            return self.args.get(flag_name)
-        if self.env.get(env_name):
-            return self.env.get(env_name)
-        return None
+class CommandLineError(PrintableError):
+    pass
