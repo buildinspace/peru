@@ -2,37 +2,34 @@
 
 ##### Maybe sometimes better than copy-paste.
 
-Peru is a tool for including other people's code in your projects. It's a lot
-like [git submodules](http://git-scm.com/book/en/Git-Tools-Submodules), except
-that peru stays out of the way of your other tools. You write a `peru.yaml`
-file and then call `peru sync` when you need code, either by hand or in your
-build scripts. Your projects can live in git, hg, svn, tarballs, whatever. And
-your dependencies can too.
+Peru is a tool for including other people's code in your projects. It
+fetches from anywhere -- git, hg, svn, tarballs -- and puts files
+wherever you like. Peru helps you track exact versions of your
+dependencies, so that your history is always reproducible. And it fits
+inside your scripts and Makefiles, so your build stays simple and
+foolproof.
 
 ![snazzy gif](docs/peru.gif)
 
 ## Why?
 
-There are so many tools for grabbing code. [Maven](http://maven.apache.org/)
-downloads JARs. The [Go tool](http://golang.org/cmd/go/) clones libraries from
-GitHub. [Vundle](https://github.com/gmarik/Vundle.vim) installs your vim
-plugins. They each solve the same problem for different languages and tools.
-But peru is all about fetching, and that lets us get a few things right:
+If you build with `make`, you don't have to do anything special when you
+switch branches or pull new commits. Build tools notice those changes
+without any help. But if you depend on other people's code, the tools
+aren't so automatic anymore. You need to remember when to `git submodule
+update`, or when to refresh your `virtualenv`. If you forget a step you
+can break your build, or worse, you might build something wrong without
+noticing.
 
-- **Reproducibility.** When you check out an old version of your code, you can
-  get exactly the same dependencies as when you wrote that code.
-- **Speed.** Fetches run in parallel, everything is cached, and we use git
-  internally for heavy lifting. (See
-  [Architecture: Caching](docs/architecture.md#caching).)
-- **Dubious features.** Peru can automatically update your `peru.yaml` file
-  with the latest versions of your dependencies. Peru can pick specific files
-  out of a tree, or mix multiple trees into a single directory.
+Peru wants you to automate dependency management just like you automate
+the rest of your build. It doesn't interfere with your repo or install
+anything global, so you can just throw it in at the start of a script
+and forget about it. It'll run every time, and your dependencies will
+never be out of sync. Simple, and fast as heck.
 
-There's another class of tools, like Google's
-[gclient](http://dev.chromium.org/developers/how-tos/depottools) and
-[repo](http://source.android.com/source/developing.html), that do fetching as
-part of your source control. Those tend to break sweet features like `git
-bisect`. Peru leaves your source control the heck alone.
+The name "peru", along with our love for reproducible builds, was inspired by
+[Amazon's Brazil build system](https://web.archive.org/web/20130731100223/http://stackoverflow.com/questions/3380795/what-does-amazon-use-for-its-build-and-release-system).
+It also happens to be an anagram for "[reup](#magical-updates)".
 
 ## Installation
 
