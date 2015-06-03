@@ -287,6 +287,10 @@ file that defines module `bar`, then in your project you can import
 `foo.bar`.
 
 ## Configuration
+
+**CAUTION: We're planning to make
+[changes](https://phabricator.buildinspace.com/D213) to these flags.**
+
 There are several flags and environment variables you can set, to
 control where peru puts things. Flags always take precedence.
 
