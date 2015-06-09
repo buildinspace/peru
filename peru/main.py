@@ -168,9 +168,6 @@ Usage:
     peru override delete <module>
     peru override --help
 
-Options:
-    -h --help  (>'-')> <('-'<) ^('-')^
-
 Adding an override tells peru to use the contents of a given directory
 in place of the actual contents of a module. So for example, if your
 project normally fetches `foo` from GitHub, but you want to test it with
@@ -183,6 +180,9 @@ module. Peru doesn't care whether you override your git module with an
 actual git clone, or just a directory full of files. It simply copies
 what's there. Module fields (including `rev`) have no effect while a
 module is overridden.
+
+Options:
+    -h --help  (>'-')> <('-'<) ^('-')^
 ''')
 def do_override(params):
     if params.args['add']:
