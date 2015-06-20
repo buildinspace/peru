@@ -18,8 +18,8 @@ from .runtime import Runtime
 
 __doc__ = '''\
 Usage:
-    peru [-hqv] [--peru-file=PATH] [--sync-dir=PATH] [--state-dir=PATH]
-         [--cache-dir=PATH] <command> [<args>...]
+    peru [-hqv] [--file=<file>] [--sync-dir=<dir>] [--state-dir=<dir>]
+         [--cache-dir=<dir>] [--file-basename=<name>] <command> [<args>...]
     peru [--help|--version]
 
 Commands:
@@ -31,16 +31,26 @@ Commands:
     help      show help for subcommands, same as -h/--help
 
 Options:
-    --cache-dir=PATH  custom location for peru's cache, normally
-                      .peru/cache
-    -h --help         so much help
-    --peru-file=PATH  explicit path to peru.yaml
-    -q --quiet        don't print anything
-    --state-dir=PATH  custom location for various peru metadata, which
-                      normally lives in .peru
-    --sync-dir=PATH   explicit path to where your imports go, normally
-                      the directory containing peru.yaml
-    -v --verbose      print everything
+    -h --help             so much help
+    -q --quiet            don't print anything
+    -v --verbose          print everything
+
+    --file=<file>
+        The project file to use instead of 'peru.yaml'. This must be used
+        together with --sync-dir.
+    --sync-dir=<dir>
+        The root directory for your imports, instead of the directory
+        containing 'peru.yaml'. This must be used together with --file.
+    --state-dir=<dir>
+        The directory where peru keeps all of its metadata, including the cache
+        and the current imports tree. Defaults to '.peru' next to 'peru.yaml'.
+    --cache-dir=<dir>
+        The directory for caching all the files peru fetches. Defaults to
+        '.peru/cache', or $PERU_CACHE_DIR if it's defined.
+    --file-basename=<name>
+        An alternative filename (not a path) for 'peru.yaml'. As usual, peru
+        will search the current dir and its parents for this file, and import
+        paths will be relative to it. Incompatible with --file.
 '''
 
 

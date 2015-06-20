@@ -1,4 +1,5 @@
 import os
+import shutil
 import textwrap
 import unittest
 
@@ -36,9 +37,9 @@ class PathsTest(unittest.TestCase):
         self.cwd = os.path.join(self.project_dir, 'cwd', 'in', 'here')
         makedirs(self.cwd)
 
-    def assert_success(self, sync_dir, state_dir, cache_dir):
+    def assert_success(self, sync_dir, state_dir, cache_dir, more_excludes=[]):
         shared.assert_contents(sync_dir, {'bar': 'baz'},
-                               excludes=['.peru', 'peru.yaml'])
+                               excludes=['.peru', 'peru.yaml'] + more_excludes)
         assert os.path.isfile(os.path.join(state_dir, 'lastimports'))
         assert os.path.isdir(os.path.join(cache_dir, 'trees'))
 
@@ -48,9 +49,16 @@ class PathsTest(unittest.TestCase):
 
     def test_peru_file_and_sync_dir_must_be_set_together(self):
         for command in [['--sync-dir=junk', 'sync'],
-                        ['--peru-file=junk', 'sync']]:
+                        ['--file=junk', 'sync']]:
             with self.assertRaises(CommandLineError):
                 shared.run_peru_command(command, cwd=self.cwd)
+
+    def test_file_and_file_basename_incompatible(self):
+        with self.assertRaises(CommandLineError):
+            shared.run_peru_command(
+                ['--file=foo', '--sync-dir=bar', '--file-basename=baz',
+                    'sync'],
+                cwd=self.cwd)
 
     def test_setting_all_flags(self):
         cwd = shared.create_dir()
@@ -58,7 +66,7 @@ class PathsTest(unittest.TestCase):
         state_dir = shared.create_dir()
         cache_dir = shared.create_dir()
         shared.run_peru_command(
-            ['--peru-file', self.peru_file, '--sync-dir', sync_dir,
+            ['--file', self.peru_file, '--sync-dir', sync_dir,
              '--state-dir', state_dir, '--cache-dir', cache_dir, 'sync'],
             cwd)
         self.assert_success(sync_dir, state_dir, cache_dir)
@@ -84,5 +92,13 @@ class PathsTest(unittest.TestCase):
         This test repros that case. We've switched to pathlib.Path.parent to
         fix the issue.'''
         shared.run_peru_command(
-            ['--peru-file', 'peru.yaml', '--sync-dir', '.', 'sync'],
+            ['--file', 'peru.yaml', '--sync-dir', '.', 'sync'],
             cwd=self.project_dir)
+        self.assert_success(self.project_dir, self.state_dir, self.cache_dir)
+
+    def test_default_file_name(self):
+        shutil.move(self.peru_file, os.path.join(self.project_dir, 'xxx'))
+        shared.run_peru_command(['--file-basename', 'xxx', 'sync'],
+                                cwd=self.project_dir)
+        self.assert_success(self.project_dir, self.state_dir, self.cache_dir,
+                            more_excludes=['xxx'])

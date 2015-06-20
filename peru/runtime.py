@@ -48,18 +48,22 @@ class Runtime:
         self.display = get_display(args)
 
     def _set_paths(self, args, env):
-        explicit_peru_file = args['--peru-file']
+        explicit_peru_file = args['--file']
         explicit_sync_dir = args['--sync-dir']
-        if (explicit_peru_file is None) != (explicit_sync_dir is None):
+        explicit_basename = args['--file-basename']
+        if explicit_peru_file and explicit_basename:
             raise CommandLineError(
-                'If the peru file or the sync dir is set, the other must also '
-                'be set.')
-        if explicit_peru_file:
+                'Cannot use both --file and --file-basename at the same time.')
+        if explicit_peru_file and explicit_sync_dir:
             self.peru_file = explicit_peru_file
             self.sync_dir = explicit_sync_dir
+        elif explicit_peru_file or explicit_sync_dir:
+            raise CommandLineError(
+                'If the --file or --sync-dir is set, '
+                'the other must also be set.')
         else:
-            self.peru_file = find_peru_file(
-                os.getcwd(), parser.DEFAULT_PERU_FILE_NAME)
+            basename = explicit_basename or parser.DEFAULT_PERU_FILE_NAME
+            self.peru_file = find_project_file(os.getcwd(), basename)
             self.sync_dir = os.path.dirname(self.peru_file)
         self.state_dir = (args['--state-dir'] or
                           os.path.join(self.sync_dir, '.peru'))
@@ -105,11 +109,11 @@ class Runtime:
             tmp_root=self._tmp_root)
 
 
-def find_peru_file(start_dir, name):
+def find_project_file(start_dir, basename):
     '''Walk up the directory tree until we find a file of the given name.'''
     prefix = os.path.abspath(start_dir)
     while True:
-        candidate = os.path.join(prefix, name)
+        candidate = os.path.join(prefix, basename)
         if os.path.isfile(candidate):
             return candidate
         if os.path.exists(candidate):
@@ -117,7 +121,7 @@ def find_peru_file(start_dir, name):
                 "Found {}, but it's not a file.".format(candidate))
         if os.path.dirname(prefix) == prefix:
             # We've walked all the way to the top. Bail.
-            raise PrintableError("Can't find " + name)
+            raise PrintableError("Can't find " + basename)
         # Not found at this level. We must go...shallower.
         prefix = os.path.dirname(prefix)
 

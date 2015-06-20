@@ -12,7 +12,7 @@ class RuntimeTest(unittest.TestCase):
             'a/find_me': 'junk',
             'a/b/c/junk': 'junk',
         })
-        result = runtime.find_peru_file(
+        result = runtime.find_project_file(
             os.path.join(test_dir, 'a', 'b', 'c'),
             'find_me')
         expected = os.path.join(test_dir, 'a', 'find_me')

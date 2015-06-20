@@ -288,30 +288,30 @@ file that defines module `bar`, then in your project you can import
 
 ## Configuration
 
-**CAUTION: We're planning to make
-[changes](https://phabricator.buildinspace.com/D213) to these flags.**
-
 There are several flags and environment variables you can set, to
 control where peru puts things. Flags always take precedence.
 
-- `--peru-file=<path>`: The path to your peru YAML file. By default peru
+- `--file=<file>`: The path to your peru YAML file. By default peru
   looks for `peru.yaml` in the current directory or one of its parents.
-  This setting tells peru to use a specific file. If set, the sync dir
-  (below) must also be set.
-- `--sync-dir=<path>`: The path that all `imports` are interpreted
+  This setting tells peru to use a specific file. If set, `--sync-dir`
+  must also be set.
+- `--sync-dir=<dir>`: The path that all `imports` are interpreted
   relative to. That is, if you import a module to `./`, the contents of
   that module go directly in the sync dir. By default this is the
-  directory containing your `peru.yaml` file. If set, the peru file
-  (above) must also be set.
-- `--state-dir=<path>`: The directory where peru stashes all of its
-  state metadata, and also the default parent directory of the cache dir
-  (below). By default this is `.peru` inside the sync dir. You should
-  not share this directory between two projects, or `peru sync` will get
-  confused.
-- `--cache-dir=<path>` or `PERU_CACHE_DIR`: The directory where peru
+  directory containing your `peru.yaml` file. If set, `--file` must also
+  be set.
+- `--state-dir=<dir>`: The directory where peru stashes all of its state
+  metadata, and also the parent of the cache dir. By default this is
+  `.peru` inside the sync dir. You should not share this directory
+  between two projects, or `peru sync` will get confused.
+- `--cache-dir=<dir>` or `PERU_CACHE_DIR`: The directory where peru
   keeps everything it's fetched. If you have many copies of the same
   project, for example on a server running automated tests, you can
   using a shared cache to speed up syncs.
+- `--file-basename=<name>`: Changes the default name for `peru.yaml`
+  without providing a full path. Peru will search the current directory
+  and its parents for a file of the right name, and it will use that
+  file's parent as the sync dir, as usual. Incompatible with `--file`.
 
 ## Links
 - [Discussion and announcements (Google
