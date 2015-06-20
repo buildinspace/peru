@@ -36,6 +36,9 @@ class KeyVal:
     def __iter__(self):
         return iter(os.listdir(self._root))
 
+    def __len__(self):
+        return len(os.listdir(self._root))
+
     def _path(self, key):
         return os.path.join(self._root, key)
 

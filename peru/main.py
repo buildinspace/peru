@@ -84,6 +84,11 @@ Options:
     -v --verbose   print everything
 ''')
 def do_sync(params):
+    if params.runtime.overrides and not params.args['--quiet']:
+        params.runtime.display.print('syncing with overrides:')
+        for name in params.runtime.overrides:
+            params.runtime.display.print('  {} {}'.format(
+                name, params.runtime.get_override(name)))
     yield from imports.checkout(
         params.runtime, params.scope, params.imports, params.runtime.sync_dir)
 
