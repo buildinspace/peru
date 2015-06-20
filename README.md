@@ -41,9 +41,12 @@ types of repos. Use [pip](https://pip.pypa.io/en/latest/) to install it:
 pip install peru
 ```
 
-On Ubuntu, you can install `peru` from [our
-PPA](https://launchpad.net/~buildinspace/+archive/ubuntu/peru). On Arch, you
-can install `peru-git` [from the
+Note that depending on how Python is set up on your machine, you might
+need to use `sudo` with that, and Python 3's pip might be called `pip3`.
+
+On Ubuntu, you can install also `peru` from [our
+PPA](https://launchpad.net/~buildinspace/+archive/ubuntu/peru). On Arch,
+you can install `peru-git` [from the
 AUR](https://aur.archlinux.org/packages/peru-git/).
 
 ## Getting Started
