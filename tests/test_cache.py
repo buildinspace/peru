@@ -289,3 +289,21 @@ class CacheTest(unittest.TestCase):
                          'for modifications {}'.format(
                              repr(result), repr(modifications)))
             assert_contents(modified_dir, result, message=error_msg)
+
+    def test_git_attributes(self):
+        # Setting the 'text' attribute when files contain Windows-style
+        # newlines makes them appear dirty, which leads to errors where the
+        # cache thinks its own checked out files are dirty. (I don't honestly
+        # understand all the details.) The cache's git calls will read
+        # .gitattributes in the sync dir, so we need to set our own attributes
+        # in the $GIT_DIR to override.
+        windows_content = {'file': 'windows newline\r\n'}
+        gitattributes_content = {'.gitattributes': '* text'}
+        both_content = windows_content.copy()
+        both_content.update(gitattributes_content)
+        windows_dir = create_dir(windows_content)
+        tree = self.cache.import_tree(windows_dir)
+        out_dir = create_dir(gitattributes_content)
+        # This export fails without the fix mentioned above.
+        self.cache.export_tree(tree, out_dir)
+        assert_contents(out_dir, both_content)

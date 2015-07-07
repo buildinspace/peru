@@ -60,9 +60,10 @@ def read_dir(startdir, excludes=()):
         relpath = p.relative_to(startdir)
         if any(relpath.parts[:len(tup)] == tup for tup in exclude_tuples):
             continue
-        with p.open() as f:
+        # Open in binary mode to avoid newline conversions.
+        with p.open('rb') as f:
             try:
-                contents[relpath] = f.read()
+                contents[relpath] = f.read().decode()
             except UnicodeDecodeError:
                 contents[relpath] = '<BINARY>'
     return contents

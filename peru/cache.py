@@ -43,6 +43,18 @@ class Cache:
         if not os.path.exists(self.trees_path):
             os.makedirs(self.trees_path)
             self._git('init', '--bare')
+            # Override any .gitattributes files that might by in the sync dir,
+            # by writing 'info/attributes' in the bare repo. There are many
+            # attributes that we might want to disable, but disabling 'text'
+            # seems to take care of both 'text' and 'eol', which are the two
+            # that I know can cause problems. We might need to add more
+            # attributes here in the future. Note that other config files are
+            # disabled in _git_env below.
+            attributes_path = os.path.join(
+                self.trees_path, 'info', 'attributes')
+            with open(attributes_path, 'w') as attributes:
+                # Disable the 'text' attribute for all files.
+                attributes.write('* -text')
 
     class GitError(RuntimeError):
         def __init__(self, command, output, errorcode):
