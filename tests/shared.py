@@ -45,10 +45,14 @@ def write_files(dir, path_contents_map):
         full_path = dir / path
         makedirs(str(full_path.parent))
         with full_path.open('w') as f:
-            f.write(contents)
+            # Handle both string and bytes values.
+            if type(contents) is str:
+                f.write(contents)
+            else:
+                f.buffer.write(contents)
 
 
-def read_dir(startdir, excludes=()):
+def read_dir(startdir, *, excludes=(), binary=False):
     assert isinstance(excludes, list) or isinstance(excludes, tuple), \
         "excludes must be a list or a tuple, not " + repr(type(excludes))
     startdir = Path(startdir)
@@ -61,9 +65,9 @@ def read_dir(startdir, excludes=()):
         if any(relpath.parts[:len(tup)] == tup for tup in exclude_tuples):
             continue
         # Open in binary mode to avoid newline conversions.
-        with p.open('rb') as f:
+        with p.open('rb' if binary else 'r') as f:
             try:
-                contents[relpath] = f.read().decode()
+                contents[relpath] = f.read()
             except UnicodeDecodeError:
                 contents[relpath] = '<BINARY>'
     return contents
@@ -74,15 +78,16 @@ def _format_contents(contents):
             for file in sorted(contents.keys())]
 
 
-def assert_contents(dir, expected_contents, *, message='', excludes=()):
+def assert_contents(dir, expected_contents, *, message='', excludes=(),
+                    binary=False):
     dir = Path(dir)
     expected_contents = {Path(key): val for key, val
                          in expected_contents.items()}
-    actual_contents = read_dir(dir, excludes)
+    actual_contents = read_dir(dir, excludes=excludes,  binary=binary)
     if expected_contents == actual_contents:
         return
     # Make sure we didn't exclude files we were checking for.
-    full_contents = read_dir(dir)
+    full_contents = read_dir(dir, binary=binary)
     excluded_files = full_contents.keys() - actual_contents.keys()
     excluded_missing = expected_contents.keys() & excluded_files
     if excluded_missing:

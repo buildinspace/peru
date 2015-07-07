@@ -296,9 +296,11 @@ class CacheTest(unittest.TestCase):
         # cache thinks its own checked out files are dirty. (I don't honestly
         # understand all the details.) The cache's git calls will read
         # .gitattributes in the sync dir, so we need to set our own attributes
-        # in the $GIT_DIR to override.
-        windows_content = {'file': 'windows newline\r\n'}
-        gitattributes_content = {'.gitattributes': '* text'}
+        # in the $GIT_DIR to override. Everything in this test has to be done
+        # in binary mode or it will all get muddled up when we actually run it
+        # on Windows.
+        windows_content = {'file': b'windows newline\r\n'}
+        gitattributes_content = {'.gitattributes': b'* text'}
         both_content = windows_content.copy()
         both_content.update(gitattributes_content)
         windows_dir = create_dir(windows_content)
@@ -306,4 +308,4 @@ class CacheTest(unittest.TestCase):
         out_dir = create_dir(gitattributes_content)
         # This export fails without the fix mentioned above.
         self.cache.export_tree(tree, out_dir)
-        assert_contents(out_dir, both_content)
+        assert_contents(out_dir, both_content, binary=True)
