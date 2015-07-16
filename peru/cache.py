@@ -43,7 +43,7 @@ class Cache:
         if not os.path.exists(self.trees_path):
             os.makedirs(self.trees_path)
             self._git('init', '--bare')
-            # Override any .gitattributes files that might by in the sync dir,
+            # Override any .gitattributes files that might be in the sync dir,
             # by writing 'info/attributes' in the bare repo. There are many
             # attributes that we might want to disable, but disabling 'text'
             # seems to take care of both 'text' and 'eol', which are the two
