@@ -54,6 +54,10 @@ def _get_last_imports(runtime):
 
 
 def _set_last_imports(runtime, tree):
+    if tree == _get_last_imports(runtime):
+        # Don't modify the lastimports file if the imports haven't changed.
+        # This allows users to treat that file in their Makefiles.
+        return
     compat.makedirs(_last_imports_path(runtime).parent)
     with _last_imports_path(runtime).open('w') as f:
         f.write(tree)

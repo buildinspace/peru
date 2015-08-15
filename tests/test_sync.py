@@ -582,7 +582,37 @@ class SyncTest(unittest.TestCase):
             run_peru_command(['sync', '--quiet'], self.test_dir)
         # Don't literally check that stderr is empty, because that could get
         # tripped up on other Python warnings (like asyncio taking too long).
-        assert('git module foo' not in buffer.getvalue())
+        assert 'git module foo' not in buffer.getvalue()
+
+    def test_lastimports_timestamp(self):
+        module_dir = shared.create_dir({'foo': 'bar'})
+        template = '''\
+            cp module foo:
+                path: {}
+
+            imports:
+                foo: {}
+            '''
+        self.write_yaml(template, module_dir, "subdir1")
+        self.do_integration_test(['sync'], {'subdir1/foo': 'bar'})
+        lastimports = os.path.join(self.test_dir, '.peru', 'lastimports')
+
+        def get_timestamp():
+            return os.stat(lastimports).st_mtime
+
+        original_timestamp = get_timestamp()
+
+        # Running it again should be a no-op. Assert that the lastimports
+        # timestamp hasn't changed.
+        self.do_integration_test(['sync'], {'subdir1/foo': 'bar'})
+        assert get_timestamp() == original_timestamp, \
+            "Expected an unchanged timestamp."
+
+        # Modify peru.yaml and sync again. This should change the timestamp.
+        self.write_yaml(template, module_dir, "subdir2")
+        self.do_integration_test(['sync'], {'subdir2/foo': 'bar'})
+        assert get_timestamp() > original_timestamp, \
+            "Expected an updated timestamp."
 
 
 @contextlib.contextmanager
