@@ -321,3 +321,4 @@ control where peru puts things. Flags always take precedence.
   Group)](https://groups.google.com/forum/#!forum/peru-tool)
 - [Code review (Phabricator)](https://phabricator.buildinspace.com)
 - [Architecture doc](docs/architecture.md)
+- [Using peru with make](https://github.com/oconnor663/peru-make-example)
