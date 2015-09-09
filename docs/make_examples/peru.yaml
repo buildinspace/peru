@@ -1,0 +1,7 @@
+imports:
+    helloworld: ./
+
+git module helloworld:
+    url: https://github.com/leachim6/hello-world
+    pick: c/c.c
+    export: c/
