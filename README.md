@@ -6,8 +6,8 @@ Peru is a tool for including other people's code in your projects. It
 fetches from anywhere -- git, hg, svn, tarballs -- and puts files
 wherever you like. Peru helps you track exact versions of your
 dependencies, so that your history is always reproducible. And it fits
-inside your scripts and Makefiles, so your build stays simple and
-foolproof.
+inside your scripts and [Makefiles](docs/make_examples), so your build
+stays simple and foolproof.
 
 ![snazzy gif](docs/peru.gif)
 
