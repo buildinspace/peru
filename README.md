@@ -264,8 +264,8 @@ imports:
     tulip|asyncio: python/asyncio/
     tulip|license: licenses/
 
-hg module tulip:
-    url: https://code.google.com/p/tulip/
+git module tulip:
+    url: https://github.com/python/asyncio
 
 rule asyncio:
     export: asyncio/
