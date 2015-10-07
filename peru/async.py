@@ -33,7 +33,13 @@ def stable_gather(*coros):
     As with gather(), stable_gather() isn't itself a coroutine, but it returns
     a future.'''
     assert len(coros) == len(set(coros)), 'no duplicates allowed'
-    futures = [asyncio.async(coro) for coro in coros]
+    # Suppress a deprecation warning in Python 3.5, while continuing to support
+    # 3.3 and early 3.4 releases.
+    if hasattr(asyncio, 'ensure_future'):
+        ensure_future_fn = asyncio.ensure_future
+    else:
+        ensure_future_fn = asyncio.async
+    futures = [ensure_future_fn(coro) for coro in coros]
     return asyncio.gather(*futures)
 
 
