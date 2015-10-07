@@ -192,7 +192,7 @@ class FancyDisplay(BaseDisplay):
     def _job_written(self, job_id, string):
         # We need to split output on newlines. Some programs (git) also use
         # carriage return to redraw a line, so we split on that too.
-        any_newlines = '(?:\n|\r)*'  # (?: is non-capturing, for split()
+        any_newlines = '(?:\n|\r)+'  # (?: is non-capturing, for split()
         lines = [line.strip() for line in re.split(any_newlines, string)]
 
         # NB: We don't make any attempt here to join lines that might span
