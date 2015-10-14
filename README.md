@@ -37,7 +37,7 @@ Peru supports Linux, Mac, and Windows. It requires **python** (3.3 or later)
 and **git**, and optionally **hg** and **svn** if you want fetch from those
 types of repos. Use [pip](https://pip.pypa.io/en/latest/) to install it:
 
-```python
+```bash
 pip install peru
 ```
 
