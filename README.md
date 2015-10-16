@@ -17,8 +17,8 @@ If you build with `make`, you don't have to do anything special when you
 switch branches or pull new commits. Build tools notice those changes
 without any help. But if you depend on other people's code, the tools
 aren't so automatic anymore. You need to remember when to `git submodule
-update`, or when to refresh your `virtualenv`. If you forget a step you
-can break your build, or worse, you might build something wrong without
+update` or `go get -u` or `pip install -r`. If you forget a step you can
+break your build, or worse, you might build something wrong without
 noticing.
 
 Peru wants you to automate dependency management just like you automate
