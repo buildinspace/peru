@@ -22,10 +22,10 @@ break your build, or worse, you might build something wrong without
 noticing.
 
 Peru wants you to automate dependency management just like you automate
-the rest of your build. It doesn't interfere with your repo or install
-anything global, so you can just throw it in at the start of a script
-and forget about it. It'll run every time, and your dependencies will
-never be out of sync. Simple, and fast as heck.
+the rest of your build. It doesn't interfere with your source control or
+install anything global, so you can just throw it in at the start of a
+script and forget about it. It'll run every time, and your dependencies
+will never be out of sync. Simple, and fast as heck.
 
 The name "peru", along with our love for reproducible builds, was inspired by
 [Amazon's Brazil build system](https://web.archive.org/web/20130731100223/http://stackoverflow.com/questions/3380795/what-does-amazon-use-for-its-build-and-release-system).
