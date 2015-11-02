@@ -294,7 +294,22 @@ CommandParams = collections.namedtuple(
     'CommandParams', ['args', 'runtime', 'scope', 'imports'])
 
 
+def force_utf8_in_ascii_mode_hack():
+    '''In systems without a UTF8 locale configured, Python will default to
+    ASCII mode for stdout and stderr. This causes our fancy display to fail
+    with encoding errors. In particular, you run into this if you try to run
+    peru inside of Docker. This is a hack to force emitting UTF8 in that case.
+    Hopefully it doesn't break anything important.'''
+    if sys.stdout.encoding == 'ANSI_X3.4-1968':
+        sys.stdout = open(sys.stdout.fileno(), mode='w', encoding='utf8',
+                          buffering=1)
+        sys.stderr = open(sys.stderr.fileno(), mode='w', encoding='utf8',
+                          buffering=1)
+
+
 def main(*, argv=None, env=None, nocatch=False):
+    force_utf8_in_ascii_mode_hack()
+
     if argv is None:
         argv = sys.argv[1:]
     if env is None:
