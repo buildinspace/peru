@@ -32,6 +32,7 @@ class Runtime:
                 "Peru can't be quiet and verbose at the same time.")
         self.quiet = args['--quiet']
         self.verbose = args['--verbose']
+        self.no_overrides = args.get('--nooverrides', False)
 
         # Use a semaphore (a lock that allows N holders at once) to limit the
         # number of fetches that can run in parallel.

@@ -68,7 +68,7 @@ COMMAND_DOCS = {}
 
 @peru_command('sync', '''\
 Usage:
-    peru sync [-fhqv] [-j N]
+    peru sync [-fhqv] [-j N] [--nooverrides]
 
 Writes your imports to the sync directory. By default, this is the
 directory that contains your peru.yaml file. Peru is normally careful
@@ -80,22 +80,19 @@ Options:
     -f --force     overwrite existing or changed files
     -h --help      explain these confusing flags
     -j N --jobs N  max number of parallel fetches
+    --nooverrides  suppress any `peru override` settings
     -q --quiet     don't print anything
     -v --verbose   print everything
 ''')
 def do_sync(params):
-    if params.runtime.overrides and not params.args['--quiet']:
-        params.runtime.display.print('syncing with overrides:')
-        for name in params.runtime.overrides:
-            params.runtime.display.print('  {} {}'.format(
-                name, params.runtime.get_override(name)))
+    print_overrides(params.runtime)
     yield from imports.checkout(
         params.runtime, params.scope, params.imports, params.runtime.sync_dir)
 
 
 @peru_command('reup', '''\
 Usage:
-    peru reup [<modules>...] [-fhqv] [-j N] [--nosync]
+    peru reup [<modules>...] [-fhqv] [-j N] [--nosync] [--nooverrides]
 
 Updates each module in your peru.yaml file with the latest revision
 information from its source. For git, hg, and svn modules, this is the
@@ -106,8 +103,9 @@ positional arguments. Normally peru then does a sync, but you can
 disable that with --nosync.
 
 Options:
-    -f --force     for the sync at the end
+    -f --force     for `peru sync`
     -h --help      what is even happening here?
+    --nooverrides  for `peru sync`
     --nosync       skip the sync at the end
     -j N --jobs N  max number of parallel fetches
     -q --quiet     don't print anything
@@ -257,6 +255,14 @@ def maybe_print_help_and_return(args):
 
     # otherwise help is not called for
     return None
+
+
+def print_overrides(runtime):
+    if (runtime.overrides and not runtime.quiet and not runtime.no_overrides):
+        runtime.display.print('syncing with overrides:')
+        for name in runtime.overrides:
+            runtime.display.print('  {} {}'.format(
+                name, runtime.get_override(name)))
 
 
 def merged_args_dicts(global_args, subcommand_args):

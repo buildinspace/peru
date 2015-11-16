@@ -40,9 +40,10 @@ class SyncTest(unittest.TestCase):
                             **peru_cmd_kwargs):
         if not cwd:
             cwd = self.test_dir
-        run_peru_command(args, cwd, **peru_cmd_kwargs)
+        output = run_peru_command(args, cwd, **peru_cmd_kwargs)
         assert_contents(self.test_dir, expected,
                         excludes=[DEFAULT_PERU_FILE_NAME, '.peru'])
+        return output
 
     def test_basic_sync(self):
         module_dir = shared.create_dir({'foo': 'bar'})
@@ -388,8 +389,15 @@ class SyncTest(unittest.TestCase):
         # Make sure 'override list' gives the same output as 'override'.
         output = run_peru_command(['override', 'list'], self.test_dir)
         self.assertEqual(output, 'foo: {}\n'.format(override_dir))
-        # Run the sync and confirm that the override worked.
-        self.do_integration_test(['sync'], {'foo': 'override'})
+        # Run the sync with --nooverrides and confirm nothing changes. Also
+        # check that there's no overrides-related output.
+        output = self.do_integration_test(['sync', '--nooverrides'],
+                                          {'foo': 'bar'})
+        self.assertNotIn('overrides', output)
+        # Now run the sync normally and confirm that the override worked. Also
+        # confirm that we mentioned the override in output.
+        output = self.do_integration_test(['sync'], {'foo': 'override'})
+        self.assertIn('overrides', output)
         # Delete the override.
         run_peru_command(['override', 'delete', 'foo'], self.test_dir)
         # Confirm that the override was deleted.
