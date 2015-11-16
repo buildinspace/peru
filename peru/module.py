@@ -22,7 +22,7 @@ class Module:
     @asyncio.coroutine
     def _get_base_tree(self, runtime):
         override_path = runtime.get_override(self.name)
-        if override_path is not None and not runtime.no_overrides:
+        if override_path is not None:
             return self._get_override_tree(runtime, override_path)
 
         key = compute_key({
