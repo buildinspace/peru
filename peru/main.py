@@ -99,8 +99,8 @@ information from its source. For git, hg, and svn modules, this is the
 `rev` field, and for a curl module it's the `sha1` field. Peru will
 either add the field for you, or update it if it's already there. To
 update specific modules instead of everything, pass their names as
-positional arguments. Normally peru then does a sync, but you can
-disable that with --nosync.
+positional arguments. Peru does a sync after the reup is done, though
+you can prevent that with --nosync.
 
 Options:
     -f --force     for `peru sync`

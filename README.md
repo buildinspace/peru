@@ -112,7 +112,7 @@ curl module pathogen:
 
 git module vim-solarized:
     url: https://github.com/altercation/vim-colors-solarized
-    # Always fetch this exact commit, instead of master.
+    # Fetch this exact commit, instead of master.
     rev: 7a7e5c8818d717084730133ed6b84a3ffc9d0447
 ```
 
@@ -135,9 +135,8 @@ default branch (`master` in git). That's a **Super Serious Best Practice™**,
 because it means your dependencies will always be consistent, even when you
 look at commits from a long time ago.
 
-You really want all of your dependencies to have explicit hashes, but editing
-those by hand is painful, especially if you have a lot of dependencies.  The
-next section is about making that easier.
+You really want all of your dependencies to have hashes, but editing
+those by hand is painful. The next section is about making that easier.
 
 ## Magical Updates
 
@@ -183,7 +182,7 @@ Peru made three changes:
 
 At this point, you'll probably want to make a new commit of `peru.yaml` to
 record the version bumps. You can do this every so often to keep your plugins
-up to date, and you'll still be able to reach old versions in your history.
+up to date, and you'll always be able to reach old versions in your history.
 
 ## Commands
 - `sync`
@@ -234,10 +233,10 @@ clone. Peru itself doesn't need to know how to do that. For all the details,
 see [Architecture: Plugins](docs/architecture.md#plugins).
 
 ## Rules
-Some fields (like `url` and `rev`) are specific to certain module types.
-There are also fields you can use in any module, which modify the the
-tree of files after it's fetched. Some of these made an appearance in
-the fancy example above:
+Some fields (like `rev` and `unpack`) are specific to certain module
+types. There are also fields you can use in any module, which modify the
+the tree of files after it's fetched. Some of these made an appearance
+in the fancy example above:
 
 - `copy`: A map or multimap of source and destination paths to copy.
   Works like `cp` on the command line, so if the destination is a
@@ -274,20 +273,23 @@ rule license:
     pick: COPYING
 ```
 
-As in the example above, named rules are declared a lot like modules and then
-used in the `imports` list, with the syntax `module|rule`.  The `|` operator
-there works kind of like a shell pipeline, so you can even do twisted things
-like `module|rule1|rule2`, with each rule applying to the output tree of the
-previous.
+As in this example, named rules are declared a lot like modules and then
+used in the `imports` list, with the syntax `module|rule`.  The `|`
+operator there works kind of like a shell pipeline, so you can even do
+twisted things like `module|rule1|rule2`, with each rule applying to the
+output tree of the previous.
 
 ## Recursion
 
 If you import a module that has a peru file of its own, peru will
-automatically sync that module's imports as part of yours. It's also
-possible to refer directly to the modules that another module defines.
-For example if your project defines module `foo`, and `foo` has a peru
-file that defines module `bar`, then in your project you can import
-`foo.bar`.
+automatically include that module's imports along with it. This is
+similar to how git submodules behave with `git clone --recursive`.
+
+It's also possible to directly import modules that are defined in the
+`peru.yaml` file of another module. If your project defines a module
+`foo`, and `foo` has a peru file in it that defines a module `bar`, you
+can use `foo.bar` in your own imports. This works even if you never
+actually import `foo`.
 
 ## Configuration
 
@@ -308,13 +310,12 @@ control where peru puts things. Flags always take precedence.
   `.peru` inside the sync dir. You should not share this directory
   between two projects, or `peru sync` will get confused.
 - `--cache-dir=<dir>` or `PERU_CACHE_DIR`: The directory where peru
-  keeps everything it's fetched. If you have many copies of the same
-  project, for example on a server running automated tests, you can
-  using a shared cache to speed up syncs.
-- `--file-basename=<name>`: Changes the default name for `peru.yaml`
-  without providing a full path. Peru will search the current directory
-  and its parents for a file of the right name, and it will use that
-  file's parent as the sync dir, as usual. Incompatible with `--file`.
+  keeps everything it's fetched. If you have many projects fetching the
+  same dependencies, you can use a shared cache dir to speed things up.
+- `--file-basename=<name>`: Change the default peru file name (normally
+  `peru.yaml`). As usual, peru will search the current directory and its
+  parents for a file of that name, and it will use that file's parent
+  dir as the sync dir. Incompatible with `--file`.
 
 ## Links
 - [Discussion and announcements (Google
