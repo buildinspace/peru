@@ -61,7 +61,7 @@ class ReupIntegrationTest(unittest.TestCase):
             ''').format(self.foo_dir, self.foo_master, self.bar_dir)
         test_dir = shared.create_dir({'peru.yaml': yaml_with_imports})
         # First reup without the sync.
-        run_peru_command(['reup', 'foo', '--nosync'], test_dir)
+        run_peru_command(['reup', 'foo', '--no-sync'], test_dir)
         assert_contents(test_dir, {}, excludes=['.peru', 'peru.yaml'])
         # Now do it with the sync. Note that barfile wasn't pulled in, because
         # we didn't reup bar.

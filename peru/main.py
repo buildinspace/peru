@@ -68,7 +68,7 @@ COMMAND_DOCS = {}
 
 @peru_command('sync', '''\
 Usage:
-    peru sync [-fhqv] [-j N] [--nooverrides]
+    peru sync [-fhqv] [-j N] [--no-overrides]
 
 Writes your imports to the sync directory. By default, this is the
 directory that contains your peru.yaml file. Peru is normally careful
@@ -77,12 +77,12 @@ then it writes nothing and reports an error. Use the --force flag if you
 want sync to overwrite existing files.
 
 Options:
-    -f --force     overwrite existing or changed files
-    -h --help      explain these confusing flags
-    -j N --jobs N  max number of parallel fetches
-    --nooverrides  suppress any `peru override` settings
-    -q --quiet     don't print anything
-    -v --verbose   print everything
+    -f --force      overwrite existing or changed files
+    -h --help       explain these confusing flags
+    -j N --jobs N   max number of parallel fetches
+    --no-overrides  suppress any `peru override` settings
+    -q --quiet      don't print anything
+    -v --verbose    print everything
 ''')
 def do_sync(params):
     print_overrides(params.runtime)
@@ -92,7 +92,7 @@ def do_sync(params):
 
 @peru_command('reup', '''\
 Usage:
-    peru reup [<modules>...] [-fhqv] [-j N] [--nosync] [--nooverrides]
+    peru reup [<modules>...] [-fhqv] [-j N] [--no-sync] [--no-overrides]
 
 Updates each module in your peru.yaml file with the latest revision
 information from its source. For git, hg, and svn modules, this is the
@@ -100,16 +100,16 @@ information from its source. For git, hg, and svn modules, this is the
 either add the field for you, or update it if it's already there. To
 update specific modules instead of everything, pass their names as
 positional arguments. Peru does a sync after the reup is done, though
-you can prevent that with --nosync.
+you can prevent that with --no-sync.
 
 Options:
-    -f --force     for `peru sync`
-    -h --help      what is even happening here?
-    --nooverrides  for `peru sync`
-    --nosync       skip the sync at the end
-    -j N --jobs N  max number of parallel fetches
-    -q --quiet     don't print anything
-    -v --verbose   print everything
+    -f --force      for `peru sync`
+    -h --help       what is even happening here?
+    --no-overrides  for `peru sync`
+    --no-sync       skip the sync at the end
+    -j N --jobs N   max number of parallel fetches
+    -q --quiet      don't print anything
+    -v --verbose    print everything
 ''')
 def do_reup(params):
     names = params.args['<modules>']
@@ -119,7 +119,7 @@ def do_reup(params):
         modules = params.scope.get_modules_for_reup(names)
     futures = [module.reup(params.runtime) for module in modules]
     yield from async.stable_gather(*futures)
-    if not params.args['--nosync']:
+    if not params.args['--no-sync']:
         # Do an automatic sync. Reparse peru.yaml to get the new revs.
         new_scope, new_imports = parser.parse_file(params.runtime.peru_file)
         new_params = params._replace(scope=new_scope, imports=new_imports)

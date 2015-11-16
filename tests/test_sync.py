@@ -389,9 +389,9 @@ class SyncTest(unittest.TestCase):
         # Make sure 'override list' gives the same output as 'override'.
         output = run_peru_command(['override', 'list'], self.test_dir)
         self.assertEqual(output, 'foo: {}\n'.format(override_dir))
-        # Run the sync with --nooverrides and confirm nothing changes. Also
+        # Run the sync with --no-overrides and confirm nothing changes. Also
         # check that there's no overrides-related output.
-        output = self.do_integration_test(['sync', '--nooverrides'],
+        output = self.do_integration_test(['sync', '--no-overrides'],
                                           {'foo': 'bar'})
         self.assertNotIn('overrides', output)
         # Now run the sync normally and confirm that the override worked. Also
