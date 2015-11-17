@@ -66,4 +66,4 @@ build_script:
   - "echo NO-OP"
 
 test_script:
-  - "%CMD_IN_ENV% test.py"
+  - "%CMD_IN_ENV% python test.py"
