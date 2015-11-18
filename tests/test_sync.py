@@ -177,6 +177,32 @@ class SyncTest(unittest.TestCase):
         self.do_integration_test(
             ['sync'], {'where_c_put_b/where_b_put_a/afile': 'stuff'})
 
+    def test_recursive_import_error(self):
+        '''Errors that happen inside recursively-fetched targets should have
+        context information about the targets that caused them.'''
+        # Project NOTABLE_NAME has a BAD_MODULE in it.
+        dir_notable = shared.create_dir()
+        # Create the peru.yaml file for NOTABLE_NAME.
+        self.write_yaml('''\
+            imports:
+                BAD_MODULE: ./
+            git module BAD_MODULE:
+                bad_field: stuff
+            ''', dir=dir_notable)
+        # Now make our test project import it.
+        self.write_yaml('''\
+            imports:
+                NOTABLE_NAME: ./
+
+            cp module NOTABLE_NAME:
+                path: {}
+            ''', dir_notable)
+        try:
+            run_peru_command(['sync'], self.test_dir)
+        except peru.error.PrintableError as e:
+            self.assertIn("NOTABLE_NAME", e.message)
+            self.assertIn("BAD_MODULE", e.message)
+
     def test_peru_file_field(self):
         # Project B contains project A
         dir_a = shared.create_dir({'afile': 'stuff'})

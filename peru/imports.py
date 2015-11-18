@@ -3,6 +3,7 @@ from pathlib import Path
 
 from .async import stable_gather
 from . import compat
+from .error import error_context
 from .merge import merge_imports_tree
 
 
@@ -33,11 +34,13 @@ def get_trees(runtime, scope, targets):
 @asyncio.coroutine
 def get_tree(runtime, scope, target_str):
     module, rules = yield from scope.parse_target(runtime, target_str)
-    tree = yield from module.get_tree(runtime)
-    if module.default_rule:
-        tree = yield from module.default_rule.get_tree(runtime, tree)
-    for rule in rules:
-        tree = yield from rule.get_tree(runtime, tree)
+    context = 'target "{}"'.format(target_str)
+    with error_context(context):
+        tree = yield from module.get_tree(runtime)
+        if module.default_rule:
+            tree = yield from module.default_rule.get_tree(runtime, tree)
+        for rule in rules:
+            tree = yield from rule.get_tree(runtime, tree)
     return tree
 
 
