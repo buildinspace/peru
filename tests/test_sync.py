@@ -197,11 +197,10 @@ class SyncTest(unittest.TestCase):
             cp module NOTABLE_NAME:
                 path: {}
             ''', dir_notable)
-        try:
+        with self.assertRaises(peru.error.PrintableError) as cm:
             run_peru_command(['sync'], self.test_dir)
-        except peru.error.PrintableError as e:
-            self.assertIn("NOTABLE_NAME", e.message)
-            self.assertIn("BAD_MODULE", e.message)
+        self.assertIn("NOTABLE_NAME", cm.exception.message)
+        self.assertIn("BAD_MODULE", cm.exception.message)
 
     def test_peru_file_field(self):
         # Project B contains project A
