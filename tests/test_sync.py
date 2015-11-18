@@ -64,6 +64,27 @@ class SyncTest(unittest.TestCase):
         with self.assertRaises(peru.cache.DirtyWorkingCopyError):
             self.do_integration_test(['sync'], {'subdir/foo': 'bar'})
 
+    def test_no_cache_flag(self):
+        foo_dir = shared.create_dir({'foo': 'bar'})
+        self.write_yaml('''\
+            cp module foo:
+                path: {}
+
+            imports:
+                foo: subdir
+            ''', foo_dir)
+
+        # Sync the foo module once.
+        self.do_integration_test(['sync'], {'subdir/foo': 'bar'})
+
+        # Change the contents of foo and sync again. Because foo is cached, we
+        # shouldn't see any changes.
+        shared.write_files(foo_dir, {'foo': 'woo'})
+        self.do_integration_test(['sync'], {'subdir/foo': 'bar'})
+
+        # Now sync with --no-cache. This time we should see the changes.
+        self.do_integration_test(['sync', '--no-cache'], {'subdir/foo': 'woo'})
+
     def test_sync_from_subdir(self):
         module_dir = shared.create_dir({'foo': 'bar'})
         self.write_yaml('''\

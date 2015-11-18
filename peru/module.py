@@ -36,7 +36,11 @@ class Module:
         # avoid double fetching.
         cache_key_lock = runtime.cache_key_locks[key]
         with (yield from cache_key_lock):
-            if key in runtime.cache.keyval:
+            # Skip reading the cache if --no-cache is set. This is the only
+            # place in the code we check that flag. Deterministic operations
+            # like tree merging still get read from cache, because there's no
+            # reason to redo them.
+            if key in runtime.cache.keyval and not runtime.no_cache:
                 return runtime.cache.keyval[key]
             with runtime.tmp_dir() as tmp_dir:
                 yield from plugin_fetch(
@@ -44,6 +48,8 @@ class Module:
                     self.plugin_fields, tmp_dir,
                     runtime.display.get_handle(self.name))
                 tree = runtime.cache.import_tree(tmp_dir)
+            # Note that we still *write* to cache even when --no-cache is True.
+            # That way we avoid confusing results on subsequent syncs.
             runtime.cache.keyval[key] = tree
         return tree
 

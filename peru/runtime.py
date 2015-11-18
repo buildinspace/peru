@@ -33,6 +33,7 @@ class Runtime:
         self.quiet = args['--quiet']
         self.verbose = args['--verbose']
         self.no_overrides = args.get('--no-overrides', False)
+        self.no_cache = args.get('--no-cache', False)
 
         # Use a semaphore (a lock that allows N holders at once) to limit the
         # number of fetches that can run in parallel.

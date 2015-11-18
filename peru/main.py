@@ -68,7 +68,7 @@ COMMAND_DOCS = {}
 
 @peru_command('sync', '''\
 Usage:
-    peru sync [-fhqv] [-j N] [--no-overrides]
+    peru sync [-fhqv] [-j N] [--no-cache] [--no-overrides]
 
 Writes your imports to the sync directory. By default, this is the
 directory that contains your peru.yaml file. Peru is normally careful
@@ -80,6 +80,7 @@ Options:
     -f --force      overwrite existing or changed files
     -h --help       explain these confusing flags
     -j N --jobs N   max number of parallel fetches
+    --no-cache      force modules without exact revs to refetch
     --no-overrides  suppress any `peru override` settings
     -q --quiet      don't print anything
     -v --verbose    print everything
@@ -92,7 +93,8 @@ def do_sync(params):
 
 @peru_command('reup', '''\
 Usage:
-    peru reup [<modules>...] [-fhqv] [-j N] [--no-sync] [--no-overrides]
+    peru reup [<modules>...] [-fhqv] [-j N] [--no-cache] [--no-overrides]
+              [--no-sync]
 
 Updates each module in your peru.yaml file with the latest revision
 information from its source. For git, hg, and svn modules, this is the
@@ -105,6 +107,7 @@ you can prevent that with --no-sync.
 Options:
     -f --force      for `peru sync`
     -h --help       what is even happening here?
+    --no-cache      for `peru sync`
     --no-overrides  for `peru sync`
     --no-sync       skip the sync at the end
     -j N --jobs N   max number of parallel fetches
@@ -147,7 +150,7 @@ def do_clean(params):
 
 @peru_command('copy', '''\
 Usage:
-    peru copy <target> [<dest>] [-fhqv] [-j N] [--no-overrides]
+    peru copy <target> [<dest>] [-fhqv] [-j N] [--no-cache] [--no-overrides]
     peru copy --help
 
 Writes the contents of a target to a temp dir, or to a destination that
@@ -159,6 +162,7 @@ Options:
     -f --force      overwrite existing files
     -h --help       is anyone even listening?
     -j N --jobs N   max number of parallel fetches
+    --no-cache      force modules without exact revs to refetch
     --no-overrides  suppress any `peru override` settings
     -q --quiet      don't print anything
     -v --verbose    print everything

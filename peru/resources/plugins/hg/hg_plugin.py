@@ -76,7 +76,7 @@ def already_has_rev(repo, rev):
     # Only return True for revs that are absolute hashes.
     # We could consider treating tags the way, but...
     # 1) Tags actually can change.
-    # 2) It's not clear at a glance whether something is a branch or a hash.
+    # 2) It's not clear at a glance whether something is a branch or a tag.
     # Keep it simple.
     return output.split()[0] == rev
 
