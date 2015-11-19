@@ -1,4 +1,5 @@
 import asyncio
+import json
 import os
 
 from .cache import compute_key
@@ -68,9 +69,20 @@ class Module:
     def parse_peru_file(self, runtime):
         from . import parser  # avoid circular imports
         tree = yield from self._get_base_tree(runtime)
-        try:
-            yaml = runtime.cache.read_file(tree, self.peru_file)
-        except FileNotFoundError:
+        cache_key = compute_key({
+            'key_type': 'module_peru_file',
+            'input_tree': tree,
+            'file_name': self.peru_file,
+        })
+        if cache_key in runtime.cache.keyval:
+            yaml = json.loads(runtime.cache.keyval[cache_key])
+        else:
+            try:
+                yaml = runtime.cache.read_file(tree, self.peru_file)
+            except FileNotFoundError:
+                yaml = None
+            runtime.cache.keyval[cache_key] = json.dumps(yaml)
+        if yaml is None:
             # This module is not a peru project.
             return (None, None)
         prefix = self.name + scope.SCOPE_SEPARATOR
