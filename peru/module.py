@@ -78,7 +78,8 @@ class Module:
             yaml = json.loads(runtime.cache.keyval[cache_key])
         else:
             try:
-                yaml = runtime.cache.read_file(tree, self.peru_file)
+                yaml_bytes = runtime.cache.read_file(tree, self.peru_file)
+                yaml = yaml_bytes.decode('utf8')
             except FileNotFoundError:
                 yaml = None
             runtime.cache.keyval[cache_key] = json.dumps(yaml)
