@@ -120,7 +120,7 @@ def assert_clean_tmp(peru_dir):
         assert not tmpfiles, 'cache tmp dir is not clean: ' + str(tmpfiles)
 
 
-def run_peru_command(args, cwd, *, env=None):
+def run_peru_command(args, cwd, *, env=None, expected_error=None):
     old_cwd = os.getcwd()
     old_stdout = sys.stdout
     os.chdir(cwd)
@@ -131,10 +131,16 @@ def run_peru_command(args, cwd, *, env=None):
         # the Main class. This lets us check that the right types of exceptions
         # make it up to the top, so we don't need to check specific output
         # strings.
-        peru.main.main(argv=args, env=env or {}, nocatch=True)
+        ret = peru.main.main(argv=args, env=env or {}, nocatch=True)
     finally:
         os.chdir(old_cwd)
         sys.stdout = old_stdout
+    if expected_error is not None:
+        allowed_returns = {expected_error}
+    else:
+        allowed_returns = {0, None}
+    assert ret in allowed_returns, \
+        'run_peru_command() returned an error: ' + repr(ret)
     return capture_stream.getvalue()
 
 

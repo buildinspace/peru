@@ -592,7 +592,7 @@ class SyncTest(unittest.TestCase):
 
         buffer = io.StringIO()
         with redirect_stderr(buffer):
-            run_peru_command(['foobarbaz'], self.test_dir)
+            run_peru_command(['foobarbaz'], self.test_dir, expected_error=1)
         self.assertEqual(peru.main.__doc__, buffer.getvalue())
 
     def test_version(self):
