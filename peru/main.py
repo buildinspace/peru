@@ -147,7 +147,7 @@ def do_clean(params):
 
 @peru_command('copy', '''\
 Usage:
-    peru copy <target> [<dest>] [-fhqv] [-j N]
+    peru copy <target> [<dest>] [-fhqv] [-j N] [--no-overrides]
     peru copy --help
 
 Writes the contents of a target to a temp dir, or to a destination that
@@ -156,13 +156,15 @@ a module (foo), a module followed by named rules (foo|bar|baz), or even
 a module defined within another module (foo.bing).
 
 Options:
-    -f --force     overwrite existing files
-    -h --help      is anyone even listening?
-    -j N --jobs N  max number of parallel fetches
-    -q --quiet     don't print anything
-    -v --verbose   print everything
+    -f --force      overwrite existing files
+    -h --help       is anyone even listening?
+    -j N --jobs N   max number of parallel fetches
+    --no-overrides  suppress any `peru override` settings
+    -q --quiet      don't print anything
+    -v --verbose    print everything
 ''')
 def do_copy(params):
+    print_overrides(params.runtime)
     if not params.args['<dest>']:
         dest = tempfile.mkdtemp(prefix='peru_copy_')
     else:
