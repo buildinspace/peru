@@ -158,6 +158,12 @@ class Cache:
         if not os.path.exists(dest):
             os.makedirs(dest)
 
+        # The fast path. If the previous tree is the same as the current one,
+        # and no files have changed at all, short-circuit.
+        if self._no_changes(tree, previous_tree, dest):
+            return
+
+        # The slow allows deletions.
         self._read_tree_and_error_on_modified(previous_tree, dest, force)
 
         # Check out the new tree using read-tree's -u flag. This cleans up
@@ -174,6 +180,21 @@ class Cache:
 
         # Recreate any missing files.
         self._git('checkout-index', '--all', work_tree=dest)
+
+    def _no_changes(self, tree, previous_tree, dest):
+        '''Peru needs to make no-op syncs extra fast, so that you can sync at
+        the start of random scripts without slowing them down. The slowest
+        thing peru does is shell out to git, so we try to keep the no-op sync
+        down to a single git operation (which detects that the sync is indeed a
+        no-op). This function is that one fast path operation.'''
+        if tree != previous_tree:
+            return False
+        # TODO: Use a cached index here, instead of recreating it.
+        self._read_tree(tree, dest)
+        diff_output = self._git('diff-files', work_tree=dest)
+        if diff_output:
+            return False
+        return True
 
     def _read_tree_and_error_on_modified(self, tree, dest, force):
         self._read_tree(tree, dest)
