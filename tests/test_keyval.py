@@ -1,11 +1,9 @@
-import unittest
-
 import shared
 
 from peru.keyval import KeyVal
 
 
-class KeyValTest(unittest.TestCase):
+class KeyValTest(shared.PeruTest):
 
     def test_keyval(self):
         root = shared.create_dir()

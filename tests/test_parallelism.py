@@ -1,5 +1,4 @@
 from textwrap import dedent
-import unittest
 
 from peru import plugin
 
@@ -14,7 +13,7 @@ def assert_parallel(n):
             n, 'job' if n == 1 else 'jobs', plugin.DEBUG_PARALLEL_MAX))
 
 
-class ParallelismTest(unittest.TestCase):
+class ParallelismTest(shared.PeruTest):
 
     def setUp(self):
         # Make sure nothing is fishy with the jobs counter, and reset the max.

@@ -1,8 +1,10 @@
+import asyncio
 import textwrap
 
 from .cache import compute_key, MergeConflictError
 
 
+@asyncio.coroutine
 def merge_imports_tree(cache, imports, target_trees, base_tree=None):
     '''Take an Imports struct and a dictionary of resolved trees and merge the
     unified imports tree. If base_tree is supplied, merge that too. There are a
@@ -20,11 +22,11 @@ def merge_imports_tree(cache, imports, target_trees, base_tree=None):
     # We always want to merge imports in the same order, so that any conflicts
     # we run into will be deterministic. Sort the imports alphabetically by
     # target name.
-    unified_tree = base_tree or cache.get_empty_tree()
+    unified_tree = base_tree or (yield from cache.get_empty_tree())
     for target, paths in imports.items():
         for path in paths:
             try:
-                unified_tree = cache.merge_trees(
+                unified_tree = yield from cache.merge_trees(
                     unified_tree, target_trees[target], path)
             except MergeConflictError as e:
                 message = 'Merge conflict in import "{}" at "{}":\n\n{}'

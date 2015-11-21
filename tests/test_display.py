@@ -1,12 +1,12 @@
 import io
 import re
 import textwrap
-import unittest
 
 from peru import display
+import shared
 
 
-class DisplayTest(unittest.TestCase):
+class DisplayTest(shared.PeruTest):
     def test_quiet_display(self):
         output = io.StringIO()
         disp = display.QuietDisplay(output)

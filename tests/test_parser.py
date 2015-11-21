@@ -1,13 +1,13 @@
 from textwrap import dedent
-import unittest
 
 from peru import parser
 from peru.parser import parse_string, ParserError
 from peru.module import Module
 from peru.rule import Rule
+import shared
 
 
-class ParserTest(unittest.TestCase):
+class ParserTest(shared.PeruTest):
 
     def test_parse_empty_file(self):
         scope, imports = parse_string('')

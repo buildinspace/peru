@@ -36,7 +36,7 @@ def test_plugin_get_reup_fields(context, type, fields):
         plugin.plugin_get_reup_fields(context, type, fields, handle))
 
 
-class PluginsTest(unittest.TestCase):
+class PluginsTest(shared.PeruTest):
 
     def setUp(self):
         self.content = {"some": "stuff", "foo/bar": "baz"}

@@ -1,11 +1,11 @@
 import collections
 import re
-import unittest
 
 import peru.glob as glob
+import shared
 
 
-class GlobTest(unittest.TestCase):
+class GlobTest(shared.PeruTest):
     def test_split_on_stars_interpreting_backslashes(self):
         cases = [
             ('', ['']),

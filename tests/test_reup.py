@@ -1,12 +1,11 @@
 import os
 from textwrap import dedent
-import unittest
 
 import shared
 from shared import run_peru_command, assert_contents
 
 
-class ReupIntegrationTest(unittest.TestCase):
+class ReupIntegrationTest(shared.PeruTest):
     def setUp(self):
         self.foo_dir = shared.create_dir({'a': 'b'})
         self.foo_repo = shared.GitRepo(self.foo_dir)

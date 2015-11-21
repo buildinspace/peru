@@ -1,12 +1,11 @@
 import os
-import unittest
 
 import peru.runtime as runtime
 
 import shared
 
 
-class RuntimeTest(unittest.TestCase):
+class RuntimeTest(shared.PeruTest):
     def test_find_peru_file(self):
         test_dir = shared.create_dir({
             'a/find_me': 'junk',

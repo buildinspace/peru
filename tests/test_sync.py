@@ -3,7 +3,6 @@ import io
 import os
 import sys
 import textwrap
-import unittest
 
 import peru.cache
 import peru.compat
@@ -20,7 +19,7 @@ PERU_MODULE_ROOT = os.path.abspath(
     os.path.join(os.path.dirname(peru.__file__)))
 
 
-class SyncTest(unittest.TestCase):
+class SyncTest(shared.PeruTest):
 
     def setUp(self):
         self.test_dir = shared.create_dir()

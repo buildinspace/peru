@@ -1,3 +1,4 @@
+import contextlib
 import os
 import shutil
 import tempfile
@@ -46,3 +47,11 @@ class KeyVal:
         fd, path = tempfile.mkstemp(dir=self._tmp_dir)
         os.close(fd)
         return path
+
+    @contextlib.contextmanager
+    def tmp_dir_context(self):
+        try:
+            path = tempfile.mkdtemp(dir=self._tmp_dir)
+            yield path
+        finally:
+            shutil.rmtree(path, ignore_errors=True)

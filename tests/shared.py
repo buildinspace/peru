@@ -1,4 +1,7 @@
+import asyncio
 import difflib
+import functools
+import inspect
 import io
 import os
 from pathlib import Path
@@ -7,12 +10,25 @@ import subprocess
 import sys
 import tempfile
 import textwrap
+import unittest
 
+import peru.async
 from peru.compat import makedirs
 import peru.main
 
 
 test_resources = Path(__file__).parent.resolve() / 'resources'
+
+
+def make_synchronous(f):
+    '''This lets you turn coroutines into regular functions and call them from
+    synchronous code, so for example test methods can be coroutines. It does
+    NOT let you call coroutines as regular functions *inside* another
+    coroutine. That will raise an "Event loop is running" error.'''
+    @functools.wraps(f)
+    def wrapper(*args, **kwargs):
+        return peru.async.run_task(asyncio.coroutine(f)(*args, **kwargs))
+    return wrapper
 
 
 def tmp_dir():
@@ -103,9 +119,10 @@ def assert_contents(dir, expected_contents, *, message='', excludes=(),
     raise AssertionError(assertion_msg)
 
 
+@asyncio.coroutine
 def assert_tree_contents(cache, tree, expected_contents, **kwargs):
     export_dir = create_dir()
-    cache.export_tree(tree, export_dir)
+    yield from cache.export_tree(tree, export_dir)
     assert_contents(export_dir, expected_contents, **kwargs)
 
 
@@ -209,3 +226,21 @@ def assert_executable(path):
 
 def assert_not_executable(path):
     _check_executable(path, False)
+
+
+class PeruTest(unittest.TestCase):
+    '''Behaves like a standard TestCase, but checks to make sure that we don't
+    accidentally define any generator tests. (Normally using yield in a test
+    turns it into a silent no-op. Very sad.)'''
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        # Complain if it looks like an important test function is a generator.
+        for name in dir(self):
+            is_test = (name.startswith('test') or
+                       name in ('setUp', 'tearDown'))
+            is_generator = inspect.isgeneratorfunction(getattr(self, name))
+            if is_test and is_generator:
+                raise TypeError("{}() is a generator, which makes it a silent "
+                                "no-op!\nUse @make_synchronous or something."
+                                .format(type(self).__name__ + '.' + name))

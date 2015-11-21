@@ -1,5 +1,4 @@
 from textwrap import dedent
-import unittest
 
 import yaml
 
@@ -15,7 +14,7 @@ yaml_template = dedent("""\
     """)
 
 
-class EditYamlTest(unittest.TestCase):
+class EditYamlTest(shared.PeruTest):
 
     def test_replace(self):
         start_yaml = yaml_template.format("foo")

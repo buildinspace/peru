@@ -1,11 +1,11 @@
 import asyncio
-import unittest
 
 from peru.async import run_task
 import peru.scope
+import shared
 
 
-class ScopeTest(unittest.TestCase):
+class ScopeTest(shared.PeruTest):
     def test_parse_target(self):
         scope = scope_tree_to_scope({
             'modules': {

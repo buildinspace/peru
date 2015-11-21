@@ -1,7 +1,6 @@
 import os
 import shutil
 import textwrap
-import unittest
 
 from peru.compat import makedirs
 from peru.runtime import CommandLineError
@@ -9,7 +8,7 @@ from peru.runtime import CommandLineError
 import shared
 
 
-class PathsTest(unittest.TestCase):
+class PathsTest(shared.PeruTest):
 
     def setUp(self):
         self.test_root = shared.create_dir()

@@ -175,7 +175,8 @@ def do_copy(params):
         dest = params.args['<dest>']
     tree = yield from imports.get_tree(
         params.runtime, params.scope, params.args['<target>'])
-    params.runtime.cache.export_tree(tree, dest, force=params.runtime.force)
+    yield from params.runtime.cache.export_tree(
+        tree, dest, force=params.runtime.force)
     if not params.args['<dest>']:
         print(dest)
 
@@ -335,7 +336,7 @@ def main(*, argv=None, env=None, nocatch=False):
         return ret
 
     try:
-        runtime = Runtime(args, env)
+        runtime = async.run_task(Runtime(args, env))
         if not args['--quiet']:
             parser.warn_duplicate_keys(runtime.peru_file)
         scope, imports = parser.parse_file(runtime.peru_file)

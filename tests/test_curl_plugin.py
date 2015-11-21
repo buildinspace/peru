@@ -2,7 +2,6 @@ import hashlib
 import importlib.machinery
 import io
 from os.path import abspath, join, dirname
-import unittest
 
 import peru
 import shared
@@ -27,7 +26,7 @@ class MockRequest:
         return self._response_buffer.read(*args)
 
 
-class CurlPluginTest(unittest.TestCase):
+class CurlPluginTest(shared.PeruTest):
     def test_format_bytes(self):
         self.assertEqual('0B', curl_plugin.format_bytes(0))
         self.assertEqual('999B', curl_plugin.format_bytes(999))

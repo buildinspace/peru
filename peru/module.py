@@ -24,7 +24,9 @@ class Module:
     def _get_base_tree(self, runtime):
         override_path = runtime.get_override(self.name)
         if override_path is not None:
-            return self._get_override_tree(runtime, override_path)
+            override_tree = yield from self._get_override_tree(
+                runtime, override_path)
+            return override_tree
 
         key = compute_key({
             'type': self.type,
@@ -48,7 +50,7 @@ class Module:
                     runtime.get_plugin_context(), self.type,
                     self.plugin_fields, tmp_dir,
                     runtime.display.get_handle(self.name))
-                tree = runtime.cache.import_tree(tmp_dir)
+                tree = yield from runtime.cache.import_tree(tmp_dir)
             # Note that we still *write* to cache even when --no-cache is True.
             # That way we avoid confusing results on subsequent syncs.
             runtime.cache.keyval[key] = tree
@@ -78,7 +80,8 @@ class Module:
             yaml = json.loads(runtime.cache.keyval[cache_key])
         else:
             try:
-                yaml_bytes = runtime.cache.read_file(tree, self.peru_file)
+                yaml_bytes = yield from runtime.cache.read_file(
+                    tree, self.peru_file)
                 yaml = yaml_bytes.decode('utf8')
             except FileNotFoundError:
                 yaml = None
@@ -106,6 +109,7 @@ class Module:
             for line in output_lines:
                 runtime.display.print(line)
 
+    @asyncio.coroutine
     def _get_override_tree(self, runtime, path):
         if not os.path.exists(path):
             raise PrintableError(
@@ -115,4 +119,5 @@ class Module:
             raise PrintableError(
                 "override path for module '{}' is not a directory: {}".format(
                     self.name, path))
-        return runtime.cache.import_tree(path)
+        tree = yield from runtime.cache.import_tree(path)
+        return tree

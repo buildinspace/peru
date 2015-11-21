@@ -1,11 +1,10 @@
 import os
 from pathlib import Path
-import unittest
 
 import shared
 
 
-class SharedTestCodeTest(unittest.TestCase):
+class SharedTestCodeTest(shared.PeruTest):
 
     def test_create_dir(self):
         empty_dir = shared.create_dir()

@@ -1,11 +1,10 @@
 import os
-import unittest
 
 import peru.compat as compat
 import shared
 
 
-class CompatTest(unittest.TestCase):
+class CompatTest(shared.PeruTest):
 
     def test_makedirs(self):
         tmp_dir = shared.tmp_dir()
