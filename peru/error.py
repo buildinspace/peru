@@ -7,7 +7,7 @@ class PrintableError(Exception):
         self.message = message.format(*args, **kwargs)
 
     def __str__(self):
-        return self.message_with_context()
+        return self.message
 
     def add_context(self, context):
         self.message = 'In {}:\n{}'.format(context, indent(self.message, '  '))
