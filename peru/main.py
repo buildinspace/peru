@@ -348,3 +348,7 @@ def main(*, argv=None, env=None, nocatch=False):
             raise
         print_red(e.message, end='' if e.message.endswith('\n') else '\n')
         return 1
+
+
+if __name__ == '__main__':
+    main()
