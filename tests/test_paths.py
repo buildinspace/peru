@@ -99,6 +99,6 @@ class PathsTest(unittest.TestCase):
     def test_default_file_name(self):
         shutil.move(self.peru_file, os.path.join(self.project_dir, 'xxx'))
         shared.run_peru_command(['--file-basename', 'xxx', 'sync'],
-                                cwd=self.project_dir)
+                                cwd=self.cwd)
         self.assert_success(self.project_dir, self.state_dir, self.cache_dir,
                             more_excludes=['xxx'])
