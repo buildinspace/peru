@@ -319,25 +319,54 @@ class _Cache:
             return unified_tree
 
     @asyncio.coroutine
-    def export_tree(self, tree, dest, previous_tree=None, *, force=False):
+    def export_tree(self, tree, dest, previous_tree=None, *, force=False,
+                    previous_index_file=None):
+        '''This method is the core of `peru sync`. If the contents of "dest"
+        match "previous_tree", then export_tree() updates them to match "tree".
+        If not, it raises an error and doesn't touch any files.
+
+        Because it's important for the no-op `peru sync` to be fast, we make an
+        extra optimization for this case. The caller passes in the path to the
+        index file used during the last sync, which should already reflect
+        "previous_tree". That allows us to skip the read-tree and update-index
+        calls, so all we have to do is a single diff-files operation to check
+        for cleanliness.
+
+        It's difficult to predict all the different states the index file might
+        end up in under different error conditions, not only now but also in
+        past and future git versions. For safety and simplicity, if any
+        operation returns an error code, we delete the supplied index file.'''
+
         tree = tree or (yield from self.get_empty_tree())
         previous_tree = previous_tree or (yield from self.get_empty_tree())
 
         if not os.path.exists(dest):
             os.makedirs(dest)
 
-        # TODO: Use a cached index file for the fast path.
-        with self.clean_git_session(dest) as session:
-            yield from session.read_tree_and_stats_into_index(previous_tree)
+        with contextlib.ExitStack() as stack:
+
+            # If the caller gave us an index file, create a git session around
+            # it. Otherwise, create a clean one. Note that because we pretty
+            # aggressively delete the index file whenever there are errors, we
+            # allow the caller to pass in a path to a nonexistent file, and
+            # just ignore it.
+            if previous_index_file and os.path.exists(previous_index_file):
+                session = GitSession(
+                    self.trees_path, previous_index_file, dest)
+                stack.enter_context(delete_if_error(previous_index_file))
+            else:
+                session = stack.enter_context(self.clean_git_session(dest))
+                yield from session.read_tree_and_stats_into_index(
+                    previous_tree)
 
             # The fast path. If the previous tree is the same as the current
             # one, and no files have changed at all, short-circuit.
-            matches_index = yield from session.working_copy_matches_index()
-            if (previous_tree == tree and matches_index):
-                return
+            if previous_tree == tree:
+                if (yield from session.working_copy_matches_index()):
+                    return
 
-            # The rest of this method is the slow path, which we hit when
-            # imports have changed.
+            # Everything below is the slow path. Some files have changed, or
+            # the tree has changed, or both.
             modified = yield from session.get_modified_files_skipping_deletes()
             if modified and not force:
                 raise DirtyWorkingCopyError(
@@ -345,7 +374,7 @@ class _Cache:
                     '(use --force to overwrite):\n\n' +
                     _format_file_lines(modified))
 
-            # Do all the file updates and deletions needed for `tree`.
+            # Do all the file updates and deletions needed to produce `tree`.
             try:
                 yield from session.read_tree_updating_working_copy(tree, force)
             except GitError:
@@ -455,6 +484,18 @@ class _Cache:
             return tree
         else:
             return None
+
+
+@contextlib.contextmanager
+def delete_if_error(path):
+    '''If any exception is raised inside the context, delete the file at the
+    given path, and allow the exception to continue.'''
+    try:
+        yield
+    except:
+        if os.path.exists(path):
+            os.remove(path)
+        raise
 
 
 def _format_file_lines(files):
