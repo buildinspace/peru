@@ -1,4 +1,5 @@
 import asyncio
+import os
 from pathlib import Path
 
 from .async import stable_gather
@@ -11,8 +12,10 @@ from .merge import merge_imports_tree
 def checkout(runtime, scope, imports, path):
     imports_tree = yield from get_imports_tree(runtime, scope, imports)
     last_imports_tree = _get_last_imports(runtime)
+    index = _last_imports_index(runtime)
     yield from runtime.cache.export_tree(
-        imports_tree, path, last_imports_tree, force=runtime.force)
+        imports_tree, path, last_imports_tree, force=runtime.force,
+        previous_index_file=index)
     _set_last_imports(runtime, imports_tree)
 
 
@@ -64,3 +67,7 @@ def _set_last_imports(runtime, tree):
     compat.makedirs(_last_imports_path(runtime).parent)
     with _last_imports_path(runtime).open('w') as f:
         f.write(tree)
+
+
+def _last_imports_index(runtime):
+    return os.path.join(runtime.state_dir, 'lastimports.index')

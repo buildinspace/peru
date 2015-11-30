@@ -13,6 +13,14 @@ from .error import PrintableError
 from .keyval import KeyVal
 
 
+# git output modes
+TEXT_MODE = object()
+BINARY_MODE = object()
+
+# for tests
+DEBUG_GIT_COMMAND_COUNT = 0
+
+
 def compute_key(data):
     # To hash this dictionary of fields, serialize it as a JSON string, and
     # take the SHA1 of that string. Dictionary key order is unspecified, so
@@ -25,11 +33,6 @@ def compute_key(data):
     sha1 = hashlib.sha1()
     sha1.update(json_representation.encode("utf8"))
     return sha1.hexdigest()
-
-
-# git output modes
-TEXT_MODE = object()
-BINARY_MODE = object()
 
 
 class GitSession:
@@ -50,6 +53,8 @@ class GitSession:
 
     @asyncio.coroutine
     def git(self, *args, input=None, output_mode=TEXT_MODE):
+        global DEBUG_GIT_COMMAND_COUNT
+        DEBUG_GIT_COMMAND_COUNT += 1
         command = ['git']
         command.append('--git-dir=' + self.git_dir)
         if self.working_copy:
@@ -346,14 +351,17 @@ class _Cache:
         with contextlib.ExitStack() as stack:
 
             # If the caller gave us an index file, create a git session around
-            # it. Otherwise, create a clean one. Note that because we pretty
-            # aggressively delete the index file whenever there are errors, we
-            # allow the caller to pass in a path to a nonexistent file, and
-            # just ignore it.
-            if previous_index_file and os.path.exists(previous_index_file):
+            # it. Otherwise, create a clean one. Note that because we delete
+            # the index file whenever there are errors, we also allow the
+            # caller to pass in a path to a nonexistent file. In that case we
+            # have to pay the cost to recreate it.
+            if previous_index_file:
                 session = GitSession(
                     self.trees_path, previous_index_file, dest)
                 stack.enter_context(delete_if_error(previous_index_file))
+                if not os.path.exists(previous_index_file):
+                    yield from session.read_tree_and_stats_into_index(
+                        previous_tree)
             else:
                 session = stack.enter_context(self.clean_git_session(dest))
                 yield from session.read_tree_and_stats_into_index(

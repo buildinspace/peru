@@ -667,6 +667,58 @@ class SyncTest(shared.PeruTest):
         assert get_timestamp() > original_timestamp, \
             "Expected an updated timestamp."
 
+    def test_number_of_git_commands(self):
+        '''A no-op sync should be a single git command. Also check that index
+        files are deleted after any sync error.'''
+        module_dir = shared.create_dir({'foo': 'bar'})
+        self.write_yaml('''\
+            cp module foo:
+                path: {}
+
+            imports:
+                foo: subdir
+            ''', module_dir)
+        index_path = os.path.join(self.test_dir, '.peru/lastimports.index')
+
+        # The first sync should take multiple operations and create a
+        # lastimports.index file.
+        peru.cache.DEBUG_GIT_COMMAND_COUNT = 0
+        self.do_integration_test(['sync'], {'subdir/foo': 'bar'})
+        assert peru.cache.DEBUG_GIT_COMMAND_COUNT > 1, \
+            'The first sync should take multiple operations.'
+        assert os.path.exists(index_path), \
+            'The first sync should create an index file.'
+
+        # The second sync should reuse the index file and only take one
+        # operation.
+        peru.cache.DEBUG_GIT_COMMAND_COUNT = 0
+        self.do_integration_test(['sync'], {'subdir/foo': 'bar'})
+        assert peru.cache.DEBUG_GIT_COMMAND_COUNT == 1, \
+            'The second sync should take only one operation.'
+        assert os.path.exists(index_path), \
+            'The second sync should preserve the index file.'
+
+        # Now force an error. This should delete the index file.
+        with open(os.path.join(self.test_dir, 'subdir/foo'), 'w') as f:
+            f.write('dirty')
+        with self.assertRaises(peru.cache.DirtyWorkingCopyError):
+            run_peru_command(['sync'], self.test_dir)
+        assert not os.path.exists(index_path), \
+            'The error should delete the index file.'
+
+        # Fix the error and resync with new module contents. This should
+        # recreate the index file with the current tree and then succeed,
+        # rather than using an empty index and treating the current files as
+        # conflicting.
+        with open(os.path.join(self.test_dir, 'subdir/foo'), 'w') as f:
+            f.write('bar')
+        with open(os.path.join(module_dir, 'foo'), 'w') as f:
+            f.write('new bar')
+        self.do_integration_test(['sync', '--no-cache'],
+                                 {'subdir/foo': 'new bar'})
+        assert os.path.exists(index_path), \
+            'The index should have been recreated.'
+
 
 @contextlib.contextmanager
 def redirect_stderr(f):
