@@ -398,6 +398,10 @@ class _Cache:
                         'Imports would overwrite preexisting files '
                         '(use --force to write anyway):\n\n' +
                         _format_file_lines(existing_new_files))
+                else:
+                    # We must've failed for some other reason. Let the error
+                    # keep going.
+                    raise
 
             # Recreate any missing files.
             yield from session.checkout_files_from_index()
