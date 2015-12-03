@@ -522,7 +522,7 @@ def _format_file_lines(files):
     return lines
 
 
-class GitError(RuntimeError):
+class GitError(Exception):
     def __init__(self, command, errorcode, stdout, stderr):
         self.command = " ".join(command)
         self.errorcode = errorcode
@@ -532,7 +532,7 @@ class GitError(RuntimeError):
             git command "{}" returned error code {}.
             stdout: {}
             stderr: {}''').format(command, errorcode, stdout, stderr)
-        RuntimeError.__init__(self, message)
+        Exception.__init__(self, message)
 
 
 class ModifyTreeError(PrintableError):
