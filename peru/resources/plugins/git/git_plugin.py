@@ -1,9 +1,9 @@
 #! /usr/bin/env python3
 
 import configparser
+import hashlib
 import os
 import subprocess
-import urllib.parse
 
 URL = os.environ['PERU_MODULE_URL']
 REV = os.environ['PERU_MODULE_REV'] or 'master'
@@ -55,8 +55,10 @@ def clone_if_needed(url):
 
 
 def repo_cache_path(url):
-    escaped = urllib.parse.quote(url, safe='')
-    return os.path.join(CACHE_ROOT, escaped)
+    # If we just concatenate the escaped repo URL into the path, we start to
+    # run up against the 260-character path limit on Windows.
+    url_hash = hashlib.sha1(url.encode()).hexdigest()
+    return os.path.join(CACHE_ROOT, url_hash)
 
 
 def clone_and_maybe_print(url):
