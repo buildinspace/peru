@@ -56,7 +56,7 @@ def clone_if_needed(url):
         except:
             # Delete the whole thing if the clone failed to avoid confusing the
             # cache.
-            shutil.rmtree(repo_path)
+            shutil.rmtree(repo_path, ignore_errors=True)
             raise
     return repo_path
 

@@ -45,7 +45,7 @@ def clone_if_needed(url, verbose=False):
         except:
             # Delete the whole thing if the clone failed to avoid confusing the
             # cache.
-            shutil.rmtree(CACHE_PATH)
+            shutil.rmtree(CACHE_PATH, ignore_errors=True)
             raise
         configure(CACHE_PATH)
 
