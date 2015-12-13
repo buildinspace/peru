@@ -2,7 +2,6 @@
 
 import configparser
 import os
-import shutil
 import subprocess
 import urllib.parse
 
@@ -51,13 +50,7 @@ def has_clone(url):
 def clone_if_needed(url):
     repo_path = repo_cache_path(url)
     if not has_clone(url):
-        try:
-            git('clone', '--mirror', '--progress', url, repo_path)
-        except:
-            # Delete the whole thing if the clone failed to avoid confusing the
-            # cache.
-            shutil.rmtree(repo_path, ignore_errors=True)
-            raise
+        git('clone', '--mirror', '--progress', url, repo_path)
     return repo_path
 
 

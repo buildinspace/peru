@@ -1,7 +1,6 @@
 #! /usr/bin/env python3
 
 import os
-import shutil
 import subprocess
 import textwrap
 
@@ -38,15 +37,9 @@ def hg(*args, hg_dir=None, capture_output=False):
 
 def clone_if_needed(url, verbose=False):
     if not os.path.exists(os.path.join(CACHE_PATH, '.hg')):
-        try:
-            if verbose:
-                print('hg clone', url)
-            hg('clone', '--noupdate', url, CACHE_PATH)
-        except:
-            # Delete the whole thing if the clone failed to avoid confusing the
-            # cache.
-            shutil.rmtree(CACHE_PATH, ignore_errors=True)
-            raise
+        if verbose:
+            print('hg clone', url)
+        hg('clone', '--noupdate', url, CACHE_PATH)
         configure(CACHE_PATH)
 
 
