@@ -4,7 +4,7 @@
 # in bash, as an example of how to implement plugins in other languages, and to
 # force us to keep our plugin interface simple. Not intended for serious use.
 
-set -e
+set -e -u -o pipefail
 
 # Don't perform the copy without a source. Generally, plugins should not need
 # to worry about this, and peru should ensure that required fields are set, but
