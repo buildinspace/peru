@@ -15,7 +15,7 @@ def bzr(path, *args, capture_output=False):
         command.extend(args)
         stdout = subprocess.PIPE if capture_output else None
         process = subprocess.Popen(command, stdin=subprocess.DEVNULL,
-                                stdout=stdout, universal_newlines=True)
+                                   stdout=stdout, universal_newlines=True)
         output, _ = process.communicate()
         if process.returncode != 0:
             raise RuntimeError(
@@ -32,7 +32,8 @@ def clone_if_needed(bzr_path, url):
     if os.path.exists(os.path.join(bzr_path, '.bzr')):
         return False
     try:
-        bzr(bzr_path, 'branch', '--use-existing-dir', url, '.', capture_output=True)
+        bzr(bzr_path, 'branch', '--use-existing-dir', url, '.',
+            capture_output=True)
         return True
     except:
         shutil.rmtree(bzr_path)
