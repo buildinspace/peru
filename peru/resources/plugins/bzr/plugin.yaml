@@ -1,0 +1,8 @@
+sync exe: bzr_plugin.py
+reup exe: bzr_plugin.py
+required fields:
+    - url
+optional fields:
+    - rev
+cache fields:
+    - url
