@@ -60,10 +60,11 @@ def reup():
 
     if not clone_if_needed(cache_path, url):
         bzr(cache_path, 'pull', url)
-    output = bzr(cache_path, 'revno', capture_output=True)
+    output = bzr(cache_path, 'version-info', '--custom', '--template',
+                 '{revision_id}', capture_output=True)
 
     with open(reup_output, 'w') as output_file:
-        print('rev: "{}"'.format(output.strip()), file=output_file)
+        print('rev: {}'.format(output.strip()), file=output_file)
 
 
 def main():
