@@ -27,7 +27,7 @@ def clone_if_needed(bzr_path, url):
     if os.path.exists(os.path.join(bzr_path, '.bzr')):
         return False
     try:
-        bzr(bzr_path, 'branch', '--use-existing-dir', url, '.',
+        bzr(bzr_path, 'branch', '--use-existing-dir', '--no-tree', url, '.',
             capture_output=True)
         return True
     except:
