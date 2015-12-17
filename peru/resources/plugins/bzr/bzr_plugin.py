@@ -7,25 +7,20 @@ import subprocess
 
 
 def bzr(path, *args, capture_output=False):
-    cwd = os.getcwd()
-    os.chdir(path)
-
-    try:
-        command = ['bzr']
-        command.extend(args)
-        stdout = subprocess.PIPE if capture_output else None
-        process = subprocess.Popen(command, stdin=subprocess.DEVNULL,
-                                   stdout=stdout, universal_newlines=True)
-        output, _ = process.communicate()
-        if process.returncode != 0:
-            raise RuntimeError(
-                'Command exited with error code {0}:\n$ {1}\n{2}'.format(
-                    process.returncode,
-                    ' '.join(command),
-                    output))
-        return output
-    finally:
-        os.chdir(cwd)
+    command = ['bzr']
+    command.extend(args)
+    stdout = subprocess.PIPE if capture_output else None
+    process = subprocess.Popen(command, stdin=subprocess.DEVNULL,
+                               stdout=stdout, cwd=path,
+                               universal_newlines=True)
+    output, _ = process.communicate()
+    if process.returncode != 0:
+        raise RuntimeError(
+            'Command exited with error code {0}:\n$ {1}\n{2}'.format(
+                process.returncode,
+                ' '.join(command),
+                output))
+    return output
 
 
 def clone_if_needed(bzr_path, url):
