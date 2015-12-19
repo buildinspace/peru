@@ -250,6 +250,30 @@ class PluginsTest(shared.PeruTest):
             self.plugin_context, 'hg', plugin_fields)
         self.assertDictEqual(expected_output, output)
 
+    def test_bzr_plugin_reup(self):
+        repo = BzrRepo(self.content_dir)
+        # Check that the bzr reup outputs what it should.
+        head = repo.run(
+            'bzr', 'version-info', '--custom', '--template', '{revision_id}'
+            ).split()[0]
+        expected_output = {'rev': head}
+        plugin_fields = {'url': self.content_dir}
+        output = test_plugin_get_reup_fields(
+            self.plugin_context, 'bzr', plugin_fields)
+        self.assertDictEqual(expected_output, output)
+        # Make a new commit and confirm that reup sees it.
+        shared.write_files(self.content_dir, {
+            'newfile': 'some more stuff'})
+        repo.run('bzr', 'add', '.')
+        repo.run('bzr', 'commit', '-qm', 'a second commit')
+        new_head = repo.run(
+            'bzr', 'version-info', '--custom', '--template', '{revision_id}'
+            ).split()[0]
+        new_expected_output = {'rev': new_head}
+        new_output = test_plugin_get_reup_fields(
+            self.plugin_context, 'bzr', plugin_fields)
+        self.assertDictEqual(new_expected_output, new_output)
+
     def test_curl_plugin_fetch(self):
         curl_content = {'myfile': 'content'}
         test_dir = shared.create_dir(curl_content)
