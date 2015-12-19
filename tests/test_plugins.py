@@ -164,6 +164,30 @@ class PluginsTest(shared.PeruTest):
         self.assertEqual(output.count('hg clone'), 0)
         self.assertEqual(output.count('hg pull'), 1)
 
+    def test_bzr_plugin_multiple_fetches(self):
+        content_repo = BzrRepo(self.content_dir)
+        head = content_repo.run(
+            'bzr', 'version-info', '--custom', '--template', '{revision_id}'
+            ).split()[0]
+        plugin_fields = {'url': self.content_dir, 'rev': head}
+        output = self.do_plugin_test('bzr', plugin_fields, self.content)
+        self.assertEqual(output.count('bzr branch'), 1)
+        self.assertEqual(output.count('bzr pull'), 0)
+        # Add a new file to the directory and commit it.
+        shared.write_files(self.content_dir, {'another': 'file'})
+        content_repo.run('bzr', 'add', '.')
+        content_repo.run('bzr', 'commit', '-qm', 'committing another file')
+        # Refetch the original rev. Bzr should not do a pull.
+        output = self.do_plugin_test('bzr', plugin_fields, self.content)
+        self.assertEqual(output.count('bzr branch'), 0)
+        self.assertEqual(output.count('bzr pull'), 0)
+        # Not delete the rev field. Git should default to master and fetch.
+        del plugin_fields['rev']
+        self.content['another'] = 'file'
+        output = self.do_plugin_test('bzr', plugin_fields, self.content)
+        self.assertEqual(output.count('bzr branch'), 0)
+        self.assertEqual(output.count('bzr pull'), 1)
+
     def test_git_plugin_reup(self):
         repo = GitRepo(self.content_dir)
         master_head = repo.run('git', 'rev-parse', 'master')
