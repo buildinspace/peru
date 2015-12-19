@@ -195,6 +195,16 @@ class HgRepo(Repo):
         self.run('hg', 'commit', '-A', '-m', 'first commit')
 
 
+class BzrRepo(Repo):
+    def __init__(self, content_dir):
+        super().__init__(content_dir)
+
+        self.run('bzr', 'init', '-q')
+        self.run('bzr', 'whoami', '--branch', 'peru <peru@example.com>')
+        self.run('bzr', 'add', '.')
+        self.run('bzr', 'commit', '-qm', 'first commit')
+
+
 class SvnRepo(Repo):
     def __init__(self, content_dir):
         # SVN can't create a repo "in place" like git or hg.

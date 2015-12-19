@@ -12,7 +12,7 @@ import unittest
 import peru.async as async
 import peru.plugin as plugin
 import shared
-from shared import SvnRepo, GitRepo, HgRepo, assert_contents
+from shared import SvnRepo, GitRepo, HgRepo, BzrRepo, assert_contents
 
 
 class TestDisplayHandle(io.StringIO):
@@ -74,6 +74,10 @@ class PluginsTest(shared.PeruTest):
     def test_hg_plugin(self):
         HgRepo(self.content_dir)
         self.do_plugin_test("hg", {"url": self.content_dir}, self.content)
+
+    def test_bzr_plugin(self):
+        BzrRepo(self.content_dir)
+        self.do_plugin_test('bzr', {'url': self.content_dir}, self.content)
 
     def test_svn_plugin(self):
         repo = SvnRepo(self.content_dir)
