@@ -134,7 +134,7 @@ class PluginsTest(shared.PeruTest):
         output = self.do_plugin_test("git", plugin_fields, self.content)
         self.assertEqual(output.count("git clone"), 0)
         self.assertEqual(output.count("git fetch"), 0)
-        # Not delete the rev field. Git should default to master and fetch.
+        # Now delete the rev field. Git should default to master and fetch.
         del plugin_fields["rev"]
         self.content["another"] = "file"
         output = self.do_plugin_test("git", plugin_fields, self.content)
@@ -157,7 +157,7 @@ class PluginsTest(shared.PeruTest):
         output = self.do_plugin_test('hg', plugin_fields, self.content)
         self.assertEqual(output.count('hg clone'), 0)
         self.assertEqual(output.count('hg pull'), 0)
-        # Not delete the rev field. Git should default to master and fetch.
+        # Now delete the rev field. Hg should default to master and fetch.
         del plugin_fields['rev']
         self.content['another'] = 'file'
         output = self.do_plugin_test('hg', plugin_fields, self.content)
@@ -181,7 +181,7 @@ class PluginsTest(shared.PeruTest):
         output = self.do_plugin_test('bzr', plugin_fields, self.content)
         self.assertEqual(output.count('bzr branch'), 0)
         self.assertEqual(output.count('bzr pull'), 0)
-        # Not delete the rev field. Git should default to master and fetch.
+        # Now delete the rev field. Bzr should default to master and fetch.
         del plugin_fields['rev']
         self.content['another'] = 'file'
         output = self.do_plugin_test('bzr', plugin_fields, self.content)
