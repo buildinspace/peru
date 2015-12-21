@@ -67,6 +67,13 @@ install:
   # target Python version and architecture
   - "%CMD_IN_ENV% pip install -r requirements-dev.txt"
 
+  # Delete a reg key that associates Visual Studio with .py files. Without
+  # doing this, running a .py file directly will open a "How do you want to
+  # open this type of file?" window. Since there's nothing on the server to
+  # click that window, the result is that the script doesn't execute at all.
+  # See http://help.appveyor.com/discussions/problems/2569-latest-appveyor-build-platform-update-introduced-a-python-problem.
+  - "reg delete HKEY_CLASSES_ROOT\\.py\\OpenWithProgids /f"
+
 build_script:
   # Without this Appveyor complains it can't find a solution file.
   - "echo NO-OP"
