@@ -8,46 +8,31 @@ environment:
     CMD_IN_ENV: "cmd /E:ON /V:ON /C .\\appveyor\\run_with_env.cmd"
 
   matrix:
-
-    # Pre-installed Python versions, which Appveyor may upgrade to
-    # a later point release.
-    # See: http://www.appveyor.com/docs/installed-software#python
-
     - PYTHON: "C:\\Python33"
-      PYTHON_VERSION: "3.3.x" # currently 3.3.5
-      PYTHON_ARCH: "32"
+      PY_PYTHON: 3.3-32
+      PY_PYTHON3: 3.3-32
 
     - PYTHON: "C:\\Python33-x64"
-      PYTHON_VERSION: "3.3.x" # currently 3.3.5
-      PYTHON_ARCH: "64"
+      PY_PYTHON: 3.3
+      PY_PYTHON3: 3.3
 
     - PYTHON: "C:\\Python34"
-      PYTHON_VERSION: "3.4.x" # currently 3.4.3
-      PYTHON_ARCH: "32"
+      PY_PYTHON: 3.4-32
+      PY_PYTHON3: 3.4-32
 
     - PYTHON: "C:\\Python34-x64"
-      PYTHON_VERSION: "3.4.x" # currently 3.4.3
-      PYTHON_ARCH: "64"
+      PY_PYTHON: 3.4
+      PY_PYTHON3: 3.4
 
     - PYTHON: "C:\\Python35"
-      PYTHON_VERSION: "3.5.x" # currently 3.5.0
-      PYTHON_ARCH: "32"
+      PY_PYTHON: 3.5-32
+      PY_PYTHON3: 3.5-32
 
     - PYTHON: "C:\\Python35-x64"
-      PYTHON_VERSION: "3.5.x" # currently 3.5.0
-      PYTHON_ARCH: "64"
+      PY_PYTHON: 3.5
+      PY_PYTHON3: 3.5
 
 install:
-  - ECHO "Filesystem root:"
-  - ps: "ls \"C:/\""
-
-  - ECHO "Installed SDKs:"
-  - ps: "ls \"C:/Program Files/Microsoft SDKs/Windows\""
-
-  # Install Python (from the official .msi of http://python.org) and pip when
-  # not already installed.
-  - ps: if (-not(Test-Path($env:PYTHON))) { & appveyor\install.ps1 }
-
   # Prepend newly installed Python to the PATH of this build (this cannot be
   # done from inside the powershell script as it would require to restart
   # the parent CMD process).
@@ -67,16 +52,13 @@ install:
   # target Python version and architecture
   - "%CMD_IN_ENV% pip install -r requirements-dev.txt"
 
-  # Delete a reg key that associates Visual Studio with .py files. Without
-  # doing this, running a .py file directly will open a "How do you want to
-  # open this type of file?" window. Since there's nothing on the server to
-  # click that window, the result is that the script doesn't execute at all.
-  # See http://help.appveyor.com/discussions/problems/2569-latest-appveyor-build-platform-update-introduced-a-python-problem.
-  - "reg delete HKEY_CLASSES_ROOT\\.py\\OpenWithProgids /f"
+  # The AppVeyor ftype for Python files is hardcoded to the Python 2
+  # interpreter, instead of the py.exe launcher. This works around that problem
+  # until a fix is in:
+  # http://help.appveyor.com/discussions/problems/2569-latest-appveyor-build-platform-update-introduced-a-python-problem#comment_38756340
+  - ps: cmd /c ftype Python.File="C:\Windows\py.exe" "%1" %*
 
-build_script:
-  # Without this Appveyor complains it can't find a solution file.
-  - "echo NO-OP"
+build: off
 
 test_script:
   - "%CMD_IN_ENV% python test.py -v"
