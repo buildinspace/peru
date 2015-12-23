@@ -24,9 +24,12 @@ environment:
       PY_PYTHON: 3.4
       PY_PYTHON3: 3.4
 
-    - PYTHON: "C:\\Python35"
-      PY_PYTHON: 3.5-32
-      PY_PYTHON3: 3.5-32
+    # Python 3.5-32 won't run through the C:\Windows\py.exe launcher on
+    # AppVeyor for some reason. See:
+    # http://help.appveyor.com/discussions/problems/3891-py-35-32-hellopy-fails-with-error-code-103
+    # - PYTHON: "C:\\Python35"
+    # - PY_PYTHON: 3.5-32
+    # - PY_PYTHON3: 3.5-32
 
     - PYTHON: "C:\\Python35-x64"
       PY_PYTHON: 3.5
@@ -41,6 +44,8 @@ install:
   # Check that we have the expected version and architecture for Python
   - "python --version"
   - "python -c \"import struct; print(struct.calcsize('P') * 8)\""
+  - "py -c \"import sys; print(sys.version)\""
+  - "py -3 -c \"import sys; print(sys.version)\""
 
   # Upgrade to the latest version of pip to avoid it displaying warnings
   # about it being out of date.
