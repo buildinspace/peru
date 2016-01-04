@@ -209,6 +209,12 @@ def _get_duplicate_keys_approximate(yaml_text):
     indent_to_keylines = collections.defaultdict(dict)
     for _line_index, line in enumerate(lines):
         line_num = _line_index + 1
+        # Strip comments. This (and several other steps below) will do the
+        # wrong thing for quoted keys that happen to contain the '#' character
+        # in them, but since this is just for the sake of a warning, we don't
+        # want to add all the code that would be needed to deal with it.
+        if '#' in line:
+            line = line[:line.index('#')]
         # Ignore lines that are not dictionary keys.
         if ':' not in line:
             continue
