@@ -19,7 +19,7 @@ def get_untracked_files():
 def main():
     # Unset any PERU environment variables to make sure test runs don't get
     # thrown off by anything in your bashrc.
-    for var in os.environ:
+    for var in list(os.environ.keys()):
         if var.startswith('PERU_'):
             del os.environ[var]
 
