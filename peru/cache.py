@@ -355,15 +355,18 @@ class _Cache:
             # the index file whenever there are errors, we also allow the
             # caller to pass in a path to a nonexistent file. In that case we
             # have to pay the cost to recreate it.
+            did_refresh = False
             if previous_index_file:
                 session = GitSession(
                     self.trees_path, previous_index_file, dest)
                 stack.enter_context(delete_if_error(previous_index_file))
                 if not os.path.exists(previous_index_file):
+                    did_refresh = True
                     yield from session.read_tree_and_stats_into_index(
                         previous_tree)
             else:
                 session = stack.enter_context(self.clean_git_session(dest))
+                did_refresh = True
                 yield from session.read_tree_and_stats_into_index(
                     previous_tree)
 
@@ -374,7 +377,11 @@ class _Cache:
                     return
 
             # Everything below is the slow path. Some files have changed, or
-            # the tree has changed, or both.
+            # the tree has changed, or both. If we didn't refresh the index
+            # file above, we must do so now.
+            if not did_refresh:
+                yield from session.read_tree_and_stats_into_index(
+                    previous_tree)
             modified = yield from session.get_modified_files_skipping_deletes()
             if modified and not force:
                 raise DirtyWorkingCopyError(

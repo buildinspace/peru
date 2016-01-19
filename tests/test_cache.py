@@ -1,5 +1,6 @@
 import asyncio
 import os
+import time
 
 import peru.cache
 from shared import assert_contents, create_dir, make_synchronous, PeruTest
@@ -341,3 +342,39 @@ class CacheTest(PeruTest):
         # This export fails without the fix mentioned above.
         yield from self.cache.export_tree(tree, out_dir)
         assert_contents(out_dir, both_content, binary=True)
+
+    @make_synchronous
+    def test_touched_file(self):
+        # Bumping the mtime on a file makes it appear dirty to `git
+        # diff-files`. However, when the index is refreshed with `git
+        # update-index`, the dirtiness should go away. This test guarantees
+        # that we do that refresh, both with and without a cached index file.
+        # Note that because the index file only has an mtime resolution of 1
+        # second, we have to artificially inflate the mtime to guarantee that
+        # the file will actually appear dirty.
+        export_dir = create_dir()
+        a_path = os.path.join(export_dir, 'a')
+        t = time.time()
+
+        def touch_a_ten_seconds_ahead():
+            nonlocal t
+            t += 60  # Add a whole minute to the mtime we set.
+            os.utime(a_path, (t, t))
+
+        # Do the first export.
+        yield from self.cache.export_tree(self.content_tree, export_dir)
+        # Touch a and rerun the export with no cached index.
+        touch_a_ten_seconds_ahead()
+        yield from self.cache.export_tree(
+            self.content_tree, export_dir, previous_tree=self.content_tree)
+        # Create a cached index file.
+        index_dir = create_dir()
+        index_file = os.path.join(index_dir, 'test_index_file')
+        yield from self.cache.export_tree(
+            self.content_tree, export_dir, previous_tree=self.content_tree,
+            previous_index_file=index_file)
+        # Finally, touch a again and rerun the export using the cached index.
+        touch_a_ten_seconds_ahead()
+        yield from self.cache.export_tree(
+            self.content_tree, export_dir, previous_tree=self.content_tree,
+            previous_index_file=index_file)
