@@ -356,7 +356,7 @@ class CacheTest(PeruTest):
         a_path = os.path.join(export_dir, 'a')
         t = time.time()
 
-        def touch_a_ten_seconds_ahead():
+        def bump_mtime_one_minute():
             nonlocal t
             t += 60  # Add a whole minute to the mtime we set.
             os.utime(a_path, (t, t))
@@ -364,7 +364,7 @@ class CacheTest(PeruTest):
         # Do the first export.
         yield from self.cache.export_tree(self.content_tree, export_dir)
         # Touch a and rerun the export with no cached index.
-        touch_a_ten_seconds_ahead()
+        bump_mtime_one_minute()
         yield from self.cache.export_tree(
             self.content_tree, export_dir, previous_tree=self.content_tree)
         # Create a cached index file.
@@ -374,7 +374,7 @@ class CacheTest(PeruTest):
             self.content_tree, export_dir, previous_tree=self.content_tree,
             previous_index_file=index_file)
         # Finally, touch a again and rerun the export using the cached index.
-        touch_a_ten_seconds_ahead()
+        bump_mtime_one_minute()
         yield from self.cache.export_tree(
             self.content_tree, export_dir, previous_tree=self.content_tree,
             previous_index_file=index_file)
