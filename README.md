@@ -235,8 +235,8 @@ see [Architecture: Plugins](docs/architecture.md#plugins).
 ## Rules
 Some fields (like `rev` and `unpack`) are specific to certain module
 types. There are also fields you can use in any module, which modify the
-the tree of files after it's fetched. Some of these made an appearance
-in the fancy example above:
+tree of files after it's fetched. Some of these made an appearance in
+the fancy example above:
 
 - `copy`: A map or multimap of source and destination paths to copy.
   Works like `cp` on the command line, so if the destination is a
