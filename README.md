@@ -130,7 +130,7 @@ install Pathogen.
 
 The `vim-solarized` module gets copied into its own directory under `bundle`,
 which is where Pathogen will look for it. Note that it has an explicit `rev`
-field, which tells peru to fetch that exact revision, rather than the the
+field, which tells peru to fetch that exact revision, rather than the
 default branch (`master` in git). That's a **Super Serious Best Practice™**,
 because it means your dependencies will always be consistent, even when you
 look at commits from a long time ago.
