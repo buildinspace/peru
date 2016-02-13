@@ -104,6 +104,7 @@ def _extract_modules(blob, name_prefix):
 
 def _build_module(name, type, blob, yaml_name):
     peru_file = typesafe_pop(blob, 'peru file', DEFAULT_PERU_FILE_NAME)
+    recursive = typesafe_pop(blob, 'recursive', None)
     default_rule = _extract_default_rule(blob)
     plugin_fields = blob
 
@@ -121,7 +122,7 @@ def _build_module(name, type, blob, yaml_name):
             plugin_fields[k] = str(v)
 
     module = Module(name, type, default_rule, plugin_fields, yaml_name,
-                    peru_file)
+                    peru_file, recursive)
     return module
 
 
