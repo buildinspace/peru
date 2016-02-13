@@ -1,6 +1,7 @@
 import asyncio
 import json
 import os
+import textwrap
 
 from .cache import compute_key
 from .error import PrintableError
@@ -10,15 +11,31 @@ from .plugin import plugin_fetch, plugin_get_reup_fields
 from . import scope
 
 
+recursion_warning = textwrap.dedent('''\
+WARNING: This peru project is using a recursive module, '{}'. The next
+version of peru is going to turn off recursive modules by default. To
+keep it, add "recursive: true" to the module definition.''')
+
+
 class Module:
     def __init__(self, name, type, default_rule, plugin_fields, yaml_name,
-                 peru_file):
+                 peru_file, recursive):
         self.name = name
         self.type = type
         self.default_rule = default_rule
         self.plugin_fields = plugin_fields
-        self.yaml_name = yaml_name  # used by reup to edit the markup
-        self.peru_file = peru_file  # for recursive module definitions
+        # used by reup to edit the markup
+        self.yaml_name = yaml_name
+        # for recursive module definitions
+        self.peru_file = peru_file
+        # whether to automatically fetch recursive imports
+        if recursive is None:
+            # NB: This default is going to change!
+            self.recursive = True
+            self.recursion_explicit = False
+        else:
+            self.recursive = recursive
+            self.recursion_explicit = True
 
     @asyncio.coroutine
     def _get_base_tree(self, runtime):
@@ -60,9 +77,13 @@ class Module:
     def get_tree(self, runtime):
         # TODO: memoize the tree or something
         base_tree = yield from self._get_base_tree(runtime)
+        if not self.recursive:
+            return base_tree
         scope, _imports = yield from self.parse_peru_file(runtime)
         if not scope:
             return base_tree
+        if not self.recursion_explicit:
+            runtime.display.print(recursion_warning.format(self.name))
         recursive_tree = yield from imports.get_imports_tree(
             runtime, scope, _imports, base_tree=base_tree)
         return recursive_tree

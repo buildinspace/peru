@@ -177,11 +177,11 @@ class SyncTest(shared.PeruTest):
     def test_recursive_imports(self):
         # Project B contains project A
         dir_a = shared.create_dir({'afile': 'stuff'})
-        dir_b = shared.create_dir()
+        dir_b = shared.create_dir({'exports/bfile': 'stuff'})
         # Create the peru.yaml file for B.
         self.write_yaml('''\
             imports:
-                a: b_imports/where_b_put_a
+                a: exports/where_b_put_a
             cp module a:
                 path: {}
             ''', dir_a, dir=dir_b)
@@ -192,10 +192,37 @@ class SyncTest(shared.PeruTest):
 
             cp module b:
                 path: {}
-                export: b_imports  # omit the peru.yaml file from b
+                pick: exports/where_b_put_a
+                export: exports  # omit the peru.yaml file from b
             ''', dir_b)
         self.do_integration_test(
             ['sync'], {'where_c_put_b/where_b_put_a/afile': 'stuff'})
+
+        # Repeat the same test with explicit 'recursive' settings.
+        self.write_yaml('''\
+            imports:
+                b: where_c_put_b
+
+            cp module b:
+                path: {}
+                pick: exports/where_b_put_a
+                export: exports  # omit the peru.yaml file from b
+                recursive: true
+            ''', dir_b)
+        self.do_integration_test(
+            ['sync'], {'where_c_put_b/where_b_put_a/afile': 'stuff'})
+
+        self.write_yaml('''\
+            imports:
+                b: where_c_put_b
+
+            cp module b:
+                path: {}
+                export: exports  # omit the peru.yaml file from b
+                recursive: false
+            ''', dir_b)
+        self.do_integration_test(
+            ['sync'], {'where_c_put_b/bfile': 'stuff'})
 
     def test_recursive_import_error(self):
         '''Errors that happen inside recursively-fetched targets should have
