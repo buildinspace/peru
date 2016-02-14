@@ -107,14 +107,18 @@ def _build_module(name, type, blob, yaml_name):
     default_rule = _extract_default_rule(blob)
     plugin_fields = blob
 
-    # Do some validation on the module fields.
-    non_string_fields = [(key, val) for key, val in plugin_fields.items()
-                         if not isinstance(key, str) or
-                         not isinstance(val, str)]
-    if non_string_fields:
-        raise ParserError(
-            'Module field names and values must be strings: ' +
-            ', '.join(repr(pair) for pair in non_string_fields))
+    # Stringify all the plugin fields.
+    for k, v in plugin_fields.items():
+        if not isinstance(k, str):
+            raise ParserError(
+                'Module field names must be strings. Found "{}".'
+                .format(repr(k)))
+        if isinstance(v, bool):
+            # Avoid the Python-specific True/False capitalization, to be
+            # consistent with what people will usually type in YAML.
+            plugin_fields[k] = "true" if v else "false"
+        else:
+            plugin_fields[k] = str(v)
 
     module = Module(name, type, default_rule, plugin_fields, yaml_name,
                     peru_file)

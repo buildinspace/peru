@@ -142,14 +142,18 @@ class ParserTest(shared.PeruTest):
     def test_non_string_module_field_value(self):
         input = dedent('''\
             git module foo:
-                bar: 4567
+                bar: 123
+                # These booleans should turn into "true" and "false".
+                baz: yes
+                bing: no
             ''')
-        try:
-            parse_string(input)
-        except ParserError as e:
-            assert '4567' in e.message
-        else:
-            assert False, 'expected ParserError'
+        scope, imports = parse_string(input)
+        foo = scope.modules['foo']
+        self.assertDictEqual(foo.plugin_fields, {
+            "bar": "123",
+            "baz": "true",
+            "bing": "false",
+        })
 
     def test_build_field_deprecated_message(self):
         input = dedent('''\
