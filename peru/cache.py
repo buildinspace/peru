@@ -265,7 +265,7 @@ class _Cache:
 
     @asyncio.coroutine
     def _init_trees(self):
-        if not os.path.exists(self.trees_path):
+        if not os.path.exists(os.path.join(self.trees_path, 'HEAD')):
             os.makedirs(self.trees_path)
             with self.clean_git_session() as session:
                 yield from session.init_git_dir()
