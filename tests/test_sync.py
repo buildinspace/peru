@@ -176,8 +176,8 @@ class SyncTest(shared.PeruTest):
 
     def test_recursive_imports(self):
         # Project B contains project A
-        dir_a = shared.create_dir({'afile': 'stuff'})
-        dir_b = shared.create_dir({'exports/bfile': 'stuff'})
+        dir_a = shared.create_dir({'afile': 'aaa'})
+        dir_b = shared.create_dir({'exports/bfile': 'bbb'})
         # Create the peru.yaml file for B.
         self.write_yaml('''\
             imports:
@@ -191,12 +191,12 @@ class SyncTest(shared.PeruTest):
                 b: where_c_put_b
 
             cp module b:
+                # recursive is false by default
                 path: {}
-                pick: exports/where_b_put_a
                 export: exports  # omit the peru.yaml file from b
             ''', dir_b)
         self.do_integration_test(
-            ['sync'], {'where_c_put_b/where_b_put_a/afile': 'stuff'})
+            ['sync'], {'where_c_put_b/bfile': 'bbb'})
 
         # Repeat the same test with explicit 'recursive' settings.
         self.write_yaml('''\
@@ -210,7 +210,7 @@ class SyncTest(shared.PeruTest):
                 recursive: true
             ''', dir_b)
         self.do_integration_test(
-            ['sync'], {'where_c_put_b/where_b_put_a/afile': 'stuff'})
+            ['sync'], {'where_c_put_b/where_b_put_a/afile': 'aaa'})
 
         self.write_yaml('''\
             imports:
@@ -222,7 +222,7 @@ class SyncTest(shared.PeruTest):
                 recursive: false
             ''', dir_b)
         self.do_integration_test(
-            ['sync'], {'where_c_put_b/bfile': 'stuff'})
+            ['sync'], {'where_c_put_b/bfile': 'bbb'})
 
     def test_recursive_import_error(self):
         '''Errors that happen inside recursively-fetched targets should have
@@ -239,9 +239,10 @@ class SyncTest(shared.PeruTest):
         # Now make our test project import it.
         self.write_yaml('''\
             imports:
-                NOTABLE_NAME: ./
+                NOTABLE_NAME: ./notable
 
             cp module NOTABLE_NAME:
+                recursive: true
                 path: {}
             ''', dir_notable)
         with self.assertRaises(peru.error.PrintableError) as cm:

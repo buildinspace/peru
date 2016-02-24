@@ -11,10 +11,13 @@ from .plugin import plugin_fetch, plugin_get_reup_fields
 from . import scope
 
 
-recursion_warning = textwrap.dedent('''\
-WARNING: This peru project is using a recursive module, '{}'. The next
-version of peru is going to turn off recursive modules by default. To
-keep it, add "recursive: true" to the module definition.''')
+recursion_warning = '''\
+WARNING: The peru module '{}' doesn't specify the 'recursive' field,
+but its contents include a peru.yaml file. Peru's behavior here changed
+in version 0.4: modules with peru.yaml files are *no longer* recursive
+by default. Add 'recursive: true' to the module definition to re-enable
+recursive fetching.
+'''
 
 
 class Module:
@@ -31,11 +34,11 @@ class Module:
         # whether to automatically fetch recursive imports
         if recursive is None:
             # NB: This default is going to change!
-            self.recursive = True
-            self.recursion_explicit = False
+            self.recursive = False
+            self.recursion_specified = False
         else:
             self.recursive = recursive
-            self.recursion_explicit = True
+            self.recursion_specified = True
 
     @asyncio.coroutine
     def _get_base_tree(self, runtime):
@@ -75,15 +78,23 @@ class Module:
 
     @asyncio.coroutine
     def get_tree(self, runtime):
-        # TODO: memoize the tree or something
+        # NOTE: While the recursion warning is in place, there is a 2x3 set of
+        # states we want to keep track of. On the one side, a module either
+        # does or does not have a peru.yaml file. On the other side, the
+        # recursion setting for that module can be true, false, or unspecified.
+        # It's the possible+unspecified state that we're interested in for
+        # printing the warning.
         base_tree = yield from self._get_base_tree(runtime)
+        scope, _imports = yield from self.parse_peru_file(runtime)
+        recursion_possible = scope is not None
+        if not recursion_possible:
+            return base_tree
+        # TODO: Get rid of this with 1.0, and move the self.recursive check up.
+        if not self.recursion_specified:
+            runtime.display.print(
+                '\n'.join(textwrap.wrap(recursion_warning.format(self.name))))
         if not self.recursive:
             return base_tree
-        scope, _imports = yield from self.parse_peru_file(runtime)
-        if not scope:
-            return base_tree
-        if not self.recursion_explicit:
-            runtime.display.print(recursion_warning.format(self.name))
         recursive_tree = yield from imports.get_imports_tree(
             runtime, scope, _imports, base_tree=base_tree)
         return recursive_tree
