@@ -281,9 +281,12 @@ output tree of the previous.
 
 ## Recursion
 
-If you import a module that has a peru file of its own, peru will
-automatically include that module's imports along with it. This is
-similar to how git submodules behave with `git clone --recursive`.
+If you import a module that has a peru file of its own, peru
+<strike>will automatically</strike> can include that module's imports
+along with it. This is similar to how git submodules behave with `git
+clone --recursive`. (**Note:** This is changing in the next release.
+Recursive imports will be off by default, and you'll need to add
+`recursive: true` to your module to enable them.)
 
 It's also possible to directly import modules that are defined in the
 `peru.yaml` file of another module. If your project defines a module
