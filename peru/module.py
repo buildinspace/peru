@@ -32,13 +32,8 @@ class Module:
         # for recursive module definitions
         self.peru_file = peru_file
         # whether to automatically fetch recursive imports
-        if recursive is None:
-            # NB: This default is going to change!
-            self.recursive = False
-            self.recursion_specified = False
-        else:
-            self.recursive = recursive
-            self.recursion_specified = True
+        self.recursive = bool(recursive)
+        self.recursion_specified = recursive is not None
 
     @asyncio.coroutine
     def _get_base_tree(self, runtime):
