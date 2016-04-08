@@ -340,7 +340,9 @@ class _Cache:
         It's difficult to predict all the different states the index file might
         end up in under different error conditions, not only now but also in
         past and future git versions. For safety and simplicity, if any
-        operation returns an error code, we delete the supplied index file.'''
+        operation returns an error code, we delete the supplied index file.
+        Right now this includes expected errors, like "sync would overwrite
+        existing files," and unexpected errors, like "index is on fire."'''
 
         tree = tree or (yield from self.get_empty_tree())
         previous_tree = previous_tree or (yield from self.get_empty_tree())
