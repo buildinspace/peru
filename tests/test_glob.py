@@ -65,7 +65,11 @@ class GlobTest(shared.PeruTest):
             # Make sure special characters are escaped properly.
             Case(glob='a|b',
                  matches=['a|b'],
-                 excludes=['a', 'b'])
+                 excludes=['a', 'b']),
+            # Test escaped * characters.
+            Case(glob='a\\*',
+                 matches=['a*'],
+                 excludes=['a', 'aa']),
         ]
         for case in cases:
             regex = glob.glob_to_path_regex(case.glob)
