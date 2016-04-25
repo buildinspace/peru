@@ -72,11 +72,12 @@ def _extract_rule(name, blob):
     copy = _extract_multimap_field(blob, 'copy')
     move = _extract_multimap_field(blob, 'move')
     executable = _extract_optional_list_field(blob, 'executable')
+    delete = _extract_optional_list_field(blob, 'delete')
     pick = _extract_optional_list_field(blob, 'pick')
     export = typesafe_pop(blob, 'export', None)
-    if not any((copy, move, executable, pick, export)):
+    if not any((copy, move, executable, delete, pick, export)):
         return None
-    rule = Rule(name, copy, move, executable, pick, export)
+    rule = Rule(name, copy, move, executable, delete, pick, export)
     return rule
 
 

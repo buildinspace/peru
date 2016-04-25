@@ -8,11 +8,12 @@ from . import glob
 
 
 class Rule:
-    def __init__(self, name, copy, move, executable, pick, export):
+    def __init__(self, name, copy, move, executable, delete, pick, export):
         self.name = name
         self.copy = copy
         self.move = move
         self.executable = executable
+        self.delete = delete
         self.pick = pick
         self.export = export
 
@@ -22,6 +23,7 @@ class Rule:
             'copy': self.copy,
             'move': self.move,
             'executable': self.executable,
+            'delete': self.delete,
             'pick': self.pick,
             'export': self.export,
         })
@@ -42,6 +44,9 @@ class Rule:
                 tree = yield from copy_files(runtime.cache, tree, self.copy)
             if self.move:
                 tree = yield from move_files(runtime.cache, tree, self.move)
+            if self.delete:
+                tree = yield from delete_files(
+                    runtime.cache, tree, self.delete)
             if self.pick:
                 tree = yield from pick_files(runtime.cache, tree, self.pick)
             if self.executable:
