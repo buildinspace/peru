@@ -137,6 +137,15 @@ def pick_files(_cache, tree, globs_list):
 
 
 @asyncio.coroutine
+def delete_files(_cache, tree, globs_list):
+    deletes = yield from _get_glob_entries(_cache, tree, globs_list)
+    for path in deletes:
+        deletes[path] = None
+    tree = yield from _cache.modify_tree(tree, deletes)
+    return tree
+
+
+@asyncio.coroutine
 def make_files_executable(_cache, tree, globs_list):
     entries = yield from _get_glob_entries(_cache, tree, globs_list)
     exes = {}
