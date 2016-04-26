@@ -87,9 +87,8 @@ This is similar to the last example, in that `gcc` only runs when the
 imported files actually change. But we've added a phony target, which
 produces no files. Depending on that forces make to run the `peru sync`
 rule every time, so overrides will work properly. A `peru sync` with
-everything in cache is about as fast as a single `git status`, so you
-shouldn't notice a slowdown unless your dependencies are extremely
-large.
+everything in cache amounts to a single `git status`, so you shouldn't
+notice a slowdown unless your dependencies are extremely large.
 
 The `Makefile` in this directory reproduces the last example, with some
 comments and a real `.PHONY` declaration (which keeps make from getting
