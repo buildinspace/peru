@@ -199,8 +199,9 @@ DuplicatedKey = collections.namedtuple(
 
 def _get_line_indentation(line):
     indentation = 0
-    for i in range(len(line)):
-        if line[i] == ' ':
+    for c in line:
+        # YAML forbids tabs, so we only need to look for spaces.
+        if c == ' ':
             indentation += 1
         else:
             return indentation
