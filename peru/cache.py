@@ -486,13 +486,14 @@ class _Cache:
         # If 'a' is a file, inserting a new file at 'a/b' will implicitly
         # delete 'a', but trying to delete 'a/b' will be a no-op and will not
         # delete 'a'.
+        empty_tree = (yield from self.get_empty_tree())
         for name, sub_modifications in modifications_in_subtrees.items():
             subtree_base = None
             if name in entries and entries[name].type == TREE_TYPE:
                 subtree_base = entries[name].hash
             new_subtree = yield from self.modify_tree(
                 subtree_base, sub_modifications)
-            if new_subtree is not None:
+            if new_subtree != empty_tree:
                 entries[name] = TreeEntry(TREE_MODE, TREE_TYPE, new_subtree)
             # Delete an empty tree if it was actually a tree to begin with.
             elif name in entries and entries[name].type == TREE_TYPE:
@@ -504,7 +505,7 @@ class _Cache:
             tree = yield from session.make_tree_from_entries(entries)
             return tree
         else:
-            return None
+            return empty_tree
 
 
 @contextlib.contextmanager
