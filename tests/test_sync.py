@@ -354,6 +354,22 @@ class SyncTest(shared.PeruTest):
         with self.assertRaises(peru.rule.NoMatchingFilesError):
             self.do_integration_test(['sync'], {})
 
+    def test_rule_with_deleted_files(self):
+        content = {'foo': 'one', 'bar': 'two'}
+        module_dir = shared.create_dir(content)
+        self.write_yaml('''\
+            cp module foobar:
+                path: {}
+
+            rule filter:
+                delete: foo
+
+            imports:
+                foobar|filter: ./
+            ''', module_dir)
+        filtered_content = {'bar': 'two'}
+        self.do_integration_test(['sync'], filtered_content)
+
     def test_rule_with_executable(self):
         contents = {'a.txt': '', 'b.txt': '', 'c.foo': ''}
         module_dir = shared.create_dir(contents)
