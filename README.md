@@ -244,8 +244,8 @@ the fancy example above:
   destination directory.
 - `move`: A map or multimap of source and destination paths to move.
   Similar to `copy` above, but removes the source.
-- `delete`: A file or directory, or a list of files and directories, to
-  delete from the module. Paths can contain `*` or `**` globs.
+- `drop`: A file or directory, or a list of files and directories, to
+  remove from the module. Paths can contain `*` or `**` globs.
 - `pick`: A file or directory, or a list of files and directories, to
   include in the module. Everything else is dropped. Paths can contain
   `*` or `**` globs.

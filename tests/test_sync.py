@@ -354,7 +354,7 @@ class SyncTest(shared.PeruTest):
         with self.assertRaises(peru.rule.NoMatchingFilesError):
             self.do_integration_test(['sync'], {})
 
-    def test_rule_with_deleted_files(self):
+    def test_rule_with_dropped_files(self):
         content = {'foo': 'one', 'bar': 'two'}
         module_dir = shared.create_dir(content)
         self.write_yaml('''\
@@ -362,7 +362,7 @@ class SyncTest(shared.PeruTest):
                 path: {}
 
             rule filter:
-                delete: foo
+                drop: foo
 
             imports:
                 foobar|filter: ./
@@ -370,8 +370,8 @@ class SyncTest(shared.PeruTest):
         filtered_content = {'bar': 'two'}
         self.do_integration_test(['sync'], filtered_content)
 
-    def test_delete_and_pick_is_an_error(self):
-        '''We want delete to run before pick, so that deleting a bunch of stuff
+    def test_drop_then_pick_is_an_error(self):
+        '''We want drop to run before pick, so that deleting a bunch of stuff
         and then trying to pick it turns into an error. The opposite execution
         order would make this silently succeed. See the discussion at
         https://github.com/buildinspace/peru/issues/150#issuecomment-212580912.
@@ -381,7 +381,7 @@ class SyncTest(shared.PeruTest):
         self.write_yaml('''\
             cp module foobar:
                 path: {}
-                delete: foo
+                drop: foo
                 pick: foo
 
             imports:

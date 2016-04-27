@@ -46,18 +46,18 @@ class RuleTest(shared.PeruTest):
         })
 
     @shared.make_synchronous
-    def test_delete(self):
-        delete_dir = yield from rule.delete_files(
+    def test_drop(self):
+        drop_dir = yield from rule.drop_files(
             self.cache, self.content_tree, ['b'])
         yield from shared.assert_tree_contents(
-            self.cache, delete_dir, {'a': 'foo'})
+            self.cache, drop_dir, {'a': 'foo'})
 
-        delete_file = yield from rule.delete_files(
+        drop_file = yield from rule.drop_files(
             self.cache, self.content_tree, ['a'])
         yield from shared.assert_tree_contents(
-            self.cache, delete_file, {'b/c': 'bar'})
+            self.cache, drop_file, {'b/c': 'bar'})
 
-        globs = yield from rule.delete_files(
+        globs = yield from rule.drop_files(
             self.cache, self.content_tree, ['**/c', '**/a'])
         yield from shared.assert_tree_contents(
             self.cache, globs, {})

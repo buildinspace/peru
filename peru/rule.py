@@ -8,12 +8,12 @@ from . import glob
 
 
 class Rule:
-    def __init__(self, name, copy, move, executable, delete, pick, export):
+    def __init__(self, name, copy, move, executable, drop, pick, export):
         self.name = name
         self.copy = copy
         self.move = move
         self.executable = executable
-        self.delete = delete
+        self.drop = drop
         self.pick = pick
         self.export = export
 
@@ -23,7 +23,7 @@ class Rule:
             'copy': self.copy,
             'move': self.move,
             'executable': self.executable,
-            'delete': self.delete,
+            'drop': self.drop,
             'pick': self.pick,
             'export': self.export,
         })
@@ -44,9 +44,9 @@ class Rule:
                 tree = yield from copy_files(runtime.cache, tree, self.copy)
             if self.move:
                 tree = yield from move_files(runtime.cache, tree, self.move)
-            if self.delete:
-                tree = yield from delete_files(
-                    runtime.cache, tree, self.delete)
+            if self.drop:
+                tree = yield from drop_files(
+                    runtime.cache, tree, self.drop)
             if self.pick:
                 tree = yield from pick_files(runtime.cache, tree, self.pick)
             if self.executable:
@@ -142,11 +142,11 @@ def pick_files(_cache, tree, globs_list):
 
 
 @asyncio.coroutine
-def delete_files(_cache, tree, globs_list):
-    deletes = yield from _get_glob_entries(_cache, tree, globs_list)
-    for path in deletes:
-        deletes[path] = None
-    tree = yield from _cache.modify_tree(tree, deletes)
+def drop_files(_cache, tree, globs_list):
+    drops = yield from _get_glob_entries(_cache, tree, globs_list)
+    for path in drops:
+        drops[path] = None
+    tree = yield from _cache.modify_tree(tree, drops)
     return tree
 
 
