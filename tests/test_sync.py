@@ -569,8 +569,8 @@ class SyncTest(shared.PeruTest):
         override_dir = shared.create_dir({'foo': 'override'})
         run_peru_command(['override', 'add', 'B.A', override_dir],
                          self.test_dir)
-        # Now do another sync. *Both* the directly important copy of A *and*
-        # the copy synced inside of B should be overridden.
+        # Now do another sync. *Both* the directly imported copy of A *and* the
+        # copy synced inside of B should be overridden.
         self.do_integration_test(['sync'], {
             'A/foo': 'override',
             'B/A/foo': 'override',
