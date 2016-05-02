@@ -4,9 +4,6 @@ python:
   - "3.4"
   - "3.5"
   - "nightly"
-matrix:
-  allow_failures:
-    - python: "nightly"  # coverage has some failures in the 'inspect' module
 install:
   - pip install -r ./requirements-dev.txt
   - pip install coveralls
