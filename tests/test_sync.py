@@ -532,6 +532,50 @@ class SyncTest(shared.PeruTest):
                          self.test_dir)
         self.do_integration_test(['sync'], {'foo': 'override'})
 
+    def test_override_recursive(self):
+        # Module A just includes the file 'foo'.
+        module_a_dir = shared.create_dir({'foo': 'bar'})
+        # Module B imports module A.
+        module_b_dir = shared.create_dir()
+        self.write_yaml('''\
+            cp module A:
+                path: {}
+
+            imports:
+                A: A/
+            ''', module_a_dir, dir=module_b_dir)
+        # Module C (in self.test_dir) imports module B, and also directly
+        # imports module A. When we set an override for module A below, we'll
+        # want to check that *both* of these imports get overridden.
+        self.write_yaml('''\
+            cp module B:
+                path: {}
+                recursive: true
+                # Note that module business happens before rule business, so
+                # 'drop: peru.yaml' will not affect the recursion, just the
+                # final output.
+                drop: peru.yaml
+
+            imports:
+                B.A: A/
+                B: B/
+            ''', module_b_dir)
+        # First, do a regular sync.
+        self.do_integration_test(['sync'], {
+            'A/foo': 'bar',
+            'B/A/foo': 'bar',
+        })
+        # Now set an override for B.A.
+        override_dir = shared.create_dir({'foo': 'override'})
+        run_peru_command(['override', 'add', 'B.A', override_dir],
+                         self.test_dir)
+        # Now do another sync. *Both* the directly important copy of A *and*
+        # the copy synced inside of B should be overridden.
+        self.do_integration_test(['sync'], {
+            'A/foo': 'override',
+            'B/A/foo': 'override',
+        })
+
     def test_relative_override_from_subdir(self):
         self.write_yaml('''\
             empty module foo:
