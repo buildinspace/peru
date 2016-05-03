@@ -378,3 +378,32 @@ class CacheTest(PeruTest):
         yield from self.cache.export_tree(
             self.content_tree, export_dir, previous_tree=self.content_tree,
             previous_index_file=index_file)
+
+    @make_synchronous
+    def test_import_ignores_dotperu(self):
+        # We have a security problem similar to git's if we allow '.peru'
+        # directories in the trees we write to disk. (See
+        # https://github.com/blog/1938-vulnerability-announced-update-your-git-clients.)
+        # We need to check that *all* '.peru' dirs are ignored in imported
+        # trees, including inside of nested subdirectories. And as in the git
+        # issue, we need to do this in a case-insensitive way.
+        content = {
+            'foo': 'bar',
+            '.peru/foo1': 'bar',
+            '.PERU/foo2': 'bar',
+            '.pErU/foo3': 'bar',
+            'dir/foo': 'bar',
+            'dir/.peru/foo1': 'bar',
+            'dir/.PERU/foo2': 'bar',
+            'dir/.peRU/foo3': 'bar',
+        }
+        tree = yield from self.cache.import_tree(create_dir(content))
+        entries = yield from self.cache.ls_tree(tree, recursive=True)
+        self.assertEqual({'foo', 'dir', 'dir/foo'}, entries.keys(),
+                         "Expected all of the .peru dirs to be omitted.")
+
+    @make_synchronous
+    def test_validate_capitalizations(self):
+        self.assertEqual(len(set(peru.cache.DOTPERU_CAPITALIZATIONS)), 16)
+        for capitalization in peru.cache.DOTPERU_CAPITALIZATIONS:
+            self.assertEqual(capitalization.lower(), ".peru")

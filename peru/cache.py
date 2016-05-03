@@ -307,7 +307,17 @@ class _Cache:
             raise RuntimeError('import tree called on nonexistent path ' + src)
         with self.clean_git_session(src) as session:
             yield from session.read_working_copy_into_index(picks)
-            yield from session.drop_paths_from_index(excludes)
+
+            # We want to avoid ever importing a .peru directory. This is a
+            # security/correctness issue similar to git's issue with .git dirs,
+            # and just like git we need to watch out for case-insensitive
+            # filesystems. See also:
+            # https://github.com/blog/1938-vulnerability-announced-update-your-git-clients.
+            full_excludes = dotperu_exclude_case_insensitive_git_globs()
+            if excludes:
+                full_excludes += excludes
+            yield from session.drop_paths_from_index(full_excludes)
+
             tree = yield from session.make_tree_from_index()
             return tree
 
@@ -565,3 +575,34 @@ TREE_TYPE = 'tree'
 NONEXECUTABLE_FILE_MODE = '100644'
 EXECUTABLE_FILE_MODE = '100755'
 TREE_MODE = '040000'
+
+# All possible ways to capitalize ".peru", to exclude from imported trees.
+DOTPERU_CAPITALIZATIONS = [
+    '.peru',
+    '.Peru',
+    '.pEru',
+    '.peRu',
+    '.perU',
+    '.PEru',
+    '.PeRu',
+    '.PerU',
+    '.pERu',
+    '.pErU',
+    '.peRU',
+    '.PERu',
+    '.PErU',
+    '.PeRU',
+    '.pERU',
+    '.PERU',
+]
+
+
+def dotperu_exclude_case_insensitive_git_globs():
+    """These use the glob syntax accepted by `git ls-files` (NOT our own
+    glob.py). Note that ** must match at least one path component, so we have
+    to use separate globs for matches at the root and matches below."""
+    globs = []
+    for capitalization in DOTPERU_CAPITALIZATIONS:
+        globs.append(capitalization + '/**')
+        globs.append('**/' + capitalization + '/**')
+    return globs
