@@ -114,3 +114,18 @@ def _unify_newlines(s):
     style we have to support.'''
 
     return s.replace('\r\n', '\n')
+
+
+@asyncio.coroutine
+def safe_communicate(process, input=None):
+    '''Asyncio's communicate method has a bug where `communicate(input=b"")` is
+    treated the same as `communicate(). That means that child processes can
+    hang waiting for input, when their stdin should be closed. See
+    https://bugs.python.org/issue26848. The issue is fixed upstream in
+    https://github.com/python/asyncio/commit/915b6eaa30e1e3744e6f8223f996e197c1c9b91d,
+    but we will probably always need this workaround for old versions.'''
+    if input is not None and len(input) == 0:
+        process.stdin.close()
+        return (yield from process.communicate())
+    else:
+        return (yield from process.communicate(input))

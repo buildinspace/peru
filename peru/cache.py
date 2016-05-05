@@ -8,6 +8,7 @@ import pathlib
 import re
 import textwrap
 
+from .async import safe_communicate
 from .compat import makedirs
 from .error import PrintableError
 from .keyval import KeyVal
@@ -68,7 +69,7 @@ class GitSession:
             stdin=asyncio.subprocess.PIPE,
             stdout=asyncio.subprocess.PIPE,
             stderr=asyncio.subprocess.PIPE)
-        stdout, stderr = yield from process.communicate(input=input)
+        stdout, stderr = yield from safe_communicate(process, input)
         stderr = stderr.decode()
         if output_mode == TEXT_MODE:
             stdout = stdout.decode()
