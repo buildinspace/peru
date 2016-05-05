@@ -213,6 +213,9 @@ For cloning repos. These types all provide the same fields:
 - `reup`: optional, the branch/tag to get the latest rev from when running
   `peru reup`
 
+The `git` type also supports setting `submodules: false` to skip
+fetching git submodules. Otherwise they're included by default.
+
 ##### curl
 For downloading a file from a URL. This type is powered by Pythons's standard
 library, rather than an external program.

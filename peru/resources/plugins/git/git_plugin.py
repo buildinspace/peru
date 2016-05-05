@@ -101,6 +101,9 @@ def checkout_tree(url, rev, dest):
 
 
 def checkout_submodules(repo_path, rev, work_tree):
+    if os.environ['PERU_MODULE_SUBMODULES'] == 'false':
+        return
+
     gitmodules = os.path.join(work_tree, '.gitmodules')
     if not os.path.exists(gitmodules):
         return

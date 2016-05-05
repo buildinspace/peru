@@ -5,5 +5,6 @@ required fields:
 optional fields:
     - rev
     - reup
+    - submodules
 cache fields:
     - url

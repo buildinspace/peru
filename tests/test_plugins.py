@@ -129,6 +129,14 @@ class PluginsTest(shared.PeruTest):
         del expected_content['subdir/more']
         self.do_plugin_test('git', {'url': self.content_dir}, expected_content)
 
+        # Finally, test explicitly disabling submodule fetching. Start by
+        # reverting the 'inconsistent delete' commit from above.
+        content_repo.run('git', 'revert', '--no-edit', 'HEAD')
+        self.do_plugin_test('git', {
+                'url': self.content_dir,
+                'submodules': 'false'
+            }, expected_content)
+
     def test_git_plugin_multiple_fetches(self):
         content_repo = GitRepo(self.content_dir)
         head = content_repo.run('git', 'rev-parse', 'HEAD')
