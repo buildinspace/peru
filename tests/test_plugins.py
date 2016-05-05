@@ -5,6 +5,7 @@ import hashlib
 import io
 import os
 from pathlib import Path
+import shutil
 import subprocess
 import textwrap
 import unittest
@@ -113,6 +114,19 @@ class PluginsTest(shared.PeruTest):
             cwd=os.path.join(self.content_dir, 'subdir'))
         content_repo.run('git', 'commit', '-am', 'submodule update')
         expected_content['subdir/more'] = 'stuff'
+        self.do_plugin_test('git', {'url': self.content_dir}, expected_content)
+
+        # Normally when you run `git submodule add ...`, git puts two things in
+        # your repo: an entry in .gitmodules, and a commit object at the
+        # appropriate path inside your repo. However, it's possible for those
+        # two to get out of sync, especially if you use mv/rm on a directory
+        # followed by `git add`, instead of the smarter `git mv`/`git rm`. We
+        # need to create this condition and check that we then ignore the
+        # submodule.
+        shutil.rmtree(os.path.join(self.content_dir, 'subdir'))
+        content_repo.run('git', 'commit', '-am', 'inconsistent delete')
+        del expected_content['subdir/another']
+        del expected_content['subdir/more']
         self.do_plugin_test('git', {'url': self.content_dir}, expected_content)
 
     def test_git_plugin_multiple_fetches(self):

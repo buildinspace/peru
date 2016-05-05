@@ -11,8 +11,8 @@ REUP = os.environ['PERU_MODULE_REUP'] or 'master'
 
 # Because peru gives each plugin a unique cache dir based on its cacheable
 # fields (in this case, url) we could clone directly into cache_root. However,
-# because the git plugin needs to handle subrepos as well, it still has to
-# separate things out by repo url.
+# because the git plugin needs to handle git submodules as well, it still has
+# to separate things out by repo url.
 CACHE_ROOT = os.environ['PERU_PLUGIN_CACHE']
 
 
@@ -97,10 +97,10 @@ def checkout_tree(url, rev, dest):
     # an empty commit.
     git('--work-tree=' + dest, 'read-tree', rev, git_dir=repo_path)
     git('--work-tree=' + dest, 'checkout-index', '--all', git_dir=repo_path)
-    checkout_subrepos(repo_path, rev, dest)
+    checkout_submodules(repo_path, rev, dest)
 
 
-def checkout_subrepos(repo_path, rev, work_tree):
+def checkout_submodules(repo_path, rev, work_tree):
     gitmodules = os.path.join(work_tree, '.gitmodules')
     if not os.path.exists(gitmodules):
         return
@@ -111,8 +111,18 @@ def checkout_subrepos(repo_path, rev, work_tree):
         sub_relative_path = parser[section]['path']
         sub_full_path = os.path.join(work_tree, sub_relative_path)
         sub_url = parser[section]['url']
-        ls_tree = git('ls-tree', '-r', rev, sub_relative_path,
+        ls_tree = git('ls-tree', rev, sub_relative_path,
                       git_dir=repo_path, capture_output=True)
+        # Normally when you run `git submodule add ...`, git puts two things in
+        # your repo: an entry in .gitmodules, and a commit object at the
+        # appropriate path inside your repo. However, it's possible for those
+        # two to get out of sync, especially if you use mv/rm on a directory
+        # followed by `git add`, instead of the smarter `git mv`/`git rm`. If
+        # we run into one of these missing submodules, just skip it.
+        if len(ls_tree.strip()) == 0:
+            print('WARNING: sudmodule ' + sub_relative_path +
+                  ' is configured in .gitmodules, but missing in the repo')
+            continue
         sub_rev = ls_tree.split()[2]
         checkout_tree(sub_url, sub_rev, sub_full_path)
 
