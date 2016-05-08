@@ -404,6 +404,10 @@ class CacheTest(PeruTest):
 
     @make_synchronous
     def test_validate_capitalizations(self):
+        # Assert that the set of capitalizations is the right size, both before
+        # and after deduplication.
+        self.assertEqual(len(peru.cache.DOTPERU_CAPITALIZATIONS), 16)
         self.assertEqual(len(set(peru.cache.DOTPERU_CAPITALIZATIONS)), 16)
+        # Check that every capitalization actually spells ".peru".
         for capitalization in peru.cache.DOTPERU_CAPITALIZATIONS:
             self.assertEqual(capitalization.lower(), ".peru")
