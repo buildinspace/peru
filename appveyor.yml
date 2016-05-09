@@ -32,14 +32,11 @@ environment:
       PYTHON_VERSION: "3.4.x"
       PYTHON_ARCH: "64"
 
-    # Python 3.5-32 won't run through the C:\Windows\py.exe launcher on
-    # AppVeyor for some reason. See:
-    # http://help.appveyor.com/discussions/problems/3891-py-35-32-hellopy-fails-with-error-code-103
-    # - PYTHON: "C:\\Python35"
-    # - PY_PYTHON: 3.5-32
-    # - PY_PYTHON3: 3.5-32
-    # - PYTHON_VERSION: "3.5.x"
-    # - PYTHON_ARCH: "32"
+    - PYTHON: "C:\\Python35"
+      PY_PYTHON: 3.5-32
+      PY_PYTHON3: 3.5-32
+      PYTHON_VERSION: "3.5.x"
+      PYTHON_ARCH: "32"
 
     - PYTHON: "C:\\Python35-x64"
       PY_PYTHON: 3.5
