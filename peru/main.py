@@ -86,9 +86,10 @@ Options:
     -v --verbose    print everything
 ''')
 def do_sync(params):
-    print_overrides(params.runtime)
+    params.runtime.print_overrides()
     yield from imports.checkout(
         params.runtime, params.scope, params.imports, params.runtime.sync_dir)
+    params.runtime.warn_unused_overrides()
 
 
 @peru_command('reup', '''\
@@ -168,7 +169,7 @@ Options:
     -v --verbose    print everything
 ''')
 def do_copy(params):
-    print_overrides(params.runtime)
+    params.runtime.print_overrides()
     if not params.args['<dest>']:
         dest = tempfile.mkdtemp(prefix='peru_copy_')
     else:
@@ -262,14 +263,6 @@ def maybe_print_help_and_return(args):
 
     # otherwise help is not called for
     return None
-
-
-def print_overrides(runtime):
-    if (runtime.overrides and not runtime.quiet and not runtime.no_overrides):
-        runtime.display.print('syncing with overrides:')
-        for name in runtime.overrides:
-            runtime.display.print('  {} {}'.format(
-                name, runtime.get_override(name)))
 
 
 def merged_args_dicts(global_args, subcommand_args):

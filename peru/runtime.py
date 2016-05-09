@@ -33,6 +33,7 @@ class _Runtime:
 
         self.overrides = KeyVal(os.path.join(self.state_dir, 'overrides'),
                                 self._tmp_root)
+        self._used_overrides = set()
 
         self.force = args.get('--force', False)
         if args['--quiet'] and args['--verbose']:
@@ -88,6 +89,18 @@ class _Runtime:
         dir = tempfile.TemporaryDirectory(dir=self._tmp_root)
         return dir
 
+    def get_plugin_context(self):
+        return plugin.PluginContext(
+            # Plugin cwd is always the directory containing peru.yaml, even if
+            # the sync_dir has been explicitly set elsewhere. That's because
+            # relative paths in peru.yaml should respect the location of that
+            # file.
+            cwd=str(Path(self.peru_file).parent),
+            plugin_cache_root=self.cache.plugins_root,
+            parallelism_semaphore=self.fetch_semaphore,
+            plugin_cache_locks=self.plugin_cache_locks,
+            tmp_root=self._tmp_root)
+
     def set_override(self, name, path):
         if not os.path.isabs(path):
             # We can't store relative paths as given, because peru could be
@@ -110,17 +123,31 @@ class _Runtime:
             path = os.path.relpath(os.path.join(self.sync_dir, path))
         return path
 
-    def get_plugin_context(self):
-        return plugin.PluginContext(
-            # Plugin cwd is always the directory containing peru.yaml, even if
-            # the sync_dir has been explicitly set elsewhere. That's because
-            # relative paths in peru.yaml should respect the location of that
-            # file.
-            cwd=str(Path(self.peru_file).parent),
-            plugin_cache_root=self.cache.plugins_root,
-            parallelism_semaphore=self.fetch_semaphore,
-            plugin_cache_locks=self.plugin_cache_locks,
-            tmp_root=self._tmp_root)
+    def mark_override_used(self, name):
+        '''Marking overrides as used lets us print a warning when an override
+        is unused.'''
+        self._used_overrides.add(name)
+
+    def print_overrides(self):
+        if self.quiet or self.no_overrides:
+            return
+        names = sorted(self.overrides)
+        if not names:
+            return
+        self.display.print('syncing with overrides:')
+        for name in names:
+            self.display.print('  {}: {}'.format(
+                name, self.get_override(name)))
+
+    def warn_unused_overrides(self):
+        if self.quiet or self.no_overrides:
+            return
+        unused_names = set(self.overrides) - self._used_overrides
+        if not unused_names:
+            return
+        self.display.print('WARNING unused overrides:')
+        for name in sorted(unused_names):
+            self.display.print('  ' + name)
 
 
 def find_project_file(start_dir, basename):

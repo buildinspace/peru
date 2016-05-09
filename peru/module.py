@@ -39,6 +39,9 @@ class Module:
     def _get_base_tree(self, runtime):
         override_path = runtime.get_override(self.name)
         if override_path is not None:
+            # Marking overrides as used lets us print a warning when an
+            # override is unused.
+            runtime.mark_override_used(self.name)
             override_tree = yield from self._get_override_tree(
                 runtime, override_path)
             return override_tree

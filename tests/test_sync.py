@@ -504,9 +504,11 @@ class SyncTest(shared.PeruTest):
                                           {'foo': 'bar'})
         self.assertNotIn('overrides', output)
         # Now run the sync normally and confirm that the override worked. Also
-        # confirm that we mentioned the override in output.
+        # confirm that we mentioned the override in output, and that the unused
+        # overrides warning is not printed.
         output = self.do_integration_test(['sync'], {'foo': 'override'})
         self.assertIn('overrides', output)
+        self.assertNotIn('WARNING unused overrides', output)
         # Delete the override.
         run_peru_command(['override', 'delete', 'foo'], self.test_dir)
         # Confirm that the override was deleted.
@@ -514,6 +516,12 @@ class SyncTest(shared.PeruTest):
         self.assertEqual(output, '')
         # Rerun the sync and confirm the original content is back.
         self.do_integration_test(['sync'], {'foo': 'bar'})
+        # Add a bogus override and confirm the unused overrides warning is
+        # printed.
+        run_peru_command(['override', 'add', 'bogus', override_dir],
+                         self.test_dir)
+        output = self.do_integration_test(['sync'], {'foo': 'bar'})
+        self.assertIn('WARNING unused overrides', output)
 
     def test_override_after_regular_sync(self):
         module_dir = shared.create_dir({'foo': 'bar'})
