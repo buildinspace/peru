@@ -6,6 +6,8 @@ import os
 import subprocess
 import sys
 
+from .error import PrintableError
+
 # The default event loop on Windows doesn't support subprocesses, so we need to
 # use the proactor loop. See:
 # https://docs.python.org/3/library/asyncio-eventloops.html#available-event-loops
@@ -25,22 +27,48 @@ def run_task(coro):
     return asyncio.get_event_loop().run_until_complete(coro)
 
 
-def stable_gather(*coros):
-    '''asyncio.gather() starts tasks in a nondeterministic order (because it
-    calls set() on its arguments). stable_gather starts the list of tasks in
-    order, and passes the resulting futures to gather().
+@asyncio.coroutine
+def gather_coalescing_exceptions(coros, display, error_str):
+    '''The tricky thing about running multiple coroutines in parallel is what
+    we're supposed to do when one of them raises an exception. The approach
+    we're using here is to catch all exceptions, print them, and keep waiting
+    for all tasks to finish. Then after everything is done, if any exceptions
+    were caught, we raise a new generic exception with the supplied message.
 
-    As with gather(), stable_gather() isn't itself a coroutine, but it returns
-    a future.'''
-    assert len(coros) == len(set(coros)), 'no duplicates allowed'
+    Another minor detail: We also want to make sure to start coroutines in the
+    order given, so that they end up appearing to the user alphabetically in
+    the fancy display. Note that asyncio.gather() puts coroutines in a set
+    internally, so we schedule coroutines *before* we give them to gather().
+    '''
+
+    @asyncio.coroutine
+    def catching_logging_wrapper(coro):
+        try:
+            ret = yield from coro
+            return (ret, None)
+        except Exception as e:
+            display.print(e)
+            return (None, e)
+
     # Suppress a deprecation warning in Python 3.5, while continuing to support
     # 3.3 and early 3.4 releases.
-    if hasattr(asyncio, 'ensure_future'):
-        ensure_future_fn = asyncio.ensure_future
+    schedule = getattr(asyncio, 'ensure_future', getattr(asyncio, 'async'))
+
+    futures = [schedule(catching_logging_wrapper(coro)) for coro in coros]
+
+    result_pairs = yield from asyncio.gather(*futures)
+
+    results = [pair[0] for pair in result_pairs]
+    exceptions = [pair[1] for pair in result_pairs]
+
+    if any(exceptions):
+        raise GatherException(error_str)
     else:
-        ensure_future_fn = asyncio.async
-    futures = [ensure_future_fn(coro) for coro in coros]
-    return asyncio.gather(*futures)
+        return results
+
+
+class GatherException(PrintableError):
+    pass
 
 
 @asyncio.coroutine

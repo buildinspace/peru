@@ -2,7 +2,7 @@ import asyncio
 import os
 from pathlib import Path
 
-from .async import stable_gather
+from .async import gather_coalescing_exceptions
 from . import compat
 from .error import error_context
 from .merge import merge_imports_tree
@@ -30,7 +30,10 @@ def get_imports_tree(runtime, scope, imports, base_tree=None):
 @asyncio.coroutine
 def get_trees(runtime, scope, targets):
     futures = [get_tree(runtime, scope, target) for target in targets]
-    trees = yield from stable_gather(*futures)
+    trees = yield from gather_coalescing_exceptions(
+        futures,
+        runtime.display,
+        "Sync encountered an error.")
     return dict(zip(targets, trees))
 
 
