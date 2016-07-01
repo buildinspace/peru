@@ -119,8 +119,13 @@ def _get_plugin_exe(definition, command):
     else:
         raise RuntimeError('Unrecognized command name: ' + repr(command))
 
+    if not exe:
+        raise PluginPermissionsError(
+            "Module type '{0}' does not support {1}.",
+            definition.type,
+            command)
     if not os.path.exists(exe):
-        raise PluginPermissionsError('Plugin exe does not exist: ' + exe)
+        raise PluginPermissionsError('Plugin exe is missing: ' + exe)
     if not os.access(exe, os.X_OK):
         raise PluginPermissionsError('Plugin exe is not executable: ' + exe)
     return exe
