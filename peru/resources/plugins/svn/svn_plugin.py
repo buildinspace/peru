@@ -19,11 +19,7 @@ def svn(*args, svn_dir=None, capture_output=False):
         universal_newlines=True)
     output, _ = process.communicate()
     if process.returncode != 0:
-        raise RuntimeError(
-            'Command exited with error code {0}:\n$ {1}\n{2}'.format(
-                process.returncode,
-                ' '.join(command),
-                output))
+        sys.exit(1)
 
     return output
 
