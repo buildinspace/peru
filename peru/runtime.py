@@ -3,6 +3,9 @@ import collections
 import os
 from pathlib import Path
 import tempfile
+import logging
+import sys
+import time
 
 from . import cache
 from . import compat
@@ -11,6 +14,8 @@ from . import display
 from .keyval import KeyVal
 from . import parser
 from . import plugin
+from watchdog.observers import Observer
+from watchdog.events import LoggingEventHandler
 
 
 @asyncio.coroutine
@@ -138,6 +143,67 @@ class _Runtime:
         for name in names:
             self.display.print('  {}: {}'.format(
                 name, self.get_override(name)))
+
+    def watch_overrides(self):
+        class WatchHandler(LoggingEventHandler):
+            logging.basicConfig(level=logging.INFO,
+                            format='%(asctime)s - %(message)s',
+                            datefmt='%Y-%m-%d %H:%M:%S')
+
+            def on_moved(self, event):
+                super(LoggingEventHandler, self).on_moved(event)
+                what = 'directory' if event.is_directory else 'file'
+                logging.info('moved %s: from %s to %s', what, event.src_path,
+                             event.dest_path)
+                logging.info('running peru sync --force')
+                os.system('peru sync --force')
+                logging.info('overrides synced')
+
+            def on_created(self, event):
+                super(LoggingEventHandler, self).on_created(event)
+                what = 'directory' if event.is_directory else 'file'
+                logging.info('Created %s: %s', what, event.src_path)
+                logging.info('running peru sync --force')
+                os.system('peru sync --force')
+                logging.info('overrides synced')
+
+            def on_deleted(self, event):
+                super(LoggingEventHandler, self).on_deleted(event)
+                what = 'directory' if event.is_directory else 'file'
+                logging.info('Deleted %s: %s', what, event.src_path)
+                logging.info('running peru sync --force')
+                os.system('peru sync --force')
+                logging.info('overrides synced')
+
+            def on_modified(self, event):
+                super(LoggingEventHandler, self).on_modified(event)
+                what = 'directory' if event.is_directory else 'file'
+                logging.info('Modified %s: %s', what, event.src_path)
+                logging.info('running peru sync --force')
+                os.system('peru sync --force')
+                logging.info('overrides synced')
+                
+        event_handler = WatchHandler()
+        observer = Observer()
+
+        if not self.overrides:
+            print('WARNING: no overrides found')
+            return
+
+        print('watching overrides:')
+        for module in self.overrides:
+            observer.schedule(event_handler, self.get_override(module), recursive=True)
+            print('  ' + module)
+            
+        observer.start()
+
+        try:
+            while True:
+                time.sleep(1)
+        except KeyboardInterrupt:
+            observer.stop()
+
+        observer.join()
 
     def warn_unused_overrides(self):
         if self.quiet or self.no_overrides:
