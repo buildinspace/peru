@@ -6,6 +6,8 @@ import os
 import subprocess
 import sys
 
+from .error import PrintableError
+
 # The default event loop on Windows doesn't support subprocesses, so we need to
 # use the proactor loop. See:
 # https://docs.python.org/3/library/asyncio-eventloops.html#available-event-loops
@@ -23,6 +25,21 @@ atexit.register(asyncio.get_event_loop().close)
 
 def run_task(coro):
     return asyncio.get_event_loop().run_until_complete(coro)
+
+
+class GatheredExceptions(PrintableError):
+    def __init__(self, exceptions):
+        self.exceptions = []
+        for e in exceptions:
+            # Flatten in the exceptions list of any other GatheredExceptions we
+            # see. (This happens, for example, if something throws inside a
+            # recursive module.)
+            if isinstance(e, GatheredExceptions):
+                self.exceptions.extend(e.exceptions)
+            else:
+                self.exceptions.append(e)
+
+        self.message = "{0} errors OMGGGGGG".format(len(self.exceptions))
 
 
 @asyncio.coroutine
@@ -61,14 +78,8 @@ def gather_coalescing_exceptions(coros, display, error_str):
 
     results = yield from asyncio.gather(*futures)
 
-    # If there's more than one exception, log them all.
-    if len(exceptions) > 1:
-        display.print("Encountered multiple errors. Reraising only the first:")
-        for e in exceptions:
-            print(e)
-
     if exceptions:
-        raise exceptions[0]
+        raise GatheredExceptions(exceptions)
     else:
         return results
 
