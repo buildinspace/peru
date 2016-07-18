@@ -1,6 +1,7 @@
 import asyncio
 import atexit
 import codecs
+import contextlib
 import io
 import os
 import subprocess
@@ -29,6 +30,7 @@ def run_task(coro):
 
 class GatheredExceptions(PrintableError):
     def __init__(self, exceptions):
+        assert len(exceptions) > 0
         self.exceptions = []
         for e in exceptions:
             # Flatten in the exceptions list of any other GatheredExceptions we
@@ -39,7 +41,12 @@ class GatheredExceptions(PrintableError):
             else:
                 self.exceptions.append(e)
 
+        # TODO: Something meaningful here.
         self.message = "{0} errors OMGGGGGG".format(len(self.exceptions))
+
+    def get_only(self):
+        assert len(self.exceptions) == 1, "more than one gathered exception"
+        return self.exceptions[0]
 
 
 @asyncio.coroutine
@@ -170,3 +177,21 @@ def safe_communicate(process, input=None):
         return (yield from process.communicate())
     else:
         return (yield from process.communicate(input))
+
+
+@contextlib.contextmanager
+def raises_gathered(error_type):
+    '''For use in tests. Many tests expect a single error to be thrown, and
+    want it to be of a specific type. This is a helper method for when that
+    type is inside a gathered exception.'''
+    try:
+        yield
+    except GatheredExceptions as e:
+        # Make sure there is exactly one exception.
+        if len(e.exceptions) != 1:
+            raise
+        inner = e.exceptions[0]
+        # Make sure the exception is the right type.
+        if not isinstance(inner, error_type):
+            raise
+        # Success.

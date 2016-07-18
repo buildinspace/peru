@@ -4,6 +4,7 @@ import os
 import sys
 import textwrap
 
+from peru.async import raises_gathered, GatheredExceptions
 import peru.cache
 import peru.compat
 import peru.error
@@ -387,7 +388,7 @@ class SyncTest(shared.PeruTest):
             imports:
                 foobar: ./
             ''', module_dir)
-        with self.assertRaises(peru.rule.NoMatchingFilesError):
+        with raises_gathered(peru.rule.NoMatchingFilesError):
             run_peru_command(['sync'], self.test_dir)
 
     def test_rule_with_executable(self):
@@ -430,8 +431,8 @@ class SyncTest(shared.PeruTest):
         try:
             self.do_integration_test(['sync'],
                                      {'newa': 'foo', 'newb/c': 'bar'})
-        except peru.error.PrintableError as e:
-            assert 'doesntexist' in e.message
+        except GatheredExceptions as e:
+            assert 'doesntexist' in e.get_only().message
 
     def test_rule_with_copied_files(self):
         content = {
