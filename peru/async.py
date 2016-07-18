@@ -6,6 +6,7 @@ import io
 import os
 import subprocess
 import sys
+import traceback
 
 from .error import PrintableError
 
@@ -29,20 +30,23 @@ def run_task(coro):
 
 
 class GatheredExceptions(PrintableError):
-    def __init__(self, exceptions):
+    def __init__(self, exceptions, reprs):
         assert len(exceptions) > 0
         self.exceptions = []
-        for e in exceptions:
+        self.reprs = []
+        for e, st in zip(exceptions, reprs):
             # Flatten in the exceptions list of any other GatheredExceptions we
             # see. (This happens, for example, if something throws inside a
             # recursive module.)
             if isinstance(e, GatheredExceptions):
                 self.exceptions.extend(e.exceptions)
+                self.reprs.extend(e.reprs)
             else:
                 self.exceptions.append(e)
+                self.reprs.append(st)
 
         # TODO: Something meaningful here.
-        self.message = "{0} errors OMGGGGGG".format(len(self.exceptions))
+        self.message = "\n".join(self.reprs)
 
     def get_only(self):
         assert len(self.exceptions) == 1, "more than one gathered exception"
@@ -50,7 +54,7 @@ class GatheredExceptions(PrintableError):
 
 
 @asyncio.coroutine
-def gather_coalescing_exceptions(coros, display, error_str):
+def gather_coalescing_exceptions(coros, display, *, verbose):
     '''The tricky thing about running multiple coroutines in parallel is what
     we're supposed to do when one of them raises an exception. The approach
     we're using here is to catch exceptions and keep waiting for other tasks to
@@ -65,6 +69,7 @@ def gather_coalescing_exceptions(coros, display, error_str):
     '''
 
     exceptions = []
+    reprs = []
 
     @asyncio.coroutine
     def catching_wrapper(coro):
@@ -72,6 +77,10 @@ def gather_coalescing_exceptions(coros, display, error_str):
             return (yield from coro)
         except Exception as e:
             exceptions.append(e)
+            if isinstance(e, PrintableError) and not verbose:
+                reprs.append(e.message)
+            else:
+                reprs.append(traceback.format_exc())
             return None
 
     # Suppress a deprecation warning in Python 3.5, while continuing to support
@@ -86,7 +95,7 @@ def gather_coalescing_exceptions(coros, display, error_str):
     results = yield from asyncio.gather(*futures)
 
     if exceptions:
-        raise GatheredExceptions(exceptions)
+        raise GatheredExceptions(exceptions, reprs)
     else:
         return results
 

@@ -33,7 +33,7 @@ def get_trees(runtime, scope, targets):
     trees = yield from gather_coalescing_exceptions(
         futures,
         runtime.display,
-        "Sync encountered an error.")
+        verbose=runtime.verbose)
     return dict(zip(targets, trees))
 
 
