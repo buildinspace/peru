@@ -4,6 +4,7 @@ import os
 import sys
 import textwrap
 
+from peru.async import raises_gathered
 import peru.cache
 import peru.compat
 import peru.error
@@ -226,7 +227,9 @@ class SyncTest(shared.PeruTest):
 
     def test_recursive_import_error(self):
         '''Errors that happen inside recursively-fetched targets should have
-        context information about the targets that caused them.'''
+        context information about the targets that caused them. This test is
+        especially important for checking that context isn't lost in
+        GatheredExceptions.'''
         # Project NOTABLE_NAME has a BAD_MODULE in it.
         dir_notable = shared.create_dir()
         # Create the peru.yaml file for NOTABLE_NAME.
@@ -235,6 +238,7 @@ class SyncTest(shared.PeruTest):
                 BAD_MODULE: ./
             git module BAD_MODULE:
                 bad_field: stuff
+                # The error we get here will actually be that `url` is missing.
             ''', dir=dir_notable)
         # Now make our test project import it.
         self.write_yaml('''\
@@ -330,7 +334,7 @@ class SyncTest(shared.PeruTest):
             imports:
                 foo: ./
             ''', module_dir)
-        with self.assertRaises(peru.rule.NoMatchingFilesError):
+        with raises_gathered(peru.rule.NoMatchingFilesError):
             self.do_integration_test(['sync'], {})
 
     def test_rule_with_exported_files_that_are_not_picked(self):
@@ -351,7 +355,7 @@ class SyncTest(shared.PeruTest):
             imports:
                 foo: ./
             ''', module_dir)
-        with self.assertRaises(peru.rule.NoMatchingFilesError):
+        with raises_gathered(peru.rule.NoMatchingFilesError):
             self.do_integration_test(['sync'], {})
 
     def test_rule_with_dropped_files(self):
@@ -387,7 +391,7 @@ class SyncTest(shared.PeruTest):
             imports:
                 foobar: ./
             ''', module_dir)
-        with self.assertRaises(peru.rule.NoMatchingFilesError):
+        with raises_gathered(peru.rule.NoMatchingFilesError):
             run_peru_command(['sync'], self.test_dir)
 
     def test_rule_with_executable(self):
@@ -427,11 +431,10 @@ class SyncTest(shared.PeruTest):
             imports:
                 foo: ./
             ''', module_dir)
-        try:
+        with raises_gathered(peru.rule.NoMatchingFilesError) as cm:
             self.do_integration_test(['sync'],
                                      {'newa': 'foo', 'newb/c': 'bar'})
-        except peru.error.PrintableError as e:
-            assert 'doesntexist' in e.message
+        assert 'doesntexist' in cm.exception.message
 
     def test_rule_with_copied_files(self):
         content = {

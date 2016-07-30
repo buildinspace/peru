@@ -122,7 +122,10 @@ def do_reup(params):
     else:
         modules = params.scope.get_modules_for_reup(names)
     futures = [module.reup(params.runtime) for module in modules]
-    yield from async.stable_gather(*futures)
+    yield from async.gather_coalescing_exceptions(
+        futures,
+        params.runtime.display,
+        verbose=params.runtime.verbose)
     if not params.args['--no-sync']:
         # Do an automatic sync. Reparse peru.yaml to get the new revs.
         new_scope, new_imports = parser.parse_file(params.runtime.peru_file)

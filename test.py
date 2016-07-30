@@ -23,8 +23,9 @@ def main():
         if var.startswith('PERU_'):
             del os.environ[var]
 
-    # Turn debugging features on for the asyncio library.
-    os.environ['PYTHONASYNCIODEBUG'] = '1'
+    # Turn debugging features on for the asyncio library, if it's unset.
+    if 'PYTHONASYNCIODEBUG' not in os.environ:
+        os.environ['PYTHONASYNCIODEBUG'] = '1'
 
     # Make sure the tests don't create any garbage files in the repo. That
     # tends to happen when we accidentally run something in the current dir

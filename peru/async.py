@@ -1,10 +1,14 @@
 import asyncio
 import atexit
 import codecs
+import contextlib
 import io
 import os
 import subprocess
 import sys
+import traceback
+
+from .error import PrintableError
 
 # The default event loop on Windows doesn't support subprocesses, so we need to
 # use the proactor loop. See:
@@ -25,22 +29,71 @@ def run_task(coro):
     return asyncio.get_event_loop().run_until_complete(coro)
 
 
-def stable_gather(*coros):
-    '''asyncio.gather() starts tasks in a nondeterministic order (because it
-    calls set() on its arguments). stable_gather starts the list of tasks in
-    order, and passes the resulting futures to gather().
+class GatheredExceptions(PrintableError):
+    def __init__(self, exceptions, reprs):
+        assert len(exceptions) > 0
+        self.exceptions = []
+        self.reprs = []
+        for e, st in zip(exceptions, reprs):
+            # Flatten in the exceptions list of any other GatheredExceptions we
+            # see. (This happens, for example, if something throws inside a
+            # recursive module.)
+            if isinstance(e, GatheredExceptions):
+                self.exceptions.extend(e.exceptions)
+            else:
+                self.exceptions.append(e)
 
-    As with gather(), stable_gather() isn't itself a coroutine, but it returns
-    a future.'''
-    assert len(coros) == len(set(coros)), 'no duplicates allowed'
+            # Don't flatten the reprs. This would make us lose PrintableError
+            # context. TODO: Represent context in a more structured way?
+            self.reprs.append(st)
+
+        self.message = "\n\n".join(self.reprs)
+
+
+@asyncio.coroutine
+def gather_coalescing_exceptions(coros, display, *, verbose):
+    '''The tricky thing about running multiple coroutines in parallel is what
+    we're supposed to do when one of them raises an exception. The approach
+    we're using here is to catch exceptions and keep waiting for other tasks to
+    finish. At the end, we reraise a GatheredExceptions error, if any
+    exceptions were caught.
+
+    Another minor detail: We also want to make sure to start coroutines in the
+    order given, so that they end up appearing to the user alphabetically in
+    the fancy display. Note that asyncio.gather() puts coroutines in a set
+    internally, so we schedule coroutines *before* we give them to gather().
+    '''
+
+    exceptions = []
+    reprs = []
+
+    @asyncio.coroutine
+    def catching_wrapper(coro):
+        try:
+            return (yield from coro)
+        except Exception as e:
+            exceptions.append(e)
+            if isinstance(e, PrintableError) and not verbose:
+                reprs.append(e.message)
+            else:
+                reprs.append(traceback.format_exc())
+            return None
+
     # Suppress a deprecation warning in Python 3.5, while continuing to support
     # 3.3 and early 3.4 releases.
     if hasattr(asyncio, 'ensure_future'):
-        ensure_future_fn = asyncio.ensure_future
+        schedule = getattr(asyncio, 'ensure_future')
     else:
-        ensure_future_fn = asyncio.async
-    futures = [ensure_future_fn(coro) for coro in coros]
-    return asyncio.gather(*futures)
+        schedule = getattr(asyncio, 'async')
+
+    futures = [schedule(catching_wrapper(coro)) for coro in coros]
+
+    results = yield from asyncio.gather(*futures)
+
+    if exceptions:
+        raise GatheredExceptions(exceptions, reprs)
+    else:
+        return results
 
 
 @asyncio.coroutine
@@ -129,3 +182,28 @@ def safe_communicate(process, input=None):
         return (yield from process.communicate())
     else:
         return (yield from process.communicate(input))
+
+
+class RaisesGatheredContainer:
+    def __init__(self):
+        self.exception = None
+
+
+@contextlib.contextmanager
+def raises_gathered(error_type):
+    '''For use in tests. Many tests expect a single error to be thrown, and
+    want it to be of a specific type. This is a helper method for when that
+    type is inside a gathered exception.'''
+    container = RaisesGatheredContainer()
+    try:
+        yield container
+    except GatheredExceptions as e:
+        # Make sure there is exactly one exception.
+        if len(e.exceptions) != 1:
+            raise
+        inner = e.exceptions[0]
+        # Make sure the exception is the right type.
+        if not isinstance(inner, error_type):
+            raise
+        # Success.
+        container.exception = inner

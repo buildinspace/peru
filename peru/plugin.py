@@ -4,7 +4,6 @@ import contextlib
 import os
 import subprocess
 import tempfile
-import textwrap
 
 import yaml
 
@@ -345,11 +344,6 @@ class PluginPermissionsError(PrintableError):
 
 class PluginRuntimeError(PrintableError):
     def __init__(self, type, fields, errorcode, output):
-        formatted_fields = '\n'.join('    {}: {}'.format(name, val)
-                                     for name, val in fields.items())
-        super().__init__(textwrap.dedent('''\
-            {} plugin exited with error code {}.
-            Fields:
-            {}
-            Output:
-            {}''').format(type, errorcode, formatted_fields, output))
+        # Don't depend on plugins using terminating newlines.
+        stripped_output = output.strip('\n')
+        super().__init__(stripped_output)

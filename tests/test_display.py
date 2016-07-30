@@ -40,11 +40,11 @@ class DisplayTest(shared.PeruTest):
         handle1.__enter__()
         handle1.write('something1')
         disp._draw()
-        # We need to test trailing spaces, and the '# nopep8' tag stops the
+        # We need to test trailing spaces, and the '# noqa: W291' tag stops the
         # linter from complaining about these.
         expected1 = textwrap.dedent('''\
             ╶ title1: something1 
-            ''')  # nopep8
+            ''')  # noqa: W291
         self.assertEqual(expected1, output.getlines())
 
         handle2 = disp.get_handle('title2')
@@ -54,7 +54,7 @@ class DisplayTest(shared.PeruTest):
         expected2 = textwrap.dedent('''\
             ┌ title1: something1 
             └ title2: something2 
-            ''')  # nopep8
+            ''')  # noqa: W291
         self.assertEqual(expected2, output.getlines())
 
         handle3 = disp.get_handle('title3')
@@ -65,7 +65,7 @@ class DisplayTest(shared.PeruTest):
             ┌ title1: something1 
             ├ title2: something2 
             └ title3: something3 
-            ''')  # nopep8
+            ''')  # noqa: W291
         self.assertEqual(expected3, output.getlines())
 
         disp.print('stuff above')
@@ -77,7 +77,7 @@ class DisplayTest(shared.PeruTest):
             ┌ title1: something1 
             ├ title2: something2 
             └ title3: something3 
-            ''')  # nopep8
+            ''')  # noqa: W291
         self.assertEqual(expected4, output.getlines())
 
         handle2.__exit__(None, None, None)
@@ -86,7 +86,7 @@ class DisplayTest(shared.PeruTest):
             stuff above
             ┌ title1: something1 
             └ title3: something3 
-            ''')  # nopep8
+            ''')  # noqa: W291
         self.assertEqual(expected5, output.getlines())
 
         handle1.__exit__(None, None, None)
@@ -94,7 +94,7 @@ class DisplayTest(shared.PeruTest):
         expected6 = textwrap.dedent('''\
             stuff above
             ╶ title3: something3 
-            ''')  # nopep8
+            ''')  # noqa: W291
         self.assertEqual(expected6, output.getlines())
 
         handle3.__exit__(None, None, None)

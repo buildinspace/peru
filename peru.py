@@ -11,6 +11,6 @@ repo_root = os.path.dirname(os.path.realpath(__file__))
 
 sys.path.insert(0, repo_root)
 
-import peru.main
+import peru.main  # noqa: E402
 
 peru.main.main()

@@ -10,6 +10,7 @@ class PrintableError(Exception):
         return self.message
 
     def add_context(self, context):
+        # TODO: Something more structured?
         self.message = 'In {}:\n{}'.format(context, indent(self.message, '  '))
 
 
