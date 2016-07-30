@@ -331,7 +331,7 @@ class SyncTest(shared.PeruTest):
             imports:
                 foo: ./
             ''', module_dir)
-        with self.assertRaises(peru.rule.NoMatchingFilesError):
+        with raises_gathered(peru.rule.NoMatchingFilesError):
             self.do_integration_test(['sync'], {})
 
     def test_rule_with_exported_files_that_are_not_picked(self):
@@ -352,7 +352,7 @@ class SyncTest(shared.PeruTest):
             imports:
                 foo: ./
             ''', module_dir)
-        with self.assertRaises(peru.rule.NoMatchingFilesError):
+        with raises_gathered(peru.rule.NoMatchingFilesError):
             self.do_integration_test(['sync'], {})
 
     def test_rule_with_dropped_files(self):
