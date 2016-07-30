@@ -187,13 +187,19 @@ def safe_communicate(process, input=None):
         return (yield from process.communicate(input))
 
 
+class RaisesGatheredContainer:
+    def __init__(self):
+        self.exception = None
+
+
 @contextlib.contextmanager
 def raises_gathered(error_type):
     '''For use in tests. Many tests expect a single error to be thrown, and
     want it to be of a specific type. This is a helper method for when that
     type is inside a gathered exception.'''
+    container = RaisesGatheredContainer()
     try:
-        yield
+        yield container
     except GatheredExceptions as e:
         # Make sure there is exactly one exception.
         if len(e.exceptions) != 1:
@@ -203,3 +209,4 @@ def raises_gathered(error_type):
         if not isinstance(inner, error_type):
             raise
         # Success.
+        container.exception = inner

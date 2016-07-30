@@ -4,7 +4,7 @@ import os
 import sys
 import textwrap
 
-from peru.async import raises_gathered, GatheredExceptions
+from peru.async import raises_gathered
 import peru.cache
 import peru.compat
 import peru.error
@@ -428,11 +428,10 @@ class SyncTest(shared.PeruTest):
             imports:
                 foo: ./
             ''', module_dir)
-        try:
+        with raises_gathered(peru.rule.NoMatchingFilesError) as cm:
             self.do_integration_test(['sync'],
                                      {'newa': 'foo', 'newb/c': 'bar'})
-        except GatheredExceptions as e:
-            assert 'doesntexist' in e.get_only().message
+        assert 'doesntexist' in cm.exception.message
 
     def test_rule_with_copied_files(self):
         content = {
