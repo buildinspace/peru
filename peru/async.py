@@ -40,10 +40,12 @@ class GatheredExceptions(PrintableError):
             # recursive module.)
             if isinstance(e, GatheredExceptions):
                 self.exceptions.extend(e.exceptions)
-                self.reprs.extend(e.reprs)
             else:
                 self.exceptions.append(e)
-                self.reprs.append(st)
+
+            # Don't flatten the reprs. This would make us lose PrintableError
+            # context. TODO: Represent context in a more structured way?
+            self.reprs.append(st)
 
         # TODO: Something meaningful here.
         self.message = "\n".join(self.reprs)

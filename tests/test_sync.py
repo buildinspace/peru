@@ -227,7 +227,9 @@ class SyncTest(shared.PeruTest):
 
     def test_recursive_import_error(self):
         '''Errors that happen inside recursively-fetched targets should have
-        context information about the targets that caused them.'''
+        context information about the targets that caused them. This test is
+        especially important for checking that context isn't lost in
+        GatheredExceptions.'''
         # Project NOTABLE_NAME has a BAD_MODULE in it.
         dir_notable = shared.create_dir()
         # Create the peru.yaml file for NOTABLE_NAME.
@@ -236,6 +238,7 @@ class SyncTest(shared.PeruTest):
                 BAD_MODULE: ./
             git module BAD_MODULE:
                 bad_field: stuff
+                # The error we get here will actually be that `url` is missing.
             ''', dir=dir_notable)
         # Now make our test project import it.
         self.write_yaml('''\
