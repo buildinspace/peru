@@ -47,7 +47,6 @@ class GatheredExceptions(PrintableError):
             # context. TODO: Represent context in a more structured way?
             self.reprs.append(st)
 
-        # TODO: Something meaningful here.
         self.message = "\n".join(self.reprs)
 
     def get_only(self):
