@@ -47,7 +47,7 @@ class GatheredExceptions(PrintableError):
             # context. TODO: Represent context in a more structured way?
             self.reprs.append(st)
 
-        self.message = "\n".join(self.reprs)
+        self.message = "\n\n".join(self.reprs)
 
 
 @asyncio.coroutine

@@ -344,4 +344,6 @@ class PluginPermissionsError(PrintableError):
 
 class PluginRuntimeError(PrintableError):
     def __init__(self, type, fields, errorcode, output):
-        super().__init__(output)
+        # Don't depend on plugins using terminating newlines.
+        stripped_output = output.strip('\n')
+        super().__init__(stripped_output)
