@@ -49,10 +49,6 @@ class GatheredExceptions(PrintableError):
 
         self.message = "\n".join(self.reprs)
 
-    def get_only(self):
-        assert len(self.exceptions) == 1, "more than one gathered exception"
-        return self.exceptions[0]
-
 
 @asyncio.coroutine
 def gather_coalescing_exceptions(coros, display, *, verbose):
