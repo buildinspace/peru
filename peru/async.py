@@ -58,9 +58,8 @@ def gather_coalescing_exceptions(coros, display, *, verbose):
     '''The tricky thing about running multiple coroutines in parallel is what
     we're supposed to do when one of them raises an exception. The approach
     we're using here is to catch exceptions and keep waiting for other tasks to
-    finish. At the end, we reraise the first exception caught, if any.
-    Additional exceptions we just log as they come in. This allows tests that
-    expect a single exception to receive it as usual, confirm its type, etc.
+    finish. At the end, we reraise a GatheredExceptions error, if any
+    exceptions were caught.
 
     Another minor detail: We also want to make sure to start coroutines in the
     order given, so that they end up appearing to the user alphabetically in
