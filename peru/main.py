@@ -251,26 +251,27 @@ def do_add(params):
             peru_file = params.args['--yaml'] if params.args['--yaml'] else 'peru.yaml'
 
             if(peru_file[-5:] != '.yaml'):
-                print('Peru file should end in .yaml. See usage with peru add --help')
+                params.runtime.display.print('Peru file should end in .yaml. See usage with peru add --help')
 
-            with open(peru_file, "a") as yaml:
-                yaml.write('\n' + params.args['<type>'] + ' module ' + params.args['<module>'] + ':')
-                if(params.args['<url>']):
-                    yaml.write('\n  url: ' + params.args['<url>'])
-                if(params.args['--rev']):
-                    yaml.write('\n  rev: ' + params.args['--rev'])
-                if(params.args['--reup']):
-                    yaml.write('\n  reup: ' + params.args['--reup'])
-                if(params.args['--filename']):
-                    yaml.write('\n  filename: ' + params.args['--filename'])
-                if(params.args['--sha']):
-                    yaml.write('\n  sha: ' + params.args['--sha'])
-                if(params.args['--unpack']):
-                    yaml.write('\n  unpack: ' + params.args['--unpack'])
-                yaml.write('\n')
-                yaml.close()
+            else:
+                with open(peru_file, "a") as yaml:
+                    yaml.write('\n' + params.args['<type>'] + ' module ' + params.args['<module>'] + ':')
+                    if(params.args['<url>']):
+                        yaml.write('\n  url: ' + params.args['<url>'])
+                    if(params.args['--rev']):
+                        yaml.write('\n  rev: ' + params.args['--rev'])
+                    if(params.args['--reup']):
+                        yaml.write('\n  reup: ' + params.args['--reup'])
+                    if(params.args['--filename']):
+                        yaml.write('\n  filename: ' + params.args['--filename'])
+                    if(params.args['--sha']):
+                        yaml.write('\n  sha: ' + params.args['--sha'])
+                    if(params.args['--unpack']):
+                        yaml.write('\n  unpack: ' + params.args['--unpack'])
+                    yaml.write('\n')
+                    yaml.close()
 
-            params.runtime.display.print('{} module added to {}'.format(params.args['<module>'], peru_file))
+                    params.runtime.display.print('{} module added to {}'.format(params.args['<module>'], peru_file))
 
 
 def get_version():
