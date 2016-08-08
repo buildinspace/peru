@@ -229,6 +229,31 @@ def do_override(params):
                     module, params.runtime.get_override(module)))
 
 
+@peru_command('module', '''\
+Usage:
+    peru module <list> [-z]
+
+Options:
+    -z              print one module per line for machine-readable formatting
+
+''')
+def do_list(params):
+    modules = params.scope.modules.values()
+    output = ''
+    delim = ' | ' if params.args['-z'] else "\n  "
+
+    for module in modules:
+        output += module.name
+        for field, val in module.plugin_fields.items():
+            output += '{}{}: {}'.format(delim, field, val)
+        if(params.runtime.get_override(module.name)):
+            output += '{}{}: {}'.format(delim, 'override', params.runtime.get_override(module.name))
+        output += '\n'
+
+    if (output):
+        params.runtime.display.print(output[:-1])
+
+
 def get_version():
     version_file = os.path.join(compat.MODULE_ROOT, 'VERSION')
     with open(version_file) as f:
