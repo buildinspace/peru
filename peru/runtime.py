@@ -76,7 +76,7 @@ class _Runtime:
                 'If the --file or --sync-dir is set, '
                 'the other must also be set.')
         else:
-            basename = explicit_basename or parser.DEFAULT_PERU_FILE_NAME
+            basename = explicit_basename or parser.DEFAULT_PERU_FILENAMES[0]
             self.peru_file = find_project_file(os.getcwd(), basename)
             self.sync_dir = os.path.dirname(self.peru_file)
         self.state_dir = (args['--state-dir'] or

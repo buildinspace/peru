@@ -10,7 +10,7 @@ from .rule import Rule
 from .scope import Scope
 
 
-DEFAULT_PERU_FILE_NAME = 'peru.yaml'
+DEFAULT_PERU_FILENAMES = ['peru.yaml', 'peru.yml', '.peru.yml', '.peru']
 
 
 class ParserError(PrintableError):
@@ -103,7 +103,15 @@ def _extract_modules(blob, name_prefix):
 
 
 def _build_module(name, type, blob, yaml_name):
-    peru_file = typesafe_pop(blob, 'peru file', DEFAULT_PERU_FILE_NAME)
+    peru_filename = DEFAULT_PERU_FILENAMES[0]
+    for filename in DEFAULT_PERU_FILENAMES:
+        try:
+            with open(filename):
+                peru_filename = filename
+                break
+        except:
+            continue
+    peru_file = typesafe_pop(blob, 'peru file', peru_filename)
     recursive = typesafe_pop(blob, 'recursive', None)
     default_rule = _extract_default_rule(blob)
     plugin_fields = blob

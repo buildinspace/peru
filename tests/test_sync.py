@@ -8,7 +8,7 @@ import peru.cache
 import peru.compat
 import peru.error
 import peru.main
-from peru.parser import DEFAULT_PERU_FILE_NAME
+from peru.parser import DEFAULT_PERU_FILENAMES
 import peru.rule
 import peru.scope
 
@@ -32,7 +32,7 @@ class SyncTest(shared.PeruTest):
         yaml = textwrap.dedent(unformatted_yaml.format(*format_args))
         if dir is None:
             dir = self.test_dir
-        with open(os.path.join(dir, DEFAULT_PERU_FILE_NAME), 'w') as f:
+        with open(os.path.join(dir, DEFAULT_PERU_FILENAMES[0]), 'w') as f:
             f.write(yaml)
 
     def do_integration_test(self, args, expected, *, cwd=None,
@@ -41,7 +41,7 @@ class SyncTest(shared.PeruTest):
             cwd = self.test_dir
         output = run_peru_command(args, cwd, **peru_cmd_kwargs)
         assert_contents(self.test_dir, expected,
-                        excludes=[DEFAULT_PERU_FILE_NAME, '.peru'])
+                        excludes=[DEFAULT_PERU_FILENAMES[0], '.peru'])
         return output
 
     def test_basic_sync(self):
