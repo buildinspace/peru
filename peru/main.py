@@ -190,6 +190,7 @@ Usage:
     peru override [list]
     peru override add <module> <path>
     peru override delete <module>
+    peru override watch
     peru override --help
 
 Adding an override tells peru to use the contents of a given directory
@@ -208,6 +209,7 @@ module is overridden.
 Options:
     -h --help  (>'-')> <('-'<) ^('-')^
 ''')
+
 def do_override(params):
     if params.args['add']:
         name = params.args['<module>']
@@ -216,6 +218,8 @@ def do_override(params):
     elif params.args['delete']:
         key = params.args['<module>']
         del params.runtime.overrides[key]
+    elif params.args['watch']:
+        params.runtime.watch_overrides()
     else:
         for module in sorted(params.runtime.overrides):
             print('{}: {}'.format(module, params.runtime.get_override(module)))
