@@ -2,6 +2,7 @@
 
 import asyncio
 import collections
+import json
 import os
 import sys
 import tempfile
@@ -187,7 +188,7 @@ def do_copy(params):
 
 @peru_command('override', '''\
 Usage:
-    peru override [list]
+    peru override [list] [--json]
     peru override add <module> <path>
     peru override delete <module>
     peru override --help
@@ -207,18 +208,25 @@ module is overridden.
 
 Options:
     -h --help  (>'-')> <('-'<) ^('-')^
+    --json     print output as JSON
 ''')
 def do_override(params):
+    overrides = params.runtime.overrides
     if params.args['add']:
         name = params.args['<module>']
         path = params.args['<path>']
         params.runtime.set_override(name, path)
     elif params.args['delete']:
         key = params.args['<module>']
-        del params.runtime.overrides[key]
+        del overrides[key]
     else:
-        for module in sorted(params.runtime.overrides):
-            print('{}: {}'.format(module, params.runtime.get_override(module)))
+        if params.args['--json']:
+            print(json.dumps({module: os.path.abspath(overrides[module])
+                              for module in overrides}))
+        else:
+            for module in sorted(overrides):
+                print('{}: {}'.format(
+                    module, params.runtime.get_override(module)))
 
 
 def get_version():

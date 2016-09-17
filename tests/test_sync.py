@@ -1,5 +1,6 @@
 import contextlib
 import io
+import json
 import os
 import sys
 import textwrap
@@ -501,6 +502,10 @@ class SyncTest(shared.PeruTest):
         # Make sure 'override list' gives the same output as 'override'.
         output = run_peru_command(['override', 'list'], self.test_dir)
         self.assertEqual(output, 'foo: {}\n'.format(override_dir))
+        # Same as above, but as JSON (with --json flag).
+        output = run_peru_command(['override', '--json'], self.test_dir)
+        override_dict = json.loads(output)
+        self.assertEqual(override_dict, {'foo': override_dir})
         # Run the sync with --no-overrides and confirm nothing changes. Also
         # check that there's no overrides-related output.
         output = self.do_integration_test(['sync', '--no-overrides'],
