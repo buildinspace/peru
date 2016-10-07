@@ -241,6 +241,7 @@ def do_list(params):
     for module in params.scope.modules.values():
         print(module.name)
 
+
 def get_version():
     version_file = os.path.join(compat.MODULE_ROOT, 'VERSION')
     with open(version_file) as f:
