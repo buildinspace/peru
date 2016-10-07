@@ -229,6 +229,18 @@ def do_override(params):
                     module, params.runtime.get_override(module)))
 
 
+@peru_command('module', '''\
+Usage:
+    peru module [list] [-h]
+
+Options:
+    -h --help       I'm not feeling creative :)
+
+''')
+def do_list(params):
+    for module in params.scope.modules.values():
+        print(module.name)
+
 def get_version():
     version_file = os.path.join(compat.MODULE_ROOT, 'VERSION')
     with open(version_file) as f:
