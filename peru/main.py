@@ -29,6 +29,7 @@ Commands:
     clean     delete imports from your project
     copy      copy files directly from a module to somewhere else
     override  substitute a local directory for the contents of a module
+    module    get information about the modules in your project
     help      show help for subcommands, same as -h/--help
 
 Options:
@@ -231,15 +232,21 @@ def do_override(params):
 
 @peru_command('module', '''\
 Usage:
-    peru module [list] [-h]
+    peru module [list] [-h] [--json]
+
+Lists the modules defined in the current project.
 
 Options:
-    -h --help       I'm not feeling creative :)
-
+    -h --help  I'm not feeling creative :)
+    --json     print output as JSON
 ''')
 def do_list(params):
-    for module in params.scope.modules.values():
-        print(module.name)
+    modules = sorted(params.scope.modules.keys())
+    if params.args['--json']:
+        print(json.dumps(modules))
+    else:
+        for module in modules:
+            print(module)
 
 
 def get_version():

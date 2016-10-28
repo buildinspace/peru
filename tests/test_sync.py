@@ -843,6 +843,23 @@ class SyncTest(shared.PeruTest):
         assert os.path.exists(index_path), \
             'The index should have been recreated.'
 
+    def test_module_list(self):
+        self.write_yaml('''\
+            git module foo:
+                url: blah
+            git module bar:
+                url: blah
+            ''')
+
+        output = run_peru_command(['module'], self.test_dir)
+        self.assertEqual(output, "bar\nfoo\n")
+
+        output = run_peru_command(['module', 'list'], self.test_dir)
+        self.assertEqual(output, "bar\nfoo\n")
+
+        output = run_peru_command(['module', 'list', '--json'], self.test_dir)
+        self.assertEqual(output, '["bar", "foo"]\n')
+
 
 @contextlib.contextmanager
 def redirect_stderr(f):
