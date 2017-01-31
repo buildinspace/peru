@@ -12,7 +12,7 @@ import tempfile
 import textwrap
 import unittest
 
-import peru.async
+from peru.async_helpers import run_task
 from peru.compat import makedirs
 import peru.main
 
@@ -27,7 +27,7 @@ def make_synchronous(f):
     coroutine. That will raise an "Event loop is running" error.'''
     @functools.wraps(f)
     def wrapper(*args, **kwargs):
-        return peru.async.run_task(asyncio.coroutine(f)(*args, **kwargs))
+        return run_task(asyncio.coroutine(f)(*args, **kwargs))
     return wrapper
 
 

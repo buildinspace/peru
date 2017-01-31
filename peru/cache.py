@@ -8,7 +8,7 @@ import pathlib
 import re
 import textwrap
 
-from .async import safe_communicate
+from .async_helpers import safe_communicate
 from .compat import makedirs
 from .error import PrintableError
 from .keyval import KeyVal

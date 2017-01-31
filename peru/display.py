@@ -194,7 +194,7 @@ class FancyDisplay(BaseDisplay):
         lines = [line.strip() for line in re.split(any_newlines, string)]
 
         # NB: We don't make any attempt here to join lines that might span
-        # multiple write() calls. `async.create_subprocess_with_handle()` reads
+        # multiple write() calls. `create_subprocess_with_handle()` reads
         # output in 4096 byte chunks, so this isn't likely, but it's possible.
         for line in lines:
             # Ignore empty lines, both from the job and from re.split().

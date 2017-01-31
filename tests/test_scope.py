@@ -1,6 +1,6 @@
 import asyncio
 
-from peru.async import run_task
+from peru.async_helpers import run_task
 import peru.scope
 import shared
 

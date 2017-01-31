@@ -2,7 +2,7 @@ import asyncio
 import os
 from pathlib import Path
 
-from .async import gather_coalescing_exceptions
+from .async_helpers import gather_coalescing_exceptions
 from . import compat
 from .error import error_context
 from .merge import merge_imports_tree

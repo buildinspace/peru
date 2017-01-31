@@ -9,7 +9,7 @@ import tempfile
 
 import docopt
 
-from . import async
+from .async_helpers import gather_coalescing_exceptions, run_task
 from . import compat
 from .error import PrintableError
 from . import imports
@@ -125,7 +125,7 @@ def do_reup(params):
     else:
         modules = params.scope.get_modules_for_reup(names)
     futures = [module.reup(params.runtime) for module in modules]
-    yield from async.gather_coalescing_exceptions(
+    yield from gather_coalescing_exceptions(
         futures,
         params.runtime.display,
         verbose=params.runtime.verbose)
@@ -361,13 +361,13 @@ def main(*, argv=None, env=None, nocatch=False):
         return ret
 
     try:
-        runtime = async.run_task(Runtime(args, env))
+        runtime = run_task(Runtime(args, env))
         if not args['--quiet']:
             parser.warn_duplicate_keys(runtime.peru_file)
         scope, imports = parser.parse_file(runtime.peru_file)
         params = CommandParams(args, runtime, scope, imports)
         command_fn = COMMAND_FNS[command]
-        async.run_task(command_fn(params))
+        run_task(command_fn(params))
     except PrintableError as e:
         if args['--verbose'] or nocatch:
             # Just allow the stacktrace to print if verbose, or in testing.

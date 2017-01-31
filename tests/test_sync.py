@@ -5,7 +5,7 @@ import os
 import sys
 import textwrap
 
-from peru.async import raises_gathered
+from peru.async_helpers import raises_gathered
 import peru.cache
 import peru.compat
 import peru.error

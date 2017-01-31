@@ -2,7 +2,7 @@ import asyncio
 from asyncio.subprocess import PIPE
 import sys
 
-import peru.async
+from peru.async_helpers import safe_communicate
 from shared import PeruTest, make_synchronous
 
 
@@ -16,12 +16,12 @@ class AsyncTest(PeruTest):
 
         proc_empty = yield from asyncio.create_subprocess_exec(
             *cat_command, stdin=PIPE, stdout=PIPE)
-        stdout, _ = yield from peru.async.safe_communicate(proc_empty, b"")
+        stdout, _ = yield from safe_communicate(proc_empty, b"")
         self.assertEqual(stdout, b"")
 
         proc_nonempty = yield from asyncio.create_subprocess_exec(
             *cat_command, stdin=PIPE, stdout=PIPE)
-        stdout, _ = yield from peru.async.safe_communicate(
+        stdout, _ = yield from safe_communicate(
             proc_nonempty, b"foo bar baz")
         self.assertEqual(stdout, b"foo bar baz")
 
@@ -29,5 +29,5 @@ class AsyncTest(PeruTest):
         true_command = [sys.executable, "-c", ""]
         proc_true = yield from asyncio.create_subprocess_exec(
             *true_command, stdin=PIPE, stdout=PIPE)
-        stdout, _ = yield from peru.async.safe_communicate(proc_true)
+        stdout, _ = yield from safe_communicate(proc_true)
         self.assertEqual(stdout, b"")

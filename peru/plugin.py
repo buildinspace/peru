@@ -7,7 +7,7 @@ import tempfile
 
 import yaml
 
-from .async import create_subprocess_with_handle
+from .async_helpers import create_subprocess_with_handle
 from . import cache
 from . import compat
 from .compat import makedirs
