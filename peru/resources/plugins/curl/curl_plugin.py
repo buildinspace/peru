@@ -17,7 +17,7 @@ def get_request_filename(request):
     # Check to see if a filename is specified in the HTTP headers.
     if 'Content-Disposition' in request.info():
         disposition = request.info()['Content-Disposition']
-        pieces = re.split('\s*;\s*', disposition)
+        pieces = re.split(r'\s*;\s*', disposition)
         for piece in pieces:
             if piece.startswith('filename='):
                 filename = piece[len('filename='):]
