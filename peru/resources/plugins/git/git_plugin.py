@@ -139,6 +139,7 @@ def plugin_reup():
     with open(reup_output, 'w') as out_file:
         print('rev:', output.strip(), file=out_file)
 
+
 command = os.environ['PERU_PLUGIN_COMMAND']
 if command == 'sync':
     plugin_sync()

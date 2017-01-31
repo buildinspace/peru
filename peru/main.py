@@ -64,6 +64,7 @@ def peru_command(name, doc):
         return coro
     return decorator
 
+
 COMMAND_FNS = {}
 COMMAND_DOCS = {}
 

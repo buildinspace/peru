@@ -567,6 +567,7 @@ class DirtyWorkingCopyError(PrintableError):
 class MergeConflictError(PrintableError):
     pass
 
+
 TreeEntry = collections.namedtuple('TreeEntry', ['mode', 'type', 'hash'])
 
 BLOB_TYPE = 'blob'
