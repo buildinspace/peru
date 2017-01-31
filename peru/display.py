@@ -130,19 +130,14 @@ class FancyDisplay(BaseDisplay):
         # fires. Drawing right now ensures that output never gets dropped.
         self._draw()
 
-    def _clear(self, *, flush=True):
+    def _draw(self):
+        self._cancel_draw_later()
+
         # Erase everything we printed before.
         for i in range(self._lines_printed):
             self.output.write(ANSI_CURSOR_UP_ONE_LINE)
             self.output.write(ANSI_CLEAR_LINE)
-        if flush:
-            self.output.flush()
         self._lines_printed = 0
-
-    def _draw(self):
-        self._cancel_draw_later()
-
-        self._clear(flush=False)  # We will flush below.
 
         # If we have any lines from print(), print them now. They will end up
         # above the display like regular output.
@@ -170,6 +165,9 @@ class FancyDisplay(BaseDisplay):
             self.output.write('\n')
             self._lines_printed += 1
         self.output.write(ANSI_ENABLE_LINE_WRAP)
+
+        # Finally, flush output to the terminal. Hopefully everything gets
+        # painted in one frame.
         self.output.flush()
 
     def _draw_later(self):
@@ -213,7 +211,7 @@ class FancyDisplay(BaseDisplay):
             self._draw()
         else:
             # If there are pending jobs, don't clear the display immediately.
-            # This avoid flickering between jobs when only one job is running
+            # This avoids flickering between jobs when only one job is running
             # at a time (-j1).
             self._draw_later()
 
