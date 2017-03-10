@@ -267,7 +267,7 @@ class _Cache:
     @asyncio.coroutine
     def _init_trees(self):
         if not os.path.exists(os.path.join(self.trees_path, 'HEAD')):
-            os.makedirs(self.trees_path)
+            makedirs(self.trees_path)
             with self.clean_git_session() as session:
                 yield from session.init_git_dir()
             # Override any .gitattributes files that might be in the sync dir,
@@ -358,8 +358,7 @@ class _Cache:
         tree = tree or (yield from self.get_empty_tree())
         previous_tree = previous_tree or (yield from self.get_empty_tree())
 
-        if not os.path.exists(dest):
-            os.makedirs(dest)
+        makedirs(dest)
 
         with contextlib.ExitStack() as stack:
 
