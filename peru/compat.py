@@ -14,7 +14,8 @@ def makedirs(path):
     path exists with non-default permissions. This isn't fixed until 3.4.
     Pathlib won't be getting an exist_ok param until 3.5.'''
     path = str(path)  # compatibility with pathlib
-    if not os.path.exists(path):
+    # Use isdir to avoid silently returning if the path exists but isn't a dir.
+    if not os.path.isdir(path):
         os.makedirs(path)
 
 
