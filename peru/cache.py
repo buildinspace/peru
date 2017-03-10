@@ -358,8 +358,7 @@ class _Cache:
         tree = tree or (yield from self.get_empty_tree())
         previous_tree = previous_tree or (yield from self.get_empty_tree())
 
-        if not os.path.exists(dest):
-            makedirs(dest)
+        makedirs(dest)
 
         with contextlib.ExitStack() as stack:
 
