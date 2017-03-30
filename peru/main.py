@@ -345,6 +345,7 @@ def force_utf8_in_ascii_mode_hack():
                           buffering=1)
 
 
+# Called as a setup.py entry point, or from __main__.py (`python3 -m peru`).
 def main(*, argv=None, env=None, nocatch=False):
     force_utf8_in_ascii_mode_hack()
 
@@ -374,7 +375,3 @@ def main(*, argv=None, env=None, nocatch=False):
             raise
         print_red(e.message, end='' if e.message.endswith('\n') else '\n')
         return 1
-
-
-if __name__ == '__main__':
-    main()
