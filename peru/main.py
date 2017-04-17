@@ -250,6 +250,34 @@ def do_list(params):
             print(module)
 
 
+@peru_command('module', '''\
+Usage:
+    peru module <list> [-z]
+
+Options:
+    -z              print one module per line for machine-readable formatting
+
+''')
+def do_list(params):
+    modules = params.scope.modules.values()
+    output = []
+    delim = ' | ' if params.args['-z'] else '\n  '
+    indent = '' if params.args['-z'] else '  '
+    newline = '\n'
+
+    for module in modules:
+        fields = []
+        fields.append(module.name)
+        for field, val in module.plugin_fields.items():
+            fields.append('{}{}: {}'.format(indent, field, val))
+        if(params.runtime.get_override(module.name)):
+            fields.append('{}{}: {}'.format(indent, 'override', params.runtime.get_override(module.name)))        
+        output.append(delim.join(fields))
+
+    if (output):
+        params.runtime.display.print(newline.join(output))
+
+
 def get_version():
     version_file = os.path.join(compat.MODULE_ROOT, 'VERSION')
     with open(version_file) as f:
