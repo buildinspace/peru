@@ -60,7 +60,7 @@ def already_has_rev(repo, rev):
     try:
         output = hg('identify', '--debug', '--rev', rev, hg_dir=repo,
                     capture_output=True)
-    except:
+    except Exception:
         return False
 
     # Only return True for revs that are absolute hashes.

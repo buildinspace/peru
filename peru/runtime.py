@@ -176,7 +176,7 @@ def _get_parallel_fetch_limit(args):
         if parallel <= 0:
             raise PrintableError('Argument to --jobs must be 1 or more.')
         return parallel
-    except:
+    except Exception:
         raise PrintableError('Argument to --jobs must be a number.')
 
 

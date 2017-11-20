@@ -75,7 +75,7 @@ def already_has_rev(repo, rev):
         git('cat-file', '-e', rev, git_dir=repo)
         # Get the hash for the rev.
         output = git('rev-parse', rev, git_dir=repo, capture_output=True)
-    except:
+    except Exception:
         return False
 
     # Only return True for revs that are absolute hashes.

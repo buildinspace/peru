@@ -524,7 +524,7 @@ def delete_if_error(path):
     given path, and allow the exception to continue.'''
     try:
         yield
-    except:
+    except Exception:
         if os.path.exists(path):
             os.remove(path)
         raise
