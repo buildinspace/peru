@@ -7,6 +7,7 @@ import re
 import stat
 import sys
 import tarfile
+from urllib.error import HTTPError, URLError
 from urllib.parse import urlsplit
 import urllib.request
 import zipfile
@@ -157,13 +158,18 @@ def main():
     url = os.environ['PERU_MODULE_URL']
     sha1 = os.environ['PERU_MODULE_SHA1']
     command = os.environ['PERU_PLUGIN_COMMAND']
-    if command == 'sync':
-        plugin_sync(url, sha1)
-    elif command == 'reup':
-        plugin_reup(url, sha1)
-    else:
-        raise RuntimeError('unknown command: ' + repr(command))
+    try:
+        if command == 'sync':
+            plugin_sync(url, sha1)
+        elif command == 'reup':
+            plugin_reup(url, sha1)
+        else:
+            raise RuntimeError('unknown command: ' + repr(command))
+    except (HTTPError, URLError) as e:
+        print("Error fetching", url)
+        print(e)
+        return 1
 
 
 if __name__ == '__main__':
-    main()
+    sys.exit(main())
