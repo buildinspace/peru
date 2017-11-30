@@ -4,7 +4,7 @@ import os
 import textwrap
 
 from .cache import compute_key
-from .error import PrintableError
+from .error import PrintableError, error_context
 from .edit_yaml import set_module_field_in_file
 from . import imports
 from .plugin import plugin_fetch, plugin_get_reup_fields
@@ -124,20 +124,22 @@ class Module:
 
     @asyncio.coroutine
     def reup(self, runtime):
-        reup_fields = yield from plugin_get_reup_fields(
-            runtime.get_plugin_context(), self.type, self.plugin_fields,
-            runtime.display.get_handle(self.name))
-        output_lines = []
-        for field, val in reup_fields.items():
-            if (field not in self.plugin_fields or
-                    val != self.plugin_fields[field]):
-                output_lines.append('  {}: {}'.format(field, val))
-                set_module_field_in_file(
-                    runtime.peru_file, self.yaml_name, field, val)
-        if output_lines and not runtime.quiet:
-            runtime.display.print('reup ' + self.name)
-            for line in output_lines:
-                runtime.display.print(line)
+        context = 'module "{}"'.format(self.name)
+        with error_context(context):
+            reup_fields = yield from plugin_get_reup_fields(
+                runtime.get_plugin_context(), self.type, self.plugin_fields,
+                runtime.display.get_handle(self.name))
+            output_lines = []
+            for field, val in reup_fields.items():
+                if (field not in self.plugin_fields or
+                        val != self.plugin_fields[field]):
+                    output_lines.append('  {}: {}'.format(field, val))
+                    set_module_field_in_file(
+                        runtime.peru_file, self.yaml_name, field, val)
+            if output_lines and not runtime.quiet:
+                runtime.display.print('reup ' + self.name)
+                for line in output_lines:
+                    runtime.display.print(line)
 
     @asyncio.coroutine
     def _get_override_tree(self, runtime, path):
