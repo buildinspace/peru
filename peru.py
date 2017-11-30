@@ -13,4 +13,4 @@ sys.path.insert(0, repo_root)
 
 import peru.main  # noqa: E402
 
-peru.main.main()
+sys.exit(peru.main.main())
