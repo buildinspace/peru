@@ -32,12 +32,12 @@ def _maybe_quote(val):
     try:
         int(val)
         needs_quoting = True
-    except:
+    except Exception:
         pass
     try:
         float(val)
         needs_quoting = True
-    except:
+    except Exception:
         pass
     if needs_quoting:
         return '"{}"'.format(val)
