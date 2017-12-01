@@ -1,5 +1,6 @@
 #! /usr/bin/env python3
 
+from collections import namedtuple
 import os
 import subprocess
 import sys
@@ -11,7 +12,10 @@ REV = os.environ['PERU_MODULE_REV'] or 'default'
 REUP = os.environ['PERU_MODULE_REUP'] or 'default'
 
 
-def hg(*args, hg_dir=None, capture_output=False):
+Result = namedtuple("Result", ["returncode", "output"])
+
+
+def hg(*args, hg_dir=None, capture_output=False, checked=True):
     # Avoid forgetting this arg.
     assert hg_dir is None or os.path.isdir(hg_dir)
 
@@ -26,10 +30,10 @@ def hg(*args, hg_dir=None, capture_output=False):
     process = subprocess.Popen(command, stdin=subprocess.DEVNULL,
                                stdout=stdout, universal_newlines=True)
     output, _ = process.communicate()
-    if process.returncode != 0:
+    if checked and process.returncode != 0:
         sys.exit(1)
 
-    return output
+    return Result(process.returncode, output)
 
 
 def clone_if_needed(url, verbose=False):
@@ -57,10 +61,9 @@ def hg_pull(url, repo_path):
 
 
 def already_has_rev(repo, rev):
-    try:
-        output = hg('identify', '--debug', '--rev', rev, hg_dir=repo,
-                    capture_output=True)
-    except:
+    res = hg('identify', '--debug', '--rev', rev, hg_dir=repo,
+             capture_output=True, checked=False)
+    if res.returncode != 0:
         return False
 
     # Only return True for revs that are absolute hashes.
@@ -68,7 +71,7 @@ def already_has_rev(repo, rev):
     # 1) Tags actually can change.
     # 2) It's not clear at a glance whether something is a branch or a tag.
     # Keep it simple.
-    return output.split()[0] == rev
+    return res.output.split()[0] == rev
 
 
 def plugin_sync():
@@ -86,7 +89,7 @@ def plugin_reup():
     clone_if_needed(URL, CACHE_PATH)
     hg_pull(URL, CACHE_PATH)
     output = hg('identify', '--debug', '--rev', REUP, hg_dir=CACHE_PATH,
-                capture_output=True)
+                capture_output=True).output
 
     with open(reup_output, 'w') as output_file:
         print('rev:', output.split()[0], file=output_file)

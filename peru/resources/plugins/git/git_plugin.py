@@ -1,5 +1,6 @@
 #! /usr/bin/env python3
 
+from collections import namedtuple
 import configparser
 import hashlib
 import os
@@ -17,7 +18,10 @@ REUP = os.environ['PERU_MODULE_REUP'] or 'master'
 CACHE_ROOT = os.environ['PERU_PLUGIN_CACHE']
 
 
-def git(*args, git_dir=None, capture_output=False):
+Result = namedtuple("Result", ["returncode", "output"])
+
+
+def git(*args, git_dir=None, capture_output=False, checked=True):
     # Avoid forgetting this arg.
     assert git_dir is None or os.path.isdir(git_dir)
 
@@ -34,10 +38,10 @@ def git(*args, git_dir=None, capture_output=False):
         stdout=stdout,
         universal_newlines=True)
     output, _ = process.communicate()
-    if process.returncode != 0:
+    if checked and process.returncode != 0:
         sys.exit(1)
 
-    return output
+    return Result(process.returncode, output)
 
 
 def has_clone(url):
@@ -70,20 +74,21 @@ def git_fetch(url, repo_path):
 
 
 def already_has_rev(repo, rev):
-    try:
-        # Make sure the rev exists.
-        git('cat-file', '-e', rev, git_dir=repo)
-        # Get the hash for the rev.
-        output = git('rev-parse', rev, git_dir=repo, capture_output=True)
-    except:
+    # Make sure the rev exists.
+    cat_result = git('cat-file', '-e', rev, git_dir=repo, checked=False)
+    if cat_result.returncode != 0:
         return False
-
+    # Get the hash for the rev.
+    parse_result = git('rev-parse', rev, git_dir=repo, checked=False,
+                       capture_output=True)
+    if parse_result.returncode != 0:
+        return False
     # Only return True for revs that are absolute hashes.
     # We could consider treating tags the way, but...
     # 1) Tags actually can change.
     # 2) It's not clear at a glance if something is a branch or a tag.
     # Keep it simple.
-    return output.strip() == rev
+    return parse_result.output.strip() == rev
 
 
 def checkout_tree(url, rev, dest):
@@ -112,7 +117,7 @@ def checkout_submodules(repo_path, rev, work_tree):
         sub_full_path = os.path.join(work_tree, sub_relative_path)
         sub_url = parser[section]['url']
         ls_tree = git('ls-tree', rev, sub_relative_path,
-                      git_dir=repo_path, capture_output=True)
+                      git_dir=repo_path, capture_output=True).output
         # Normally when you run `git submodule add ...`, git puts two things in
         # your repo: an entry in .gitmodules, and a commit object at the
         # appropriate path inside your repo. However, it's possible for those
@@ -135,7 +140,8 @@ def plugin_reup():
     reup_output = os.environ['PERU_REUP_OUTPUT']
     repo_path = clone_if_needed(URL)
     git_fetch(URL, repo_path)
-    output = git('rev-parse', REUP, git_dir=repo_path, capture_output=True)
+    output = git('rev-parse', REUP, git_dir=repo_path,
+                 capture_output=True).output
     with open(reup_output, 'w') as out_file:
         print('rev:', output.strip(), file=out_file)
 
