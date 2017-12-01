@@ -2,6 +2,11 @@ import os
 import setuptools
 import sys
 
+# Importing fastentrypoints monkey-patches setuptools to avoid generating slow
+# executables from the entry_points directive. See
+# https://github.com/ninjaaron/fast-entry_points.
+import fastentrypoints
+
 # Written according to the docs at
 # https://packaging.python.org/en/latest/distributing.html
 
