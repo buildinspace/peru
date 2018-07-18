@@ -3,7 +3,8 @@ import os
 import time
 
 import peru.cache
-from shared import assert_contents, create_dir, make_synchronous, PeruTest
+from shared import assert_contents, create_dir, make_synchronous, PeruTest, \
+    COLON
 
 
 class CacheTest(PeruTest):
@@ -77,19 +78,19 @@ class CacheTest(PeruTest):
         # with a leading ./
         all_content = {'foo': '',
                        'bar': '',
-                       ':baz/bing': ''}
+                       COLON + 'baz/bing': ''}
         test_dir = create_dir(all_content)
         tree = yield from self.cache.import_tree(
-            test_dir, picks=['foo', ':baz'])
+            test_dir, picks=['foo', COLON + 'baz'])
         expected_content = {'foo': '',
-                            ':baz/bing': ''}
+                            COLON + 'baz/bing': ''}
         out_dir = create_dir()
         yield from self.cache.export_tree(tree, out_dir)
         assert_contents(out_dir, expected_content)
 
         # Repeat the same test with an exclude, again with a colon.
         tree = yield from self.cache.import_tree(
-            test_dir, excludes=['foo', ':baz'])
+            test_dir, excludes=['foo', COLON + 'baz'])
         expected_content = {'bar': ''}
         out_dir = create_dir()
         yield from self.cache.export_tree(tree, out_dir)
@@ -207,17 +208,17 @@ class CacheTest(PeruTest):
         # Include a leading colon, to check that we escape pathspecs correctly
         # with a leading ./
         all_content = {'a': 'foo',
-                       ':b/c': 'bar'}
+                       COLON + 'b/c': 'bar'}
         test_dir = create_dir(all_content)
         tree = yield from self.cache.import_tree(test_dir)
         a_content = yield from self.cache.read_file(tree, 'a')
-        bc_content = yield from self.cache.read_file(tree, ':b/c')
+        bc_content = yield from self.cache.read_file(tree, COLON + 'b/c')
         self.assertEqual(b'foo', a_content)
         self.assertEqual(b'bar', bc_content)
         with self.assertRaises(FileNotFoundError):
             yield from self.cache.read_file(tree, 'nonexistent')
         with self.assertRaises(IsADirectoryError):
-            yield from self.cache.read_file(tree, ':b')
+            yield from self.cache.read_file(tree, COLON + 'b')
 
     # A helper method for several tests below below.
     @asyncio.coroutine

@@ -20,6 +20,13 @@ import peru.main
 test_resources = Path(__file__).parent.resolve() / 'resources'
 
 
+# Colons are a reserved character on Windows, so tests that cover filenames
+# with colons need to do something else.
+COLON = ':'
+if os.name == 'nt':
+    COLON = 'COLON_'
+
+
 def make_synchronous(f):
     '''This lets you turn coroutines into regular functions and call them from
     synchronous code, so for example test methods can be coroutines. It does
