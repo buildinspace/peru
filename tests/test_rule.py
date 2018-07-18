@@ -12,7 +12,8 @@ class RuleTest(shared.PeruTest):
     def setUp(self):
         self.cache_dir = shared.create_dir()
         self.cache = yield from cache.Cache(self.cache_dir)
-        self.content = {'a': 'foo', 'b/c': 'bar'}
+        # Include a leading colon to test that we prepend ./ to pathspecs.
+        self.content = {'a': 'foo', 'b/c': 'bar', ':d': 'baz'}
         self.content_dir = shared.create_dir(self.content)
         self.content_tree = yield from self.cache.import_tree(self.content_dir)
         self.entries = yield from self.cache.ls_tree(
@@ -31,6 +32,7 @@ class RuleTest(shared.PeruTest):
             'b/c': 'foo',
             'x':   'foo',
             'y/c': 'bar',
+            ':d':  'baz',
         })
 
     @shared.make_synchronous
@@ -43,6 +45,7 @@ class RuleTest(shared.PeruTest):
         yield from shared.assert_tree_contents(self.cache, tree, {
             'a/c': 'bar',
             'b/a': 'foo',
+            ':d':  'baz',
         })
 
     @shared.make_synchronous
@@ -50,17 +53,22 @@ class RuleTest(shared.PeruTest):
         drop_dir = yield from rule.drop_files(
             self.cache, self.content_tree, ['b'])
         yield from shared.assert_tree_contents(
-            self.cache, drop_dir, {'a': 'foo'})
+            self.cache, drop_dir, {'a': 'foo', ':d': 'baz'})
 
         drop_file = yield from rule.drop_files(
             self.cache, self.content_tree, ['a'])
         yield from shared.assert_tree_contents(
-            self.cache, drop_file, {'b/c': 'bar'})
+            self.cache, drop_file, {'b/c': 'bar', ':d': 'baz'})
+
+        drop_colon = yield from rule.drop_files(
+            self.cache, self.content_tree, [':d'])
+        yield from shared.assert_tree_contents(
+            self.cache, drop_colon, {'a': 'foo', 'b/c': 'bar'})
 
         globs = yield from rule.drop_files(
             self.cache, self.content_tree, ['**/c', '**/a'])
         yield from shared.assert_tree_contents(
-            self.cache, globs, {})
+            self.cache, globs, {':d': 'baz'})
 
     @shared.make_synchronous
     def test_pick(self):
@@ -73,6 +81,11 @@ class RuleTest(shared.PeruTest):
             self.cache, self.content_tree, ['a'])
         yield from shared.assert_tree_contents(
             self.cache, pick_file, {'a': 'foo'})
+
+        pick_colon = yield from rule.pick_files(
+            self.cache, self.content_tree, [':d'])
+        yield from shared.assert_tree_contents(
+            self.cache, pick_colon, {':d': 'baz'})
 
         globs = yield from rule.pick_files(
             self.cache, self.content_tree, ['**/c', '**/a'])

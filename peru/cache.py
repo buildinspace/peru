@@ -118,6 +118,9 @@ class GitSession:
     def read_working_copy_into_index(self, picks):
         # Use --force to avoid .gitignore rules. We shouldn't respect them.
         if picks:
+            # As in list_tree_entries, prepend ./ to avoid interpreting leading
+            # colons in pathspecs.
+            picks = ["./" + pick for pick in picks]
             yield from self.git('add', '--force', '--', *picks)
         else:
             yield from self.git('add', '--all', '--force')
@@ -126,6 +129,9 @@ class GitSession:
     def drop_paths_from_index(self, paths):
         if not paths:
             return
+        # As in list_tree_entries, prepend ./ to avoid interpreting leading
+        # colons in pathspecs.
+        paths = ["./" + path for path in paths]
         ls_output = yield from self.git(
             'ls-files', '--full-name', '-z', *paths, output_mode=BINARY_MODE)
         yield from self.git('update-index', '--force-remove', '-z', '--stdin',
@@ -191,9 +197,10 @@ class GitSession:
 
     @asyncio.coroutine
     def get_info_for_path(self, tree, path):
-        # --full-tree makes ls-tree ignore the cwd
+        # --full-tree makes ls-tree ignore the cwd. As in list_tree_entries,
+        # prepend ./ to avoid interpreting leading colons in pathspecs.
         ls_output = yield from self.git(
-            'ls-tree', '--full-tree', '-z', tree, path)
+            'ls-tree', '--full-tree', '-z', tree, "./" + path)
         ls_lines = ls_output.strip('\x00').split('\x00')
         # Remove empty lines.
         ls_lines = list(filter(None, ls_lines))
@@ -217,8 +224,19 @@ class GitSession:
         entry_regex = r'(\w+) (\w+) (\w+)\t(.*)'
         command = ['ls-tree', '-z', tree]
         if path is not None:
+            # If we do something like `git ls-tree -r -t HEAD foo/bar`, git
+            # will include foo in the output, because it was traversed. We
+            # filter those entries out below, by excluding results that are
+            # shorter than the original path. However, git will canonicalize
+            # paths in its output, and we need to match that behavior for the
+            # comparison to work.
             canonical_path = str(pathlib.PurePosixPath(path))
-            command += [canonical_path]
+            # However, another complication: ls-tree arguments are what git
+            # calls "pathspecs". That means that leading colons have a special
+            # meaning. In order to support leading colons, we always prefix the
+            # path with dot-slash in git's arguments. As noted above, the
+            # dot-slash will be stripped again in the final output.
+            command += ["./" + canonical_path]
         if recursive:
             # -t means tree entries are included in the listing.
             command += ['-r', '-t']
