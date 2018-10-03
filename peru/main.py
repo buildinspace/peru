@@ -1,6 +1,5 @@
 #! /usr/bin/env python3
 
-import asyncio
 import collections
 import json
 import os
@@ -58,10 +57,9 @@ Options:
 
 def peru_command(name, doc):
     def decorator(f):
-        coro = asyncio.coroutine(f)
-        COMMAND_FNS[name] = coro
+        COMMAND_FNS[name] = f
         COMMAND_DOCS[name] = doc
-        return coro
+        return f
     return decorator
 
 
@@ -88,9 +86,9 @@ Options:
     -q --quiet      don't print anything
     -v --verbose    print everything
 ''')
-def do_sync(params):
+async def do_sync(params):
     params.runtime.print_overrides()
-    yield from imports.checkout(
+    await imports.checkout(
         params.runtime, params.scope, params.imports, params.runtime.sync_dir)
     params.runtime.warn_unused_overrides()
 
@@ -118,14 +116,14 @@ Options:
     -q --quiet      don't print anything
     -v --verbose    print everything
 ''')
-def do_reup(params):
+async def do_reup(params):
     names = params.args['<modules>']
     if not names:
         modules = params.scope.modules.values()
     else:
         modules = params.scope.get_modules_for_reup(names)
     futures = [module.reup(params.runtime) for module in modules]
-    yield from gather_coalescing_exceptions(
+    await gather_coalescing_exceptions(
         futures,
         params.runtime.display,
         verbose=params.runtime.verbose)
@@ -133,7 +131,7 @@ def do_reup(params):
         # Do an automatic sync. Reparse peru.yaml to get the new revs.
         new_scope, new_imports = parser.parse_file(params.runtime.peru_file)
         new_params = params._replace(scope=new_scope, imports=new_imports)
-        yield from do_sync(new_params)
+        await do_sync(new_params)
 
 
 @peru_command('clean', '''\
@@ -150,8 +148,8 @@ Options:
     -q --quiet     don't print anything
     -v --verbose   print everything
 ''')
-def do_clean(params):
-    yield from imports.checkout(
+async def do_clean(params):
+    await imports.checkout(
         params.runtime, params.scope, {}, params.runtime.sync_dir)
 
 
@@ -174,15 +172,15 @@ Options:
     -q --quiet      don't print anything
     -v --verbose    print everything
 ''')
-def do_copy(params):
+async def do_copy(params):
     params.runtime.print_overrides()
     if not params.args['<dest>']:
         dest = tempfile.mkdtemp(prefix='peru_copy_')
     else:
         dest = params.args['<dest>']
-    tree = yield from imports.get_tree(
+    tree = await imports.get_tree(
         params.runtime, params.scope, params.args['<target>'])
-    yield from params.runtime.cache.export_tree(
+    await params.runtime.cache.export_tree(
         tree, dest, force=params.runtime.force)
     if not params.args['<dest>']:
         print(dest)
@@ -212,7 +210,7 @@ Options:
     -h --help  (>'-')> <('-'<) ^('-')^
     --json     print output as JSON
 ''')
-def do_override(params):
+async def do_override(params):
     overrides = params.runtime.overrides
     if params.args['add']:
         name = params.args['<module>']
@@ -241,7 +239,7 @@ Options:
     -h --help  I'm not feeling creative :)
     --json     print output as JSON
 ''')
-def do_list(params):
+async def do_list(params):
     modules = sorted(params.scope.modules.keys())
     if params.args['--json']:
         print(json.dumps(modules))

@@ -1,4 +1,3 @@
-import asyncio
 from collections import namedtuple
 import contextlib
 import os
@@ -29,21 +28,19 @@ PluginContext = namedtuple(
      'tmp_root'])
 
 
-@asyncio.coroutine
-def plugin_fetch(plugin_context, module_type, module_fields, dest,
+async def plugin_fetch(plugin_context, module_type, module_fields, dest,
                  display_handle):
     env = {'PERU_SYNC_DEST': dest}
-    yield from _plugin_job(plugin_context, module_type, module_fields, 'sync',
+    await _plugin_job(plugin_context, module_type, module_fields, 'sync',
                            env, display_handle)
 
 
-@asyncio.coroutine
-def plugin_get_reup_fields(plugin_context, module_type, module_fields,
+async def plugin_get_reup_fields(plugin_context, module_type, module_fields,
                            display_handle):
     with tmp_dir(plugin_context) as output_file_dir:
         output_path = os.path.join(output_file_dir, 'reup_output')
         env = {'PERU_REUP_OUTPUT': output_path}
-        yield from _plugin_job(
+        await _plugin_job(
             plugin_context, module_type, module_fields, 'reup', env,
             display_handle)
         with open(output_path) as output_file:
@@ -60,12 +57,11 @@ def plugin_get_reup_fields(plugin_context, module_type, module_fields,
     return fields
 
 
-@asyncio.coroutine
-def _plugin_job(plugin_context, module_type, module_fields, command, env,
+async def _plugin_job(plugin_context, module_type, module_fields, command, env,
                 display_handle):
     # We take several locks and other context managers in here. Using an
-    # ExitStack saves us from indentation hell.
-    with contextlib.ExitStack() as stack:
+    # AsyncExitStack saves us from indentation hell.
+    async with contextlib.AsyncExitStack() as stack:
         definition = _get_plugin_definition(module_type, module_fields,
                                             command)
         exe = _get_plugin_exe(definition, command)
@@ -84,8 +80,7 @@ def _plugin_job(plugin_context, module_type, module_fields, command, env,
         # fields" as defined by plugin.yaml. For plugins that don't define
         # cacheable fields, there is no cache dir (it's set to /dev/null) and
         # the cache lock is a no-op.
-        stack.enter_context((yield from _plugin_cache_lock(
-            plugin_context, definition, module_fields)))
+        await stack.enter_async_context(_plugin_cache_lock(plugin_context, definition, module_fields))
 
         # Use a semaphore to limit the number of jobs that can run in parallel.
         # Most plugin fetches hit the network, and for performance reasons we
@@ -94,7 +89,7 @@ def _plugin_job(plugin_context, module_type, module_fields, command, env,
         # parallelism with the --jobs flag. It's important that this is the
         # last lock taken before starting a job, otherwise we might waste a job
         # slot just waiting on other locks.
-        stack.enter_context((yield from plugin_context.parallelism_semaphore))
+        await stack.enter_async_context(plugin_context.parallelism_semaphore)
 
         # We use this debug counter for our parallelism tests. It's important
         # that it comes after all locks have been taken (so the job it's
@@ -102,7 +97,7 @@ def _plugin_job(plugin_context, module_type, module_fields, command, env,
         stack.enter_context(debug_parallel_count_context())
 
         try:
-            yield from create_subprocess_with_handle(
+            await create_subprocess_with_handle(
                 shell_command_line, display_handle, cwd=plugin_context.cwd,
                 env=complete_env, shell=True)
         except subprocess.CalledProcessError as e:
@@ -188,9 +183,8 @@ def _plugin_env(plugin_context, plugin_definition, module_fields, command,
     return env
 
 
-@asyncio.coroutine
 def _noop_lock():
-    return contextlib.ExitStack()  # a no-op context manager
+    return contextlib.AsyncExitStack()  # a no-op context manager
 
 
 def _plugin_cache_lock(plugin_context, definition, module_fields):

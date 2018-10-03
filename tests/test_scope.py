@@ -1,5 +1,3 @@
-import asyncio
-
 from peru.async_helpers import run_task
 import peru.scope
 import shared
@@ -61,8 +59,7 @@ class DummyModule:
         self.name = name
         self.scope = scope
 
-    @asyncio.coroutine
-    def parse_peru_file(self, dummy_runtime):
+    async def parse_peru_file(self, dummy_runtime):
         return self.scope, None
 
 

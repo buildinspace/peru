@@ -1,5 +1,3 @@
-import asyncio
-
 from .error import PrintableError
 
 
@@ -17,30 +15,29 @@ class Scope:
         self.modules = modules
         self.rules = rules
 
-    @asyncio.coroutine
-    def parse_target(self, runtime, target_str):
+    async def parse_target(self, runtime, target_str):
         '''A target is a pipeline of a module into zero or more rules, and each
         module and rule can itself be scoped with zero or more module names.'''
         pipeline_parts = target_str.split(RULE_SEPARATOR)
-        module = yield from self.resolve_module(
-            runtime, pipeline_parts[0], target_str)
-        rules = tuple((yield from self.resolve_rule(runtime, part))
-                      for part in pipeline_parts[1:])
-        return module, rules
+        module = await self.resolve_module(runtime, pipeline_parts[0],
+                                           target_str)
+        rules = []
+        for part in pipeline_parts[1:]:
+            rule = await self.resolve_rule(runtime, part)
+            rules.append(rule)
+        return module, tuple(rules)
 
-    @asyncio.coroutine
-    def resolve_module(self, runtime, module_str, logging_target_name=None):
+    async def resolve_module(self, runtime, module_str, logging_target_name=None):
         logging_target_name = logging_target_name or module_str
         module_names = module_str.split(SCOPE_SEPARATOR)
-        return (yield from self._resolve_module_from_names(
+        return (await self._resolve_module_from_names(
             runtime, module_names, logging_target_name))
 
-    @asyncio.coroutine
-    def _resolve_module_from_names(self, runtime, module_names,
+    async def _resolve_module_from_names(self, runtime, module_names,
                                    logging_target_name):
         next_module = self._get_module_checked(module_names[0])
         for name in module_names[1:]:
-            next_scope = yield from _get_scope_or_fail(
+            next_scope = await _get_scope_or_fail(
                 runtime, logging_target_name, next_module)
             if name not in next_scope.modules:
                 _error(logging_target_name, 'module {} not found in {}', name,
@@ -48,16 +45,15 @@ class Scope:
             next_module = next_scope._get_module_checked(name)
         return next_module
 
-    @asyncio.coroutine
-    def resolve_rule(self, runtime, rule_str, logging_target_name=None):
+    async def resolve_rule(self, runtime, rule_str, logging_target_name=None):
         logging_target_name = logging_target_name or rule_str
         *module_names, rule_name = rule_str.split(SCOPE_SEPARATOR)
         scope = self
         location_str = ''
         if module_names:
-            module = yield from self._resolve_module_from_names(
+            module = await self._resolve_module_from_names(
                 runtime, module_names, logging_target_name)
-            scope = yield from _get_scope_or_fail(
+            scope = await _get_scope_or_fail(
                 runtime, logging_target_name, module)
             location_str = ' in module ' + module.name
         if rule_name not in scope.rules:
@@ -84,9 +80,8 @@ class Scope:
         return self.rules[name]
 
 
-@asyncio.coroutine
-def _get_scope_or_fail(runtime, logging_target_name, module):
-    scope, imports = yield from module.parse_peru_file(runtime)
+async def _get_scope_or_fail(runtime, logging_target_name, module):
+    scope, imports = await module.parse_peru_file(runtime)
     if not scope:
         _error(logging_target_name, 'module {} is not a peru project',
                module.name)

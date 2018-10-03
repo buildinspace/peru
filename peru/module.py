@@ -1,4 +1,3 @@
-import asyncio
 import json
 import os
 import textwrap
@@ -35,14 +34,13 @@ class Module:
         self.recursive = bool(recursive)
         self.recursion_specified = recursive is not None
 
-    @asyncio.coroutine
-    def _get_base_tree(self, runtime):
+    async def _get_base_tree(self, runtime):
         override_path = runtime.get_override(self.name)
         if override_path is not None:
             # Marking overrides as used lets us print a warning when an
             # override is unused.
             runtime.mark_override_used(self.name)
-            override_tree = yield from self._get_override_tree(
+            override_tree = await self._get_override_tree(
                 runtime, override_path)
             return override_tree
 
@@ -56,7 +54,7 @@ class Module:
         # different modules with identical fields will take the same lock and
         # avoid double fetching.
         cache_key_lock = runtime.cache_key_locks[key]
-        with (yield from cache_key_lock):
+        async with cache_key_lock:
             # Skip reading the cache if --no-cache is set. This is the only
             # place in the code we check that flag. Deterministic operations
             # like tree merging still get read from cache, because there's no
@@ -64,26 +62,25 @@ class Module:
             if key in runtime.cache.keyval and not runtime.no_cache:
                 return runtime.cache.keyval[key]
             with runtime.tmp_dir() as tmp_dir:
-                yield from plugin_fetch(
+                await plugin_fetch(
                     runtime.get_plugin_context(), self.type,
                     self.plugin_fields, tmp_dir,
                     runtime.display.get_handle(self.name))
-                tree = yield from runtime.cache.import_tree(tmp_dir)
+                tree = await runtime.cache.import_tree(tmp_dir)
             # Note that we still *write* to cache even when --no-cache is True.
             # That way we avoid confusing results on subsequent syncs.
             runtime.cache.keyval[key] = tree
         return tree
 
-    @asyncio.coroutine
-    def get_tree(self, runtime):
+    async def get_tree(self, runtime):
         # NOTE: While the recursion warning is in place, there is a 2x3 set of
         # states we want to keep track of. On the one side, a module either
         # does or does not have a peru.yaml file. On the other side, the
         # recursion setting for that module can be true, false, or unspecified.
         # It's the possible+unspecified state that we're interested in for
         # printing the warning.
-        base_tree = yield from self._get_base_tree(runtime)
-        scope, _imports = yield from self.parse_peru_file(runtime)
+        base_tree = await self._get_base_tree(runtime)
+        scope, _imports = await self.parse_peru_file(runtime)
         recursion_possible = scope is not None
         if not recursion_possible:
             return base_tree
@@ -93,14 +90,13 @@ class Module:
                 '\n'.join(textwrap.wrap(recursion_warning.format(self.name))))
         if not self.recursive:
             return base_tree
-        recursive_tree = yield from imports.get_imports_tree(
+        recursive_tree = await imports.get_imports_tree(
             runtime, scope, _imports, base_tree=base_tree)
         return recursive_tree
 
-    @asyncio.coroutine
-    def parse_peru_file(self, runtime):
+    async def parse_peru_file(self, runtime):
         from . import parser  # avoid circular imports
-        tree = yield from self._get_base_tree(runtime)
+        tree = await self._get_base_tree(runtime)
         cache_key = compute_key({
             'key_type': 'module_peru_file',
             'input_tree': tree,
@@ -110,7 +106,7 @@ class Module:
             yaml = json.loads(runtime.cache.keyval[cache_key])
         else:
             try:
-                yaml_bytes = yield from runtime.cache.read_file(
+                yaml_bytes = await runtime.cache.read_file(
                     tree, self.peru_file)
                 yaml = yaml_bytes.decode('utf8')
             except FileNotFoundError:
@@ -122,11 +118,10 @@ class Module:
         prefix = self.name + scope.SCOPE_SEPARATOR
         return parser.parse_string(yaml, name_prefix=prefix)
 
-    @asyncio.coroutine
-    def reup(self, runtime):
+    async def reup(self, runtime):
         context = 'module "{}"'.format(self.name)
         with error_context(context):
-            reup_fields = yield from plugin_get_reup_fields(
+            reup_fields = await plugin_get_reup_fields(
                 runtime.get_plugin_context(), self.type, self.plugin_fields,
                 runtime.display.get_handle(self.name))
             output_lines = []
@@ -141,8 +136,7 @@ class Module:
                 for line in output_lines:
                     runtime.display.print(line)
 
-    @asyncio.coroutine
-    def _get_override_tree(self, runtime, path):
+    async def _get_override_tree(self, runtime, path):
         if not os.path.exists(path):
             raise PrintableError(
                 "override path for module '{}' does not exist: {}".format(
@@ -151,5 +145,5 @@ class Module:
             raise PrintableError(
                 "override path for module '{}' is not a directory: {}".format(
                     self.name, path))
-        tree = yield from runtime.cache.import_tree(path)
+        tree = await runtime.cache.import_tree(path)
         return tree

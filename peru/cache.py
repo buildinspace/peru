@@ -52,8 +52,7 @@ class GitSession:
         self.index_file = index_file
         self.working_copy = working_copy
 
-    @asyncio.coroutine
-    def git(self, *args, input=None, output_mode=TEXT_MODE):
+    async def git(self, *args, input=None, output_mode=TEXT_MODE):
         global DEBUG_GIT_COMMAND_COUNT
         DEBUG_GIT_COMMAND_COUNT += 1
         command = ['git']
@@ -63,13 +62,13 @@ class GitSession:
         command.extend(args)
         if isinstance(input, str):
             input = input.encode()
-        process = yield from asyncio.subprocess.create_subprocess_exec(
+        process = await asyncio.subprocess.create_subprocess_exec(
             *command,
             env=self.git_env(),
             stdin=asyncio.subprocess.PIPE,
             stdout=asyncio.subprocess.PIPE,
             stderr=asyncio.subprocess.PIPE)
-        stdout, stderr = yield from safe_communicate(process, input)
+        stdout, stderr = await safe_communicate(process, input)
         stderr = stderr.decode()
         if output_mode == TEXT_MODE:
             stdout = stdout.decode()
@@ -89,56 +88,49 @@ class GitSession:
         env["GIT_INDEX_FILE"] = os.path.abspath(self.index_file)
         return env
 
-    @asyncio.coroutine
-    def init_git_dir(self):
-        yield from self.git('init', '--bare')
+    async def init_git_dir(self):
+        await self.git('init', '--bare')
 
-    @asyncio.coroutine
-    def read_tree_into_index(self, tree):
-        yield from self.git('read-tree', tree)
+    async def read_tree_into_index(self, tree):
+        await self.git('read-tree', tree)
 
-    @asyncio.coroutine
-    def read_tree_and_stats_into_index(self, tree):
-        yield from self.read_tree_into_index(tree)
+    async def read_tree_and_stats_into_index(self, tree):
+        await self.read_tree_into_index(tree)
         # Refresh all the stat() information in the index.
         try:
             # This throws an error on modified files. Suppress it.
-            yield from self.git('update-index', '--refresh')
+            await self.git('update-index', '--refresh')
         except GitError as e:
             if 'needs update' not in e.stdout:
                 # Reraise any errors we don't recognize.
                 raise
 
-    @asyncio.coroutine
-    def make_tree_from_index(self):
-        tree = yield from self.git('write-tree')
+    async def make_tree_from_index(self):
+        tree = await self.git('write-tree')
         return tree
 
-    @asyncio.coroutine
-    def read_working_copy_into_index(self, picks):
+    async def read_working_copy_into_index(self, picks):
         # Use --force to avoid .gitignore rules. We shouldn't respect them.
         if picks:
             # As in list_tree_entries, prepend ./ to avoid interpreting leading
             # colons in pathspecs.
             picks = ["./" + pick for pick in picks]
-            yield from self.git('add', '--force', '--', *picks)
+            await self.git('add', '--force', '--', *picks)
         else:
-            yield from self.git('add', '--all', '--force')
+            await self.git('add', '--all', '--force')
 
-    @asyncio.coroutine
-    def drop_paths_from_index(self, paths):
+    async def drop_paths_from_index(self, paths):
         if not paths:
             return
         # As in list_tree_entries, prepend ./ to avoid interpreting leading
         # colons in pathspecs.
         paths = ["./" + path for path in paths]
-        ls_output = yield from self.git(
+        ls_output = await self.git(
             'ls-files', '--full-name', '-z', *paths, output_mode=BINARY_MODE)
-        yield from self.git('update-index', '--force-remove', '-z', '--stdin',
+        await self.git('update-index', '--force-remove', '-z', '--stdin',
                             input=ls_output)
 
-    @asyncio.coroutine
-    def merge_tree_into_index(self, tree, prefix):
+    async def merge_tree_into_index(self, tree, prefix):
         # The --prefix argument to read-tree chokes on paths that contain dot
         # or dot-dot. Instead of './', it wants the empty string. Oblige it.
         # NOTE: This parameter must be forward-slash-separated, even on
@@ -155,51 +147,45 @@ class GitSession:
             prefix_arg += '/'
         # Normally read-tree with --prefix wants to make sure changes don't
         # stomp on the working copy. The -i flag ignores the working copy.
-        yield from self.git('read-tree', '-i', '--prefix', prefix_arg, tree)
+        await self.git('read-tree', '-i', '--prefix', prefix_arg, tree)
 
-    @asyncio.coroutine
-    def working_copy_matches_index(self):
-        diff_output = yield from self.git(
+    async def working_copy_matches_index(self):
+        diff_output = await self.git(
             'diff-files', output_mode=BINARY_MODE)
         return len(diff_output) == 0
 
-    @asyncio.coroutine
-    def get_modified_files_skipping_deletes(self):
+    async def get_modified_files_skipping_deletes(self):
         # We want to ignore deleted files, so we include every possible value
         # of --diff-filter except 'D'.
-        diff_output = yield from self.git(
+        diff_output = await self.git(
             'diff-files', '-z', '--name-only', '--diff-filter=ACMRTUXB')
         return [name for name in diff_output.split('\x00') if name]
 
-    @asyncio.coroutine
-    def get_new_files_in_tree(self, previous_tree, new_tree):
-        added_files_output = yield from self.git(
+    async def get_new_files_in_tree(self, previous_tree, new_tree):
+        added_files_output = await self.git(
             'diff-tree', '--diff-filter=A', '--name-only', '-r', '-z',
             previous_tree, new_tree)
         return added_files_output.split('\x00')
 
-    @asyncio.coroutine
-    def read_tree_updating_working_copy(self, tree, force):
+    async def read_tree_updating_working_copy(self, tree, force):
         '''This method relies on the current working copy being clean with
         respect to the current index. The benefit of this over
         checkout_missing_files_from_index(), is that is clean up files that get
         deleted between the current tree and the new one. Without force, this
         raises an error rather than overwriting modified files.'''
         if force:
-            yield from self.git('read-tree', '--reset', '-u', tree)
+            await self.git('read-tree', '--reset', '-u', tree)
         else:
-            yield from self.git('read-tree', '-m', '-u', tree)
+            await self.git('read-tree', '-m', '-u', tree)
 
-    @asyncio.coroutine
-    def checkout_files_from_index(self):
+    async def checkout_files_from_index(self):
         'This recreates any deleted files.'
-        yield from self.git('checkout-index', '--all')
+        await self.git('checkout-index', '--all')
 
-    @asyncio.coroutine
-    def get_info_for_path(self, tree, path):
+    async def get_info_for_path(self, tree, path):
         # --full-tree makes ls-tree ignore the cwd. As in list_tree_entries,
         # prepend ./ to avoid interpreting leading colons in pathspecs.
-        ls_output = yield from self.git(
+        ls_output = await self.git(
             'ls-tree', '--full-tree', '-z', tree, "./" + path)
         ls_lines = ls_output.strip('\x00').split('\x00')
         # Remove empty lines.
@@ -211,13 +197,11 @@ class GitSession:
         mode, type, sha1, name = ls_lines[0].split()
         return mode, type, sha1, name
 
-    @asyncio.coroutine
-    def read_bytes_from_file_hash(self, sha1):
-        return (yield from self.git(
+    async def read_bytes_from_file_hash(self, sha1):
+        return (await self.git(
             'cat-file', '-p', sha1, output_mode=BINARY_MODE))
 
-    @asyncio.coroutine
-    def list_tree_entries(self, tree, path, recursive):
+    async def list_tree_entries(self, tree, path, recursive):
         # Lines in ls-tree are of the following form (note that the wide space
         # is a tab):
         # 100644 blob a2b67564ae3a7cb3237ee0ef1b7d26d70f2c213f    README.md
@@ -240,7 +224,7 @@ class GitSession:
         if recursive:
             # -t means tree entries are included in the listing.
             command += ['-r', '-t']
-        output = yield from self.git(*command)
+        output = await self.git(*command)
         if not output:
             return {}
         entries = {}
@@ -253,20 +237,18 @@ class GitSession:
             entries[name] = TreeEntry(mode, type, hash)
         return entries
 
-    @asyncio.coroutine
-    def make_tree_from_entries(self, entries):
+    async def make_tree_from_entries(self, entries):
         entry_format = '{} {} {}\t{}'
         input = '\x00'.join(entry_format.format(mode, type, hash, name)
                             for name, (mode, type, hash) in entries.items())
-        tree = yield from self.git('mktree', '-z', input=input)
+        tree = await self.git('mktree', '-z', input=input)
         return tree
 
 
-@asyncio.coroutine
-def Cache(root):
+async def Cache(root):
     'This is the async constructor for the _Cache class.'
     cache = _Cache(root)
-    yield from cache._init_trees()
+    await cache._init_trees()
     return cache
 
 
@@ -282,12 +264,11 @@ class _Cache:
         self.trees_path = os.path.join(root, "trees")
         self._empty_tree = None
 
-    @asyncio.coroutine
-    def _init_trees(self):
+    async def _init_trees(self):
         if not os.path.exists(os.path.join(self.trees_path, 'HEAD')):
             makedirs(self.trees_path)
             with self.clean_git_session() as session:
-                yield from session.init_git_dir()
+                await session.init_git_dir()
             # Override any .gitattributes files that might be in the sync dir,
             # by writing 'info/attributes' in the bare repo. There are many
             # attributes that we might want to disable, but disabling 'text'
@@ -312,19 +293,17 @@ class _Cache:
     def no_index_git_session(self):
         return GitSession(self.trees_path, os.devnull, os.devnull)
 
-    @asyncio.coroutine
-    def get_empty_tree(self):
+    async def get_empty_tree(self):
         if not self._empty_tree:
             with self.clean_git_session() as session:
-                self._empty_tree = yield from session.make_tree_from_index()
+                self._empty_tree = await session.make_tree_from_index()
         return self._empty_tree
 
-    @asyncio.coroutine
-    def import_tree(self, src, *, picks=None, excludes=None):
+    async def import_tree(self, src, *, picks=None, excludes=None):
         if not os.path.exists(src):
             raise RuntimeError('import tree called on nonexistent path ' + src)
         with self.clean_git_session(src) as session:
-            yield from session.read_working_copy_into_index(picks)
+            await session.read_working_copy_into_index(picks)
 
             # We want to avoid ever importing a .peru directory. This is a
             # security/correctness issue similar to git's issue with .git dirs,
@@ -334,26 +313,24 @@ class _Cache:
             full_excludes = dotperu_exclude_case_insensitive_git_globs()
             if excludes:
                 full_excludes += excludes
-            yield from session.drop_paths_from_index(full_excludes)
+            await session.drop_paths_from_index(full_excludes)
 
-            tree = yield from session.make_tree_from_index()
+            tree = await session.make_tree_from_index()
             return tree
 
-    @asyncio.coroutine
-    def merge_trees(self, base_tree, merge_tree, merge_path='.'):
+    async def merge_trees(self, base_tree, merge_tree, merge_path='.'):
         with self.clean_git_session() as session:
             if base_tree:
-                yield from session.read_tree_into_index(base_tree)
+                await session.read_tree_into_index(base_tree)
             try:
-                yield from session.merge_tree_into_index(
+                await session.merge_tree_into_index(
                     merge_tree, merge_path)
             except GitError as e:
                 raise MergeConflictError(e.stdout) from e
-            unified_tree = yield from session.make_tree_from_index()
+            unified_tree = await session.make_tree_from_index()
             return unified_tree
 
-    @asyncio.coroutine
-    def export_tree(self, tree, dest, previous_tree=None, *, force=False,
+    async def export_tree(self, tree, dest, previous_tree=None, *, force=False,
                     previous_index_file=None):
         '''This method is the core of `peru sync`. If the contents of "dest"
         match "previous_tree", then export_tree() updates them to match "tree".
@@ -373,8 +350,8 @@ class _Cache:
         Right now this includes expected errors, like "sync would overwrite
         existing files," and unexpected errors, like "index is on fire."'''
 
-        tree = tree or (yield from self.get_empty_tree())
-        previous_tree = previous_tree or (yield from self.get_empty_tree())
+        tree = tree or (await self.get_empty_tree())
+        previous_tree = previous_tree or (await self.get_empty_tree())
 
         makedirs(dest)
 
@@ -392,27 +369,27 @@ class _Cache:
                 stack.enter_context(delete_if_error(previous_index_file))
                 if not os.path.exists(previous_index_file):
                     did_refresh = True
-                    yield from session.read_tree_and_stats_into_index(
+                    await session.read_tree_and_stats_into_index(
                         previous_tree)
             else:
                 session = stack.enter_context(self.clean_git_session(dest))
                 did_refresh = True
-                yield from session.read_tree_and_stats_into_index(
+                await session.read_tree_and_stats_into_index(
                     previous_tree)
 
             # The fast path. If the previous tree is the same as the current
             # one, and no files have changed at all, short-circuit.
             if previous_tree == tree:
-                if (yield from session.working_copy_matches_index()):
+                if (await session.working_copy_matches_index()):
                     return
 
             # Everything below is the slow path. Some files have changed, or
             # the tree has changed, or both. If we didn't refresh the index
             # file above, we must do so now.
             if not did_refresh:
-                yield from session.read_tree_and_stats_into_index(
+                await session.read_tree_and_stats_into_index(
                     previous_tree)
-            modified = yield from session.get_modified_files_skipping_deletes()
+            modified = await session.get_modified_files_skipping_deletes()
             if modified and not force:
                 raise DirtyWorkingCopyError(
                     'Imported files have been modified ' +
@@ -421,11 +398,11 @@ class _Cache:
 
             # Do all the file updates and deletions needed to produce `tree`.
             try:
-                yield from session.read_tree_updating_working_copy(tree, force)
+                await session.read_tree_updating_working_copy(tree, force)
             except GitError:
                 # Give a more informative error if we failed because files that
                 # are new in `tree` already existed in the working copy.
-                new_files = yield from session.get_new_files_in_tree(
+                new_files = await session.get_new_files_in_tree(
                     previous_tree, tree)
                 existing_new_files = [f for f in new_files if f and
                                       os.path.exists(os.path.join(dest, f))]
@@ -441,27 +418,24 @@ class _Cache:
                     raise
 
             # Recreate any missing files.
-            yield from session.checkout_files_from_index()
+            await session.checkout_files_from_index()
 
-    @asyncio.coroutine
-    def read_file(self, tree, path):
+    async def read_file(self, tree, path):
         # TODO: Make this handle symlinks in the tree.
         with self.clean_git_session() as session:
-            mode, type, sha1, name = yield from session.get_info_for_path(
+            mode, type, sha1, name = await session.get_info_for_path(
                 tree, path)
             if type == 'tree':
                 raise IsADirectoryError('Path "{}" in tree {} is a directory.'
                                         .format(path, tree))
             assert type == 'blob'
-            return (yield from session.read_bytes_from_file_hash(sha1))
+            return (await session.read_bytes_from_file_hash(sha1))
 
-    @asyncio.coroutine
-    def ls_tree(self, tree, path=None, *, recursive=False):
+    async def ls_tree(self, tree, path=None, *, recursive=False):
         session = self.no_index_git_session()
-        return (yield from session.list_tree_entries(tree, path, recursive))
+        return (await session.list_tree_entries(tree, path, recursive))
 
-    @asyncio.coroutine
-    def modify_tree(self, tree, modifications):
+    async def modify_tree(self, tree, modifications):
         '''The modifications are a map of the form, {path: TreeEntry}. The tree
         can be None to indicate an empty starting tree. The entries can be
         either blobs or trees, or None to indicate a deletion. The return value
@@ -475,7 +449,7 @@ class _Cache:
         if tree is None:
             entries = {}
         else:
-            entries = yield from self.ls_tree(tree, '.')
+            entries = await self.ls_tree(tree, '.')
 
         # Separate the modifications into two groups, those that refer to
         # entries at the base of this tree (e.g. 'foo'), and those that refer
@@ -514,12 +488,12 @@ class _Cache:
         # If 'a' is a file, inserting a new file at 'a/b' will implicitly
         # delete 'a', but trying to delete 'a/b' will be a no-op and will not
         # delete 'a'.
-        empty_tree = (yield from self.get_empty_tree())
+        empty_tree = (await self.get_empty_tree())
         for name, sub_modifications in modifications_in_subtrees.items():
             subtree_base = None
             if name in entries and entries[name].type == TREE_TYPE:
                 subtree_base = entries[name].hash
-            new_subtree = yield from self.modify_tree(
+            new_subtree = await self.modify_tree(
                 subtree_base, sub_modifications)
             if new_subtree != empty_tree:
                 entries[name] = TreeEntry(TREE_MODE, TREE_TYPE, new_subtree)
@@ -530,7 +504,7 @@ class _Cache:
         # Return the resulting tree, or None if empty.
         if entries:
             session = self.no_index_git_session()
-            tree = yield from session.make_tree_from_entries(entries)
+            tree = await session.make_tree_from_entries(entries)
             return tree
         else:
             return empty_tree

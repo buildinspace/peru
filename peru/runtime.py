@@ -13,11 +13,10 @@ from . import parser
 from . import plugin
 
 
-@asyncio.coroutine
-def Runtime(args, env):
+async def Runtime(args, env):
     'This is the async constructor for the _Runtime class.'
     r = _Runtime(args, env)
-    yield from r._init_cache()
+    await r._init_cache()
     return r
 
 
@@ -58,9 +57,8 @@ class _Runtime:
 
         self.display = get_display(args)
 
-    @asyncio.coroutine
-    def _init_cache(self):
-        self.cache = yield from cache.Cache(self.cache_dir)
+    async def _init_cache(self):
+        self.cache = await cache.Cache(self.cache_dir)
 
     def _set_paths(self, args, env):
         explicit_peru_file = args['--file']

@@ -1,4 +1,3 @@
-import asyncio
 import difflib
 import functools
 import inspect
@@ -34,7 +33,7 @@ def make_synchronous(f):
     coroutine. That will raise an "Event loop is running" error.'''
     @functools.wraps(f)
     def wrapper(*args, **kwargs):
-        return run_task(asyncio.coroutine(f)(*args, **kwargs))
+        return run_task(f(*args, **kwargs))
     return wrapper
 
 
@@ -126,10 +125,9 @@ def assert_contents(dir, expected_contents, *, message='', excludes=(),
     raise AssertionError(assertion_msg)
 
 
-@asyncio.coroutine
-def assert_tree_contents(cache, tree, expected_contents, **kwargs):
+async def assert_tree_contents(cache, tree, expected_contents, **kwargs):
     export_dir = create_dir()
-    yield from cache.export_tree(tree, export_dir)
+    await cache.export_tree(tree, export_dir)
     assert_contents(export_dir, expected_contents, **kwargs)
 
 

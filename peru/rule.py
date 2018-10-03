@@ -1,4 +1,3 @@
-import asyncio
 from pathlib import PurePosixPath
 import re
 
@@ -28,32 +27,31 @@ class Rule:
             'export': self.export,
         })
 
-    @asyncio.coroutine
-    def get_tree(self, runtime, input_tree):
+    async def get_tree(self, runtime, input_tree):
         key = self._cache_key(input_tree)
 
         # As with Module, take a lock on the cache key to avoid running the
         # same rule (or identical rules) twice with the same input.
         cache_lock = runtime.cache_key_locks[key]
-        with (yield from cache_lock):
+        async with cache_lock:
             if key in runtime.cache.keyval:
                 return runtime.cache.keyval[key]
 
             tree = input_tree
             if self.copy:
-                tree = yield from copy_files(runtime.cache, tree, self.copy)
+                tree = await copy_files(runtime.cache, tree, self.copy)
             if self.move:
-                tree = yield from move_files(runtime.cache, tree, self.move)
+                tree = await move_files(runtime.cache, tree, self.move)
             if self.drop:
-                tree = yield from drop_files(
+                tree = await drop_files(
                     runtime.cache, tree, self.drop)
             if self.pick:
-                tree = yield from pick_files(runtime.cache, tree, self.pick)
+                tree = await pick_files(runtime.cache, tree, self.pick)
             if self.executable:
-                tree = yield from make_files_executable(
+                tree = await make_files_executable(
                     runtime.cache, tree, self.executable)
             if self.export:
-                tree = yield from get_export_tree(
+                tree = await get_export_tree(
                     runtime.cache, tree, self.export)
 
             runtime.cache.keyval[key] = tree
@@ -61,11 +59,10 @@ class Rule:
         return tree
 
 
-@asyncio.coroutine
-def _copy_files_modifications(_cache, tree, paths_multimap):
+async def _copy_files_modifications(_cache, tree, paths_multimap):
     modifications = {}
     for source in paths_multimap:
-        source_info_dict = yield from _cache.ls_tree(tree, source)
+        source_info_dict = await _cache.ls_tree(tree, source)
         if not source_info_dict:
             raise NoMatchingFilesError(
                 'Path "{}" does not exist.'.format(source))
@@ -74,7 +71,7 @@ def _copy_files_modifications(_cache, tree, paths_multimap):
             # If dest is a directory, put the source inside dest instead of
             # overwriting dest entirely.
             dest_is_dir = False
-            dest_info_dict = yield from _cache.ls_tree(tree, dest)
+            dest_info_dict = await _cache.ls_tree(tree, dest)
             if dest_info_dict:
                 dest_info = list(dest_info_dict.items())[0][1]
                 dest_is_dir = (dest_info.type == cache.TREE_TYPE)
@@ -86,20 +83,18 @@ def _copy_files_modifications(_cache, tree, paths_multimap):
     return modifications
 
 
-@asyncio.coroutine
-def copy_files(_cache, tree, paths_multimap):
-    modifications = yield from _copy_files_modifications(
+async def copy_files(_cache, tree, paths_multimap):
+    modifications = await _copy_files_modifications(
         _cache, tree, paths_multimap)
-    tree = yield from _cache.modify_tree(tree, modifications)
+    tree = await _cache.modify_tree(tree, modifications)
     return tree
 
 
-@asyncio.coroutine
-def move_files(_cache, tree, paths_multimap):
+async def move_files(_cache, tree, paths_multimap):
     # First obtain the copies from the original tree. Moves are not ordered but
     # happen all at once, so if you move a->b and b->c, the contents of c will
     # always end up being b rather than a.
-    modifications = yield from _copy_files_modifications(
+    modifications = await _copy_files_modifications(
         _cache, tree, paths_multimap)
     # Now add in deletions, but be careful not to delete a file that just got
     # moved. Note that if "a" gets moved into "dir", it will end up at "dir/a",
@@ -109,12 +104,11 @@ def move_files(_cache, tree, paths_multimap):
     for source in paths_multimap:
         if source not in modifications:
             modifications[source] = None
-    tree = yield from _cache.modify_tree(tree, modifications)
+    tree = await _cache.modify_tree(tree, modifications)
     return tree
 
 
-@asyncio.coroutine
-def _get_glob_entries(_cache, tree, globs_list):
+async def _get_glob_entries(_cache, tree, globs_list):
     matches = {}
     for glob_str in globs_list:
         # Do an in-memory match of all the paths in the tree against the
@@ -122,7 +116,7 @@ def _get_glob_entries(_cache, tree, globs_list):
         # like 'a/b/**/foo', only list the paths under 'a/b'.
         regex = glob.glob_to_path_regex(glob_str)
         prefix = glob.unglobbed_prefix(glob_str)
-        entries = yield from _cache.ls_tree(tree, prefix, recursive=True)
+        entries = await _cache.ls_tree(tree, prefix, recursive=True)
         found = False
         for path, entry in entries.items():
             if re.match(regex, path):
@@ -134,37 +128,33 @@ def _get_glob_entries(_cache, tree, globs_list):
     return matches
 
 
-@asyncio.coroutine
-def pick_files(_cache, tree, globs_list):
-    picks = yield from _get_glob_entries(_cache, tree, globs_list)
-    tree = yield from _cache.modify_tree(None, picks)
+async def pick_files(_cache, tree, globs_list):
+    picks = await _get_glob_entries(_cache, tree, globs_list)
+    tree = await _cache.modify_tree(None, picks)
     return tree
 
 
-@asyncio.coroutine
-def drop_files(_cache, tree, globs_list):
-    drops = yield from _get_glob_entries(_cache, tree, globs_list)
+async def drop_files(_cache, tree, globs_list):
+    drops = await _get_glob_entries(_cache, tree, globs_list)
     for path in drops:
         drops[path] = None
-    tree = yield from _cache.modify_tree(tree, drops)
+    tree = await _cache.modify_tree(tree, drops)
     return tree
 
 
-@asyncio.coroutine
-def make_files_executable(_cache, tree, globs_list):
-    entries = yield from _get_glob_entries(_cache, tree, globs_list)
+async def make_files_executable(_cache, tree, globs_list):
+    entries = await _get_glob_entries(_cache, tree, globs_list)
     exes = {}
     for path, entry in entries.items():
         # Ignore directories.
         if entry.type == cache.BLOB_TYPE:
             exes[path] = entry._replace(mode=cache.EXECUTABLE_FILE_MODE)
-    tree = yield from _cache.modify_tree(tree, exes)
+    tree = await _cache.modify_tree(tree, exes)
     return tree
 
 
-@asyncio.coroutine
-def get_export_tree(_cache, tree, export_path):
-    entries = yield from _cache.ls_tree(tree, export_path)
+async def get_export_tree(_cache, tree, export_path):
+    entries = await _cache.ls_tree(tree, export_path)
     if not entries:
         raise NoMatchingFilesError('Export path "{}" doesn\'t exist.'
                                    .format(export_path))

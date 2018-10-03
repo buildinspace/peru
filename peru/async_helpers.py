@@ -50,8 +50,7 @@ class GatheredExceptions(PrintableError):
         self.message = "\n\n".join(self.reprs)
 
 
-@asyncio.coroutine
-def gather_coalescing_exceptions(coros, display, *, verbose):
+async def gather_coalescing_exceptions(coros, display, *, verbose):
     '''The tricky thing about running multiple coroutines in parallel is what
     we're supposed to do when one of them raises an exception. The approach
     we're using here is to catch exceptions and keep waiting for other tasks to
@@ -67,10 +66,9 @@ def gather_coalescing_exceptions(coros, display, *, verbose):
     exceptions = []
     reprs = []
 
-    @asyncio.coroutine
-    def catching_wrapper(coro):
+    async def catching_wrapper(coro):
         try:
-            return (yield from coro)
+            return (await coro)
         except Exception as e:
             exceptions.append(e)
             if isinstance(e, PrintableError) and not verbose:
@@ -88,7 +86,7 @@ def gather_coalescing_exceptions(coros, display, *, verbose):
 
     futures = [schedule(catching_wrapper(coro)) for coro in coros]
 
-    results = yield from asyncio.gather(*futures)
+    results = await asyncio.gather(*futures)
 
     if exceptions:
         raise GatheredExceptions(exceptions, reprs)
@@ -96,8 +94,7 @@ def gather_coalescing_exceptions(coros, display, *, verbose):
         return results
 
 
-@asyncio.coroutine
-def create_subprocess_with_handle(command, display_handle, *, shell=False, cwd,
+async def create_subprocess_with_handle(command, display_handle, *, shell=False, cwd,
                                   **kwargs):
     '''Writes subprocess output to a display handle as it comes in, and also
     returns a copy of it as a string. Throws if the subprocess returns an
@@ -124,17 +121,17 @@ def create_subprocess_with_handle(command, display_handle, *, shell=False, cwd,
         stdout = asyncio.subprocess.PIPE
         stderr = asyncio.subprocess.STDOUT
         if shell:
-            proc = yield from asyncio.create_subprocess_shell(
+            proc = await asyncio.create_subprocess_shell(
                 command, stdin=stdin, stdout=stdout, stderr=stderr, cwd=cwd,
                 **kwargs)
         else:
-            proc = yield from asyncio.create_subprocess_exec(
+            proc = await asyncio.create_subprocess_exec(
                 *command, stdin=stdin, stdout=stdout, stderr=stderr, cwd=cwd,
                 **kwargs)
 
         # Read all the output from the subprocess as its comes in.
         while True:
-            outputbytes = yield from proc.stdout.read(4096)
+            outputbytes = await proc.stdout.read(4096)
             if not outputbytes:
                 break
             outputstr = decoder.decode(outputbytes)
@@ -142,7 +139,7 @@ def create_subprocess_with_handle(command, display_handle, *, shell=False, cwd,
             display_handle.write(outputstr_unified)
             output_copy.write(outputstr_unified)
 
-        returncode = yield from proc.wait()
+        returncode = await proc.wait()
 
     if returncode != 0:
         raise subprocess.CalledProcessError(
@@ -169,8 +166,7 @@ def _unify_newlines(s):
     return s.replace('\r\n', '\n')
 
 
-@asyncio.coroutine
-def safe_communicate(process, input=None):
+async def safe_communicate(process, input=None):
     '''Asyncio's communicate method has a bug where `communicate(input=b"")` is
     treated the same as `communicate(). That means that child processes can
     hang waiting for input, when their stdin should be closed. See
@@ -179,9 +175,9 @@ def safe_communicate(process, input=None):
     but we will probably always need this workaround for old versions.'''
     if input is not None and len(input) == 0:
         process.stdin.close()
-        return (yield from process.communicate())
+        return (await process.communicate())
     else:
-        return (yield from process.communicate(input))
+        return (await process.communicate(input))
 
 
 class RaisesGatheredContainer:
