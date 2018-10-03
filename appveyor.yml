@@ -8,43 +8,28 @@ environment:
     CMD_IN_ENV: "cmd /E:ON /V:ON /C .\\appveyor\\run_with_env.cmd"
 
   matrix:
-    - PYTHON: "C:\\Python33"
-      PY_PYTHON: 3.3-32
-      PY_PYTHON3: 3.3-32
-      PYTHON_VERSION: "3.3.x"
+    - PYTHON: "C:\\Python35"
+      PYTHON_VERSION: "3.5.0"
       PYTHON_ARCH: "32"
-
-    - PYTHON: "C:\\Python33-x64"
-      PY_PYTHON: 3.3
-      PY_PYTHON3: 3.3
-      PYTHON_VERSION: "3.3.x"
-      PYTHON_ARCH: "64"
-
-    - PYTHON: "C:\\Python34"
-      PY_PYTHON: 3.4-32
-      PY_PYTHON3: 3.4-32
-      PYTHON_VERSION: "3.4.x"
-      PYTHON_ARCH: "32"
-
-    - PYTHON: "C:\\Python34-x64"
-      PY_PYTHON: 3.4
-      PY_PYTHON3: 3.4
-      PYTHON_VERSION: "3.4.x"
-      PYTHON_ARCH: "64"
-
-    # Python 3.5-32 won't run through the C:\Windows\py.exe launcher on
-    # AppVeyor for some reason. See:
-    # http://help.appveyor.com/discussions/problems/3891-py-35-32-hellopy-fails-with-error-code-103
-    # - PYTHON: "C:\\Python35"
-    # - PY_PYTHON: 3.5-32
-    # - PY_PYTHON3: 3.5-32
-    # - PYTHON_VERSION: "3.5.x"
-    # - PYTHON_ARCH: "32"
 
     - PYTHON: "C:\\Python35-x64"
-      PY_PYTHON: 3.5
-      PY_PYTHON3: 3.5
-      PYTHON_VERSION: "3.5.x"
+      PYTHON_VERSION: "3.5.0"
+      PYTHON_ARCH: "64"
+
+    - PYTHON: "C:\\Python36"
+      PYTHON_VERSION: "3.6.x" # currently 3.6.5
+      PYTHON_ARCH: "32"
+
+    - PYTHON: "C:\\Python36-x64"
+      PYTHON_VERSION: "3.6.x" # currently 3.6.5
+      PYTHON_ARCH: "64"
+
+    - PYTHON: "C:\\Python37"
+      PYTHON_VERSION: "3.7.x"
+      PYTHON_ARCH: "32"
+
+    - PYTHON: "C:\\Python37-x64"
+      PYTHON_VERSION: "3.7.x"
       PYTHON_ARCH: "64"
 
 install:
