@@ -32,12 +32,11 @@ def test_plugin_fetch(context, type, fields, dest):
 
 def test_plugin_get_reup_fields(context, type, fields):
     handle = TestDisplayHandle()
-    return run_task(plugin.plugin_get_reup_fields(
-        context, type, fields, handle))
+    return run_task(
+        plugin.plugin_get_reup_fields(context, type, fields, handle))
 
 
 class PluginsTest(shared.PeruTest):
-
     def setUp(self):
         self.content = {"some": "stuff", "foo/bar": "baz"}
         self.content_dir = shared.create_dir(self.content)
@@ -54,11 +53,15 @@ class PluginsTest(shared.PeruTest):
     def tearDown(self):
         plugin.debug_assert_clean_parallel_count()
 
-    def do_plugin_test(self, type, plugin_fields, expected_content, *,
+    def do_plugin_test(self,
+                       type,
+                       plugin_fields,
+                       expected_content,
+                       *,
                        fetch_dir=None):
         fetch_dir = fetch_dir or shared.create_dir()
-        output = test_plugin_fetch(
-            self.plugin_context, type, plugin_fields, fetch_dir)
+        output = test_plugin_fetch(self.plugin_context, type, plugin_fields,
+                                   fetch_dir)
         assert_contents(fetch_dir, expected_content)
         return output
 
@@ -82,8 +85,8 @@ class PluginsTest(shared.PeruTest):
     def test_svn_plugin_reup(self):
         repo = SvnRepo(self.content_dir)
         plugin_fields = {'url': repo.url}
-        output = test_plugin_get_reup_fields(
-            self.plugin_context, 'svn', plugin_fields)
+        output = test_plugin_get_reup_fields(self.plugin_context, 'svn',
+                                             plugin_fields)
         self.assertDictEqual({'rev': '1'}, output)
 
     def test_git_plugin_with_submodule(self):
@@ -96,8 +99,8 @@ class PluginsTest(shared.PeruTest):
         content_repo.run('git', 'config', 'core.autocrlf', 'false')
         submodule_dir = shared.create_dir({'another': 'file'})
         submodule_repo = GitRepo(submodule_dir)
-        content_repo.run(
-            'git', 'submodule', 'add', '-q', submodule_dir, 'subdir/')
+        content_repo.run('git', 'submodule', 'add', '-q', submodule_dir,
+                         'subdir/')
         content_repo.run('git', 'commit', '-m', 'submodule commit')
         expected_content = self.content.copy()
         expected_content['subdir/another'] = 'file'
@@ -108,9 +111,8 @@ class PluginsTest(shared.PeruTest):
         shared.write_files(submodule_dir, {'more': 'stuff'})
         submodule_repo.run('git', 'add', '-A')
         submodule_repo.run('git', 'commit', '-m', 'more stuff')
-        subprocess.check_output(
-            ['git', 'pull', '-q'],
-            cwd=os.path.join(self.content_dir, 'subdir'))
+        subprocess.check_output(['git', 'pull', '-q'],
+                                cwd=os.path.join(self.content_dir, 'subdir'))
         content_repo.run('git', 'commit', '-am', 'submodule update')
         expected_content['subdir/more'] = 'stuff'
         self.do_plugin_test('git', {'url': self.content_dir}, expected_content)
@@ -158,9 +160,8 @@ class PluginsTest(shared.PeruTest):
 
     def test_hg_plugin_multiple_fetches(self):
         content_repo = HgRepo(self.content_dir)
-        head = content_repo.run(
-            'hg', 'identify', '--debug', '-r', '.'
-            ).split()[0]
+        head = content_repo.run('hg', 'identify', '--debug', '-r',
+                                '.').split()[0]
         plugin_fields = {'url': self.content_dir, 'rev': head}
         output = self.do_plugin_test('hg', plugin_fields, self.content)
         self.assertEqual(output.count('hg clone'), 1)
@@ -185,8 +186,8 @@ class PluginsTest(shared.PeruTest):
         plugin_fields = {'url': self.content_dir}
         # By default, the git plugin should reup from master.
         expected_output = {'rev': master_head}
-        output = test_plugin_get_reup_fields(
-            self.plugin_context, 'git', plugin_fields)
+        output = test_plugin_get_reup_fields(self.plugin_context, 'git',
+                                             plugin_fields)
         self.assertDictEqual(expected_output, output)
         # Add some new commits and make sure master gets fetched properly.
         repo.run('git', 'commit', '--allow-empty', '-m', 'junk')
@@ -194,51 +195,49 @@ class PluginsTest(shared.PeruTest):
         repo.run('git', 'commit', '--allow-empty', '-m', 'more junk')
         new_master_head = repo.run('git', 'rev-parse', 'master')
         expected_output['rev'] = new_master_head
-        output = test_plugin_get_reup_fields(
-            self.plugin_context, 'git', plugin_fields)
+        output = test_plugin_get_reup_fields(self.plugin_context, 'git',
+                                             plugin_fields)
         self.assertDictEqual(expected_output, output)
         # Now specify the reup target explicitly.
         newbranch_head = repo.run('git', 'rev-parse', 'newbranch')
         plugin_fields['reup'] = 'newbranch'
         expected_output['rev'] = newbranch_head
-        output = test_plugin_get_reup_fields(
-            self.plugin_context, 'git', plugin_fields)
+        output = test_plugin_get_reup_fields(self.plugin_context, 'git',
+                                             plugin_fields)
         self.assertDictEqual(expected_output, output)
 
     def test_hg_plugin_reup(self):
         repo = HgRepo(self.content_dir)
-        default_tip = repo.run(
-            'hg', 'identify', '--debug', '-r', 'default'
-            ).split()[0]
+        default_tip = repo.run('hg', 'identify', '--debug', '-r',
+                               'default').split()[0]
         plugin_fields = {'url': self.content_dir}
         # By default, the hg plugin should reup from default.
         expected_output = {'rev': default_tip}
-        output = test_plugin_get_reup_fields(
-            self.plugin_context, 'hg', plugin_fields)
+        output = test_plugin_get_reup_fields(self.plugin_context, 'hg',
+                                             plugin_fields)
         self.assertDictEqual(expected_output, output)
         # Add some new commits and make sure master gets fetched properly.
-        shared.write_files(self.content_dir, {
-            'randomfile': "hg doesn't like empty commits"})
+        shared.write_files(self.content_dir,
+                           {'randomfile': "hg doesn't like empty commits"})
         repo.run('hg', 'commit', '-A', '-m', 'junk')
-        shared.write_files(self.content_dir, {
-            'randomfile': "hg still doesn't like empty commits"})
+        shared.write_files(
+            self.content_dir,
+            {'randomfile': "hg still doesn't like empty commits"})
         repo.run('hg', 'branch', 'newbranch')
         repo.run('hg', 'commit', '-A', '-m', 'more junk')
-        new_default_tip = repo.run(
-            'hg', 'identify', '--debug', '-r', 'default'
-            ).split()[0]
+        new_default_tip = repo.run('hg', 'identify', '--debug', '-r',
+                                   'default').split()[0]
         expected_output['rev'] = new_default_tip
-        output = test_plugin_get_reup_fields(
-            self.plugin_context, 'hg', plugin_fields)
+        output = test_plugin_get_reup_fields(self.plugin_context, 'hg',
+                                             plugin_fields)
         self.assertDictEqual(expected_output, output)
         # Now specify the reup target explicitly.
-        newbranch_tip = repo.run(
-            'hg', 'identify', '--debug', '-r', 'tip'
-            ).split()[0]
+        newbranch_tip = repo.run('hg', 'identify', '--debug', '-r',
+                                 'tip').split()[0]
         plugin_fields['reup'] = 'newbranch'
         expected_output['rev'] = newbranch_tip
-        output = test_plugin_get_reup_fields(
-            self.plugin_context, 'hg', plugin_fields)
+        output = test_plugin_get_reup_fields(self.plugin_context, 'hg',
+                                             plugin_fields)
         self.assertDictEqual(expected_output, output)
 
     def test_curl_plugin_fetch(self):
@@ -266,10 +265,13 @@ class PluginsTest(shared.PeruTest):
                 'unpack': type,
             }
             fetch_dir = shared.create_dir()
-            self.do_plugin_test('curl', fields, {
-                'not_exe.txt': 'Not executable.\n',
-                'exe.sh': 'echo Executable.\n',
-            }, fetch_dir=fetch_dir)
+            self.do_plugin_test(
+                'curl',
+                fields, {
+                    'not_exe.txt': 'Not executable.\n',
+                    'exe.sh': 'echo Executable.\n',
+                },
+                fetch_dir=fetch_dir)
             shared.assert_not_executable(
                 os.path.join(fetch_dir, 'not_exe.txt'))
             shared.assert_executable(os.path.join(fetch_dir, 'exe.sh'))
@@ -292,13 +294,13 @@ class PluginsTest(shared.PeruTest):
         digest.update(b'content')
         real_hash = digest.hexdigest()
         fields = {'url': test_url}
-        output = test_plugin_get_reup_fields(
-            self.plugin_context, 'curl', fields)
+        output = test_plugin_get_reup_fields(self.plugin_context, 'curl',
+                                             fields)
         self.assertDictEqual({'sha1': real_hash}, output)
         # Confirm that we get the same thing with a preexisting hash.
         fields['sha1'] = 'preexisting junk'
-        output = test_plugin_get_reup_fields(
-            self.plugin_context, 'curl', fields)
+        output = test_plugin_get_reup_fields(self.plugin_context, 'curl',
+                                             fields)
         self.assertDictEqual({'sha1': real_hash}, output)
 
     def test_cp_plugin(self):
@@ -337,18 +339,21 @@ class PluginsTest(shared.PeruTest):
         plugin_yaml_file = plugin_prefix + 'plugin.yaml'
         fake_config_dir = shared.create_dir({
             fetch_file:
-                '#! /usr/bin/env python3\nprint("hey there!")\n',
-            reup_file: textwrap.dedent('''\
+            '#! /usr/bin/env python3\nprint("hey there!")\n',
+            reup_file:
+            textwrap.dedent('''\
                 #! /usr/bin/env python3
                 import os
                 outfile = os.environ['PERU_REUP_OUTPUT']
                 print("name: val", file=open(outfile, 'w'))
                 '''),
-            plugin_yaml_file: textwrap.dedent('''\
+            plugin_yaml_file:
+            textwrap.dedent('''\
                 sync exe: fetch.py
                 reup exe: reup.py
                 required fields: []
-                ''')})
+                ''')
+        })
         os.chmod(os.path.join(fake_config_dir, fetch_file), 0o755)
         os.chmod(os.path.join(fake_config_dir, reup_file), 0o755)
         fetch_dir = shared.create_dir()
@@ -363,17 +368,17 @@ class PluginsTest(shared.PeruTest):
             config_path_variable = 'XDG_CONFIG_HOME'
 
         with temporary_environment(config_path_variable, fake_config_dir):
-            output = test_plugin_fetch(
-                self.plugin_context, 'footype', {}, fetch_dir)
+            output = test_plugin_fetch(self.plugin_context, 'footype', {},
+                                       fetch_dir)
             self.assertEqual('hey there!\n', output)
-            output = test_plugin_get_reup_fields(
-                self.plugin_context, 'footype', {})
+            output = test_plugin_get_reup_fields(self.plugin_context,
+                                                 'footype', {})
             self.assertDictEqual({'name': 'val'}, output)
 
     def test_no_such_plugin(self):
         with self.assertRaises(plugin.PluginCandidateError):
-            test_plugin_fetch(
-                self.plugin_context, 'nosuchtype!', {}, os.devnull)
+            test_plugin_fetch(self.plugin_context, 'nosuchtype!', {},
+                              os.devnull)
 
 
 @contextlib.contextmanager

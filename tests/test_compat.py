@@ -5,7 +5,6 @@ import shared
 
 
 class CompatTest(shared.PeruTest):
-
     def test_makedirs(self):
         tmp_dir = shared.tmp_dir()
         foo_dir = os.path.join(tmp_dir, "foo")

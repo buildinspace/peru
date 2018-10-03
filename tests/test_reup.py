@@ -17,8 +17,8 @@ class ReupIntegrationTest(shared.PeruTest):
             f.write('new')
         self.bar_repo.run('git', 'add', '-A')
         self.bar_repo.run('git', 'commit', '-m', 'creating barfile')
-        self.bar_otherbranch = self.bar_repo.run(
-            'git', 'rev-parse', 'otherbranch')
+        self.bar_otherbranch = self.bar_repo.run('git', 'rev-parse',
+                                                 'otherbranch')
 
     def test_single_reup(self):
         yaml_without_imports = dedent('''\
@@ -41,8 +41,7 @@ class ReupIntegrationTest(shared.PeruTest):
                 reup: otherbranch
             ''').format(self.foo_dir, self.foo_master, self.bar_dir)
         run_peru_command(['reup', 'foo'], test_dir)
-        assert_contents(test_dir, {'peru.yaml': expected},
-                        excludes=['.peru'])
+        assert_contents(test_dir, {'peru.yaml': expected}, excludes=['.peru'])
 
     def test_reup_sync(self):
         yaml_with_imports = dedent('''\
@@ -99,6 +98,10 @@ class ReupIntegrationTest(shared.PeruTest):
                         self.bar_otherbranch)
         run_peru_command(['reup'], test_dir)
         # This time we finally pull in barfile.
-        assert_contents(test_dir,
-                        {'peru.yaml': expected, 'a': 'b', 'barfile': 'new'},
-                        excludes=['.peru'])
+        assert_contents(
+            test_dir, {
+                'peru.yaml': expected,
+                'a': 'b',
+                'barfile': 'new'
+            },
+            excludes=['.peru'])

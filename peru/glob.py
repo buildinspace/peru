@@ -3,11 +3,10 @@ import re
 
 from .error import PrintableError
 
-
 UNESCAPED_STAR_EXPR = (
-    r'(?<!\\)'    # negative lookbehind assertion for more backslashes
+    r'(?<!\\)'  # negative lookbehind assertion for more backslashes
     r'(?:\\\\)*'  # non-capturing group of an even number of backslashes
-    r'\*'         # literal *
+    r'\*'  # literal *
 )
 
 
@@ -44,10 +43,13 @@ def split_on_stars_interpreting_backslashes(s):
     *'s and \'s, and leave them in as literals (to be regex-escaped in the next
     step).'''
 
-    star_indices = [match.end() - 1 for match in
-                    re.finditer(UNESCAPED_STAR_EXPR, s)]
-    literalized_parts = [part.replace(r'\*', '*').replace(r'\\', '\\')
-                         for part in _split_on_indices(s, star_indices)]
+    star_indices = [
+        match.end() - 1 for match in re.finditer(UNESCAPED_STAR_EXPR, s)
+    ]
+    literalized_parts = [
+        part.replace(r'\*', '*').replace(r'\\', '\\')
+        for part in _split_on_indices(s, star_indices)
+    ]
     return literalized_parts
 
 
@@ -69,8 +71,8 @@ def glob_to_path_regex(glob):
     for i, component in enumerate(components):
         if component == '**':
             if i == len(components) - 1:
-                raise GlobError(
-                    glob, '** may not be the last component in a path.')
+                raise GlobError(glob,
+                                '** may not be the last component in a path.')
             else:
                 regex += r'(?:[^/]+/)*'
         elif '**' in component:

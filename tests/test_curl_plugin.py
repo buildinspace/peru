@@ -7,8 +7,9 @@ import peru
 import shared
 
 curl_plugin_path = abspath(
-    join(dirname(peru.__file__), 'resources', 'plugins', 'curl',
-         'curl_plugin.py'))
+    join(
+        dirname(peru.__file__), 'resources', 'plugins', 'curl',
+        'curl_plugin.py'))
 loader = importlib.machinery.SourceFileLoader("curl_plugin", curl_plugin_path)
 curl_plugin = loader.load_module()
 
@@ -41,29 +42,22 @@ class CurlPluginTest(shared.PeruTest):
         self.assertEqual('index.html',
                          curl_plugin.get_request_filename(request))
         request.url = 'http://www.example.com/foo'
-        self.assertEqual('foo',
-                         curl_plugin.get_request_filename(request))
-        request._info = {'Content-Disposition':
-                         'attachment; filename=bar'}
-        self.assertEqual('bar',
-                         curl_plugin.get_request_filename(request))
+        self.assertEqual('foo', curl_plugin.get_request_filename(request))
+        request._info = {'Content-Disposition': 'attachment; filename=bar'}
+        self.assertEqual('bar', curl_plugin.get_request_filename(request))
         # Check quoted filenames.
-        request._info = {'Content-Disposition':
-                         'attachment; filename="bar"'}
-        self.assertEqual('bar',
-                         curl_plugin.get_request_filename(request))
+        request._info = {'Content-Disposition': 'attachment; filename="bar"'}
+        self.assertEqual('bar', curl_plugin.get_request_filename(request))
         # Check backslashed quotes in filenames.
-        request._info = {'Content-Disposition':
-                         'attachment; filename="bar\\""'}
-        self.assertEqual('bar"',
-                         curl_plugin.get_request_filename(request))
+        request._info = {
+            'Content-Disposition': 'attachment; filename="bar\\""'
+        }
+        self.assertEqual('bar"', curl_plugin.get_request_filename(request))
 
     def test_download_file_with_length(self):
         content = b'xy' * 4096
-        request = MockRequest(
-            'some url',
-            {'Content-Length': len(content)},
-            content)
+        request = MockRequest('some url', {'Content-Length': len(content)},
+                              content)
         stdout = io.StringIO()
         output_file = io.BytesIO()
         sha1 = curl_plugin.download_file(request, output_file, stdout)
@@ -79,9 +73,7 @@ class CurlPluginTest(shared.PeruTest):
         stdout = io.StringIO()
         output_file = io.BytesIO()
         sha1 = curl_plugin.download_file(request, output_file, stdout)
-        self.assertEqual(
-            'downloaded 3B\n',
-            stdout.getvalue())
+        self.assertEqual('downloaded 3B\n', stdout.getvalue())
         self.assertEqual(content, output_file.getvalue())
         self.assertEqual(hashlib.sha1(content).hexdigest(), sha1)
 

@@ -9,7 +9,6 @@ from .module import Module
 from .rule import Rule
 from .scope import Scope
 
-
 DEFAULT_PERU_FILE_NAME = 'peru.yaml'
 
 
@@ -37,8 +36,7 @@ def _parse_toplevel(blob, name_prefix):
     rules = _extract_named_rules(blob, name_prefix)
     imports = _extract_multimap_field(blob, 'imports')
     if blob:
-        raise ParserError("Unknown toplevel fields: " +
-                          ", ".join(blob.keys()))
+        raise ParserError("Unknown toplevel fields: " + ", ".join(blob.keys()))
     return Scope(modules, rules), imports
 
 
@@ -63,7 +61,8 @@ def _extract_named_rules(blob, name_prefix):
 def _extract_rule(name, blob):
     _validate_name(name)
     if 'build' in blob:
-        raise ParserError(textwrap.dedent('''\
+        raise ParserError(
+            textwrap.dedent('''\
             The "build" field is no longer supported. If you need to
             untar/unzip a curl module, use the "unpack" field.'''))
     if 'files' in blob:
@@ -113,8 +112,8 @@ def _build_module(name, type, blob, yaml_name):
     for k, v in plugin_fields.items():
         if not isinstance(k, str):
             raise ParserError(
-                'Module field names must be strings. Found "{}".'
-                .format(repr(k)))
+                'Module field names must be strings. Found "{}".'.format(
+                    repr(k)))
         if isinstance(v, bool):
             # Avoid the Python-specific True/False capitalization, to be
             # consistent with what people will usually type in YAML.
@@ -138,8 +137,8 @@ def _extract_optional_list_field(blob, name):
     strings.'''
     value = _optional_list(typesafe_pop(blob, name, []))
     if value is None:
-        raise ParserError('"{}" field must be a string or a list.'
-                          .format(name))
+        raise ParserError(
+            '"{}" field must be a string or a list.'.format(name))
     return value
 
 
@@ -175,7 +174,7 @@ def _optional_list(value):
     produces uniform output for fields that may supply a single value or list
     of values, like the `imports` field.'''
     if isinstance(value, str):
-        return (value,)
+        return (value, )
     elif isinstance(value, list):
         return tuple(value)
 
@@ -184,8 +183,8 @@ def _optional_list(value):
 
 def typesafe_pop(d, field, default=object()):
     if not isinstance(d, dict):
-        raise ParserError(
-            'Error parsing peru file: {} is not a map.'.format(repr(d)))
+        raise ParserError('Error parsing peru file: {} is not a map.'.format(
+            repr(d)))
     if default == typesafe_pop.__defaults__[0]:
         return d.pop(field)
     else:
@@ -194,8 +193,8 @@ def typesafe_pop(d, field, default=object()):
 
 # Code for the duplicate keys warning
 
-DuplicatedKey = collections.namedtuple(
-    'DuplicatedKey', ['key', 'first_line', 'second_line'])
+DuplicatedKey = collections.namedtuple('DuplicatedKey',
+                                       ['key', 'first_line', 'second_line'])
 
 
 def _get_line_indentation(line):
@@ -233,8 +232,9 @@ def _get_duplicate_keys_approximate(yaml_text):
         # Check if the current key is a duplicate.
         key = line.split(':')[0].strip()
         if key in indent_to_keylines[current_indent]:
-            duplicates.append(DuplicatedKey(
-                key, indent_to_keylines[current_indent][key], line_num))
+            duplicates.append(
+                DuplicatedKey(key, indent_to_keylines[current_indent][key],
+                              line_num))
         # Remember it either way.
         indent_to_keylines[current_indent][key] = line_num
     return duplicates
@@ -250,8 +250,8 @@ def warn_duplicate_keys(file_path):
     duplicates = _get_duplicate_keys_approximate(text)
     if not duplicates:
         return
-    _warn('WARNING: Duplicate keys found in {}\n'
-          'These will overwrite each other:',
-          file_path)
+    _warn(
+        'WARNING: Duplicate keys found in {}\n'
+        'These will overwrite each other:', file_path)
     for duplicate in duplicates:
         _warn('  "{}" on lines {} and {}', *duplicate)

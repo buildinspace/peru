@@ -17,7 +17,6 @@ REUP = os.environ['PERU_MODULE_REUP'] or 'master'
 # to separate things out by repo url.
 CACHE_ROOT = os.environ['PERU_PLUGIN_CACHE']
 
-
 Result = namedtuple("Result", ["returncode", "output"])
 
 
@@ -79,8 +78,8 @@ def already_has_rev(repo, rev):
     if cat_result.returncode != 0:
         return False
     # Get the hash for the rev.
-    parse_result = git('rev-parse', rev, git_dir=repo, checked=False,
-                       capture_output=True)
+    parse_result = git(
+        'rev-parse', rev, git_dir=repo, checked=False, capture_output=True)
     if parse_result.returncode != 0:
         return False
     # Only return True for revs that are absolute hashes.
@@ -116,8 +115,12 @@ def checkout_submodules(repo_path, rev, work_tree):
         sub_relative_path = parser[section]['path']
         sub_full_path = os.path.join(work_tree, sub_relative_path)
         sub_url = parser[section]['url']
-        ls_tree = git('ls-tree', rev, sub_relative_path,
-                      git_dir=repo_path, capture_output=True).output
+        ls_tree = git(
+            'ls-tree',
+            rev,
+            sub_relative_path,
+            git_dir=repo_path,
+            capture_output=True).output
         # Normally when you run `git submodule add ...`, git puts two things in
         # your repo: an entry in .gitmodules, and a commit object at the
         # appropriate path inside your repo. However, it's possible for those
@@ -140,8 +143,8 @@ def plugin_reup():
     reup_output = os.environ['PERU_REUP_OUTPUT']
     repo_path = clone_if_needed(URL)
     git_fetch(URL, repo_path)
-    output = git('rev-parse', REUP, git_dir=repo_path,
-                 capture_output=True).output
+    output = git(
+        'rev-parse', REUP, git_dir=repo_path, capture_output=True).output
     with open(reup_output, 'w') as out_file:
         print('rev:', output.strip(), file=out_file)
 

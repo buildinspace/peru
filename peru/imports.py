@@ -12,24 +12,25 @@ async def checkout(runtime, scope, imports, path):
     last_imports_tree = _get_last_imports(runtime)
     index = _last_imports_index(runtime)
     await runtime.cache.export_tree(
-        imports_tree, path, last_imports_tree, force=runtime.force,
+        imports_tree,
+        path,
+        last_imports_tree,
+        force=runtime.force,
         previous_index_file=index)
     _set_last_imports(runtime, imports_tree)
 
 
 async def get_imports_tree(runtime, scope, imports, base_tree=None):
     target_trees = await get_trees(runtime, scope, imports.keys())
-    imports_tree = await merge_imports_tree(
-        runtime.cache, imports, target_trees, base_tree)
+    imports_tree = await merge_imports_tree(runtime.cache, imports,
+                                            target_trees, base_tree)
     return imports_tree
 
 
 async def get_trees(runtime, scope, targets):
     futures = [get_tree(runtime, scope, target) for target in targets]
     trees = await gather_coalescing_exceptions(
-        futures,
-        runtime.display,
-        verbose=runtime.verbose)
+        futures, runtime.display, verbose=runtime.verbose)
     return dict(zip(targets, trees))
 
 

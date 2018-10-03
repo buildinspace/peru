@@ -109,6 +109,7 @@ class DisplayTest(shared.PeruTest):
 class FakeTerminal:
     '''Emulates a terminal by keeping track of a list of lines. Knows how to
     interpret the ANSI escape sequences that are used by FancyDisplay.'''
+
     def __init__(self):
         self.lines = [io.StringIO()]
         self.cursor_line = 0
@@ -117,11 +118,10 @@ class FakeTerminal:
         self.flushed = False
 
     def write(self, string):
-        tokens = [display.ANSI_DISABLE_LINE_WRAP,
-                  display.ANSI_ENABLE_LINE_WRAP,
-                  display.ANSI_CLEAR_LINE,
-                  display.ANSI_CURSOR_UP_ONE_LINE,
-                  '\n']
+        tokens = [
+            display.ANSI_DISABLE_LINE_WRAP, display.ANSI_ENABLE_LINE_WRAP,
+            display.ANSI_CLEAR_LINE, display.ANSI_CURSOR_UP_ONE_LINE, '\n'
+        ]
         # The parens make this a capturing expression, so the tokens will be
         # included in re.split()'s return list.
         token_expr = '(' + '|'.join(re.escape(token) for token in tokens) + ')'

@@ -1,7 +1,6 @@
 import os
 import sys
 
-
 # In Python versions prior to 3.4, __file__ returns a relative path. This path
 # is fixed at load time, so if the program later cd's (as we do in tests, at
 # least) __file__ is no longer valid. As a workaround, compute the absolute

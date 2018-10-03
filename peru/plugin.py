@@ -17,32 +17,31 @@ DEFAULT_PARALLEL_FETCH_LIMIT = 10
 DEBUG_PARALLEL_COUNT = 0
 DEBUG_PARALLEL_MAX = 0
 
-PluginDefinition = namedtuple(
-    'PluginDefinition',
-    ['type', 'sync_exe', 'reup_exe', 'fields', 'required_fields',
-     'optional_fields', 'cache_fields'])
+PluginDefinition = namedtuple('PluginDefinition', [
+    'type', 'sync_exe', 'reup_exe', 'fields', 'required_fields',
+    'optional_fields', 'cache_fields'
+])
 
-PluginContext = namedtuple(
-    'PluginContext',
-    ['cwd', 'plugin_cache_root', 'parallelism_semaphore', 'plugin_cache_locks',
-     'tmp_root'])
+PluginContext = namedtuple('PluginContext', [
+    'cwd', 'plugin_cache_root', 'parallelism_semaphore', 'plugin_cache_locks',
+    'tmp_root'
+])
 
 
 async def plugin_fetch(plugin_context, module_type, module_fields, dest,
-                 display_handle):
+                       display_handle):
     env = {'PERU_SYNC_DEST': dest}
-    await _plugin_job(plugin_context, module_type, module_fields, 'sync',
-                           env, display_handle)
+    await _plugin_job(plugin_context, module_type, module_fields, 'sync', env,
+                      display_handle)
 
 
 async def plugin_get_reup_fields(plugin_context, module_type, module_fields,
-                           display_handle):
+                                 display_handle):
     with tmp_dir(plugin_context) as output_file_dir:
         output_path = os.path.join(output_file_dir, 'reup_output')
         env = {'PERU_REUP_OUTPUT': output_path}
-        await _plugin_job(
-            plugin_context, module_type, module_fields, 'reup', env,
-            display_handle)
+        await _plugin_job(plugin_context, module_type, module_fields, 'reup',
+                          env, display_handle)
         with open(output_path) as output_file:
             fields = yaml.safe_load(output_file) or {}
 
@@ -58,7 +57,7 @@ async def plugin_get_reup_fields(plugin_context, module_type, module_fields,
 
 
 async def _plugin_job(plugin_context, module_type, module_fields, command, env,
-                display_handle):
+                      display_handle):
     # We take several locks and other context managers in here. Using an
     # AsyncExitStack saves us from indentation hell.
     async with contextlib.AsyncExitStack() as stack:
@@ -70,8 +69,8 @@ async def _plugin_job(plugin_context, module_type, module_fields, command, env,
         # as a shell command, rather than exec.
         shell_command_line = subprocess.list2cmdline([exe])
 
-        complete_env = _plugin_env(
-            plugin_context, definition, module_fields, command, stack)
+        complete_env = _plugin_env(plugin_context, definition, module_fields,
+                                   command, stack)
         complete_env.update(env)
 
         # Use a lock to protect the plugin cache. It would be unsafe for two
@@ -80,7 +79,8 @@ async def _plugin_job(plugin_context, module_type, module_fields, command, env,
         # fields" as defined by plugin.yaml. For plugins that don't define
         # cacheable fields, there is no cache dir (it's set to /dev/null) and
         # the cache lock is a no-op.
-        await stack.enter_async_context(_plugin_cache_lock(plugin_context, definition, module_fields))
+        await stack.enter_async_context(
+            _plugin_cache_lock(plugin_context, definition, module_fields))
 
         # Use a semaphore to limit the number of jobs that can run in parallel.
         # Most plugin fetches hit the network, and for performance reasons we
@@ -98,11 +98,14 @@ async def _plugin_job(plugin_context, module_type, module_fields, command, env,
 
         try:
             await create_subprocess_with_handle(
-                shell_command_line, display_handle, cwd=plugin_context.cwd,
-                env=complete_env, shell=True)
+                shell_command_line,
+                display_handle,
+                cwd=plugin_context.cwd,
+                env=complete_env,
+                shell=True)
         except subprocess.CalledProcessError as e:
-            raise PluginRuntimeError(
-                module_type, module_fields, e.returncode, e.output)
+            raise PluginRuntimeError(module_type, module_fields, e.returncode,
+                                     e.output)
 
 
 def _get_plugin_exe(definition, command):
@@ -114,10 +117,8 @@ def _get_plugin_exe(definition, command):
         raise RuntimeError('Unrecognized command name: ' + repr(command))
 
     if not exe:
-        raise PluginPermissionsError(
-            "Module type '{0}' does not support {1}.",
-            definition.type,
-            command)
+        raise PluginPermissionsError("Module type '{0}' does not support {1}.",
+                                     definition.type, command)
     if not os.path.exists(exe):
         raise PluginPermissionsError('Plugin exe is missing: ' + exe)
     if not os.access(exe, os.X_OK):
@@ -126,28 +127,31 @@ def _get_plugin_exe(definition, command):
 
 
 def _format_module_fields(module_fields):
-    return {'PERU_MODULE_{}'.format(name.upper()): value for
-            name, value in module_fields.items()}
+    return {
+        'PERU_MODULE_{}'.format(name.upper()): value
+        for name, value in module_fields.items()
+    }
 
 
 def _validate_plugin_definition(definition, module_fields):
-    field_names_not_strings = [name for name in definition.fields
-                               if not isinstance(name, str)]
+    field_names_not_strings = [
+        name for name in definition.fields if not isinstance(name, str)
+    ]
     if field_names_not_strings:
-        raise PluginModuleFieldError(
-            'Metadata field names must be strings: ' +
-            ', '.join(repr(name) for name in field_names_not_strings))
+        raise PluginModuleFieldError('Metadata field names must be strings: ' +
+                                     ', '.join(
+                                         repr(name)
+                                         for name in field_names_not_strings))
 
     missing_module_fields = definition.required_fields - module_fields.keys()
     if missing_module_fields:
-        raise PluginModuleFieldError(
-            'Required module field missing: ' +
-            ', '.join(missing_module_fields))
+        raise PluginModuleFieldError('Required module field missing: ' +
+                                     ', '.join(missing_module_fields))
 
     unknown_module_fields = module_fields.keys() - definition.fields
     if unknown_module_fields:
-        raise PluginModuleFieldError(
-            'Unknown module fields: ' + ', '.join(unknown_module_fields))
+        raise PluginModuleFieldError('Unknown module fields: ' +
+                                     ', '.join(unknown_module_fields))
 
 
 def _plugin_env(plugin_context, plugin_definition, module_fields, command,
@@ -200,8 +204,8 @@ def _plugin_cache_path(plugin_context, definition, module_fields):
         # This plugin is not cacheable.
         return os.devnull
     key = _plugin_cache_key(definition, module_fields)
-    plugin_cache = os.path.join(
-        plugin_context.plugin_cache_root, definition.type, key)
+    plugin_cache = os.path.join(plugin_context.plugin_cache_root,
+                                definition.type, key)
     makedirs(plugin_cache)
     return plugin_cache
 
@@ -210,8 +214,10 @@ def _plugin_cache_key(definition, module_fields):
     assert definition.cache_fields, "Can't compute key for uncacheable type."
     return cache.compute_key({
         'type': definition.type,
-        'cacheable_fields': {field: module_fields.get(field, None)
-                             for field in definition.cache_fields},
+        'cacheable_fields': {
+            field: module_fields.get(field, None)
+            for field in definition.cache_fields
+        },
     })
 
 
@@ -226,8 +232,8 @@ def _get_plugin_definition(module_type, module_fields, command):
     with open(metadata_path) as metafile:
         metadoc = yaml.safe_load(metafile) or {}
     sync_exe = os.path.join(root, metadoc.pop('sync exe'))
-    reup_exe = (None if 'reup exe' not in metadoc
-                else os.path.join(root, metadoc.pop('reup exe')))
+    reup_exe = (None if 'reup exe' not in metadoc else os.path.join(
+        root, metadoc.pop('reup exe')))
     required_fields = frozenset(metadoc.pop('required fields'))
     optional_fields = frozenset(metadoc.pop('optional fields', []))
     cache_fields = frozenset(metadoc.pop('cache fields', []))
@@ -238,17 +244,18 @@ def _get_plugin_definition(module_type, module_fields, command):
             module_type, metadoc))
     overlap = required_fields & optional_fields
     if overlap:
-        raise RuntimeError('Fields in {} are both required and optional: {}'
-                           .format(module_type, overlap))
+        raise RuntimeError(
+            'Fields in {} are both required and optional: {}'.format(
+                module_type, overlap))
     invalid = cache_fields - fields
     if invalid:
         raise RuntimeError(
             '"cache fields" must also be either required or optional: ' +
             str(invalid))
 
-    definition = PluginDefinition(
-        module_type, sync_exe, reup_exe, fields, required_fields,
-        optional_fields, cache_fields)
+    definition = PluginDefinition(module_type, sync_exe, reup_exe, fields,
+                                  required_fields, optional_fields,
+                                  cache_fields)
     _validate_plugin_definition(definition, module_fields)
     return definition
 
@@ -265,8 +272,7 @@ def _find_plugin_dir(module_type):
     else:
         raise PluginCandidateError(
             'No plugin found for `{}` module in paths:\n{}'.format(
-                module_type,
-                '\n'.join(_get_plugin_install_dirs())))
+                module_type, '\n'.join(_get_plugin_install_dirs())))
 
 
 def _get_plugin_install_dirs():

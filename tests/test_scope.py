@@ -10,14 +10,16 @@ class ScopeTest(shared.PeruTest):
                 'a': {
                     'modules': {
                         'b': {
-                            'modules': {'c': {}},
+                            'modules': {
+                                'c': {}
+                            },
                             'rules': ['r'],
                         }
                     }
                 }
             }
         })
-        c, (r,) = run_task(scope.parse_target(DummyRuntime(), 'a.b.c|a.b.r'))
+        c, (r, ) = run_task(scope.parse_target(DummyRuntime(), 'a.b.c|a.b.r'))
         assert type(c) is DummyModule and c.name == 'a.b.c'
         assert type(r) is DummyRule and r.name == 'a.b.r'
 

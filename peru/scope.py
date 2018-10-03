@@ -1,6 +1,5 @@
 from .error import PrintableError
 
-
 SCOPE_SEPARATOR = '.'
 RULE_SEPARATOR = '|'
 
@@ -27,18 +26,21 @@ class Scope:
             rules.append(rule)
         return module, tuple(rules)
 
-    async def resolve_module(self, runtime, module_str, logging_target_name=None):
+    async def resolve_module(self,
+                             runtime,
+                             module_str,
+                             logging_target_name=None):
         logging_target_name = logging_target_name or module_str
         module_names = module_str.split(SCOPE_SEPARATOR)
-        return (await self._resolve_module_from_names(
-            runtime, module_names, logging_target_name))
+        return (await self._resolve_module_from_names(runtime, module_names,
+                                                      logging_target_name))
 
     async def _resolve_module_from_names(self, runtime, module_names,
-                                   logging_target_name):
+                                         logging_target_name):
         next_module = self._get_module_checked(module_names[0])
         for name in module_names[1:]:
-            next_scope = await _get_scope_or_fail(
-                runtime, logging_target_name, next_module)
+            next_scope = await _get_scope_or_fail(runtime, logging_target_name,
+                                                  next_module)
             if name not in next_scope.modules:
                 _error(logging_target_name, 'module {} not found in {}', name,
                        next_module.name)
@@ -53,8 +55,8 @@ class Scope:
         if module_names:
             module = await self._resolve_module_from_names(
                 runtime, module_names, logging_target_name)
-            scope = await _get_scope_or_fail(
-                runtime, logging_target_name, module)
+            scope = await _get_scope_or_fail(runtime, logging_target_name,
+                                             module)
             location_str = ' in module ' + module.name
         if rule_name not in scope.rules:
             _error(logging_target_name, 'rule {} not found{}', rule_name,
@@ -65,8 +67,8 @@ class Scope:
         for name in names:
             if SCOPE_SEPARATOR in name:
                 raise PrintableError(
-                    'Can\'t reup module "{}"; it belongs to another project.'
-                    .format(name))
+                    'Can\'t reup module "{}"; it belongs to another project.'.
+                    format(name))
         return [self._get_module_checked(name) for name in names]
 
     def _get_module_checked(self, name):

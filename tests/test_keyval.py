@@ -4,7 +4,6 @@ from peru.keyval import KeyVal
 
 
 class KeyValTest(shared.PeruTest):
-
     def test_keyval(self):
         root = shared.create_dir()
         tmp_dir = shared.create_dir()

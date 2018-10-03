@@ -15,7 +15,6 @@ from . import imports
 from . import parser
 from .runtime import Runtime
 
-
 __doc__ = '''\
 Usage:
     peru [-hqv] [--file=<file>] [--sync-dir=<dir>] [--state-dir=<dir>]
@@ -60,6 +59,7 @@ def peru_command(name, doc):
         COMMAND_FNS[name] = f
         COMMAND_DOCS[name] = doc
         return f
+
     return decorator
 
 
@@ -88,8 +88,8 @@ Options:
 ''')
 async def do_sync(params):
     params.runtime.print_overrides()
-    await imports.checkout(
-        params.runtime, params.scope, params.imports, params.runtime.sync_dir)
+    await imports.checkout(params.runtime, params.scope, params.imports,
+                           params.runtime.sync_dir)
     params.runtime.warn_unused_overrides()
 
 
@@ -124,9 +124,7 @@ async def do_reup(params):
         modules = params.scope.get_modules_for_reup(names)
     futures = [module.reup(params.runtime) for module in modules]
     await gather_coalescing_exceptions(
-        futures,
-        params.runtime.display,
-        verbose=params.runtime.verbose)
+        futures, params.runtime.display, verbose=params.runtime.verbose)
     if not params.args['--no-sync']:
         # Do an automatic sync. Reparse peru.yaml to get the new revs.
         new_scope, new_imports = parser.parse_file(params.runtime.peru_file)
@@ -149,8 +147,8 @@ Options:
     -v --verbose   print everything
 ''')
 async def do_clean(params):
-    await imports.checkout(
-        params.runtime, params.scope, {}, params.runtime.sync_dir)
+    await imports.checkout(params.runtime, params.scope, {},
+                           params.runtime.sync_dir)
 
 
 @peru_command('copy', '''\
@@ -178,8 +176,8 @@ async def do_copy(params):
         dest = tempfile.mkdtemp(prefix='peru_copy_')
     else:
         dest = params.args['<dest>']
-    tree = await imports.get_tree(
-        params.runtime, params.scope, params.args['<target>'])
+    tree = await imports.get_tree(params.runtime, params.scope,
+                                  params.args['<target>'])
     await params.runtime.cache.export_tree(
         tree, dest, force=params.runtime.force)
     if not params.args['<dest>']:
@@ -221,12 +219,15 @@ async def do_override(params):
         del overrides[key]
     else:
         if params.args['--json']:
-            print(json.dumps({module: os.path.abspath(overrides[module])
-                              for module in overrides}))
+            print(
+                json.dumps({
+                    module: os.path.abspath(overrides[module])
+                    for module in overrides
+                }))
         else:
             for module in sorted(overrides):
-                print('{}: {}'.format(
-                    module, params.runtime.get_override(module)))
+                print('{}: {}'.format(module,
+                                      params.runtime.get_override(module)))
 
 
 @peru_command('module', '''\
@@ -326,8 +327,8 @@ def docopt_parse_args(argv):
     return args
 
 
-CommandParams = collections.namedtuple(
-    'CommandParams', ['args', 'runtime', 'scope', 'imports'])
+CommandParams = collections.namedtuple('CommandParams',
+                                       ['args', 'runtime', 'scope', 'imports'])
 
 
 def force_utf8_in_ascii_mode_hack():
@@ -337,10 +338,10 @@ def force_utf8_in_ascii_mode_hack():
     peru inside of Docker. This is a hack to force emitting UTF8 in that case.
     Hopefully it doesn't break anything important.'''
     if sys.stdout.encoding == 'ANSI_X3.4-1968':
-        sys.stdout = open(sys.stdout.fileno(), mode='w', encoding='utf8',
-                          buffering=1)
-        sys.stderr = open(sys.stderr.fileno(), mode='w', encoding='utf8',
-                          buffering=1)
+        sys.stdout = open(
+            sys.stdout.fileno(), mode='w', encoding='utf8', buffering=1)
+        sys.stderr = open(
+            sys.stderr.fileno(), mode='w', encoding='utf8', buffering=1)
 
 
 # Called as a setup.py entry point, or from __main__.py (`python3 -m peru`).

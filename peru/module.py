@@ -9,7 +9,6 @@ from . import imports
 from .plugin import plugin_fetch, plugin_get_reup_fields
 from . import scope
 
-
 recursion_warning = '''\
 WARNING: The peru module '{}' doesn't specify the 'recursive' field,
 but its contents include a peru.yaml file. Peru's behavior here changed
@@ -62,10 +61,9 @@ class Module:
             if key in runtime.cache.keyval and not runtime.no_cache:
                 return runtime.cache.keyval[key]
             with runtime.tmp_dir() as tmp_dir:
-                await plugin_fetch(
-                    runtime.get_plugin_context(), self.type,
-                    self.plugin_fields, tmp_dir,
-                    runtime.display.get_handle(self.name))
+                await plugin_fetch(runtime.get_plugin_context(), self.type,
+                                   self.plugin_fields, tmp_dir,
+                                   runtime.display.get_handle(self.name))
                 tree = await runtime.cache.import_tree(tmp_dir)
             # Note that we still *write* to cache even when --no-cache is True.
             # That way we avoid confusing results on subsequent syncs.
@@ -86,8 +84,8 @@ class Module:
             return base_tree
         # TODO: Get rid of this with 1.0, and move the self.recursive check up.
         if not self.recursion_specified:
-            runtime.display.print(
-                '\n'.join(textwrap.wrap(recursion_warning.format(self.name))))
+            runtime.display.print('\n'.join(
+                textwrap.wrap(recursion_warning.format(self.name))))
         if not self.recursive:
             return base_tree
         recursive_tree = await imports.get_imports_tree(
@@ -126,11 +124,11 @@ class Module:
                 runtime.display.get_handle(self.name))
             output_lines = []
             for field, val in reup_fields.items():
-                if (field not in self.plugin_fields or
-                        val != self.plugin_fields[field]):
+                if (field not in self.plugin_fields
+                        or val != self.plugin_fields[field]):
                     output_lines.append('  {}: {}'.format(field, val))
-                    set_module_field_in_file(
-                        runtime.peru_file, self.yaml_name, field, val)
+                    set_module_field_in_file(runtime.peru_file, self.yaml_name,
+                                             field, val)
             if output_lines and not runtime.quiet:
                 runtime.display.print('reup ' + self.name)
                 for line in output_lines:

@@ -4,8 +4,8 @@ import yaml
 def set_module_field_in_file(yaml_file_path, module_name, field_name, new_val):
     with open(yaml_file_path) as f:
         yaml_text = f.read()
-    new_yaml_text = set_module_field(yaml_text, module_name,
-                                     field_name, new_val)
+    new_yaml_text = set_module_field(yaml_text, module_name, field_name,
+                                     new_val)
     with open(yaml_file_path, "w") as f:
         f.write(new_yaml_text)
 
@@ -45,8 +45,8 @@ def _maybe_quote(val):
         return val
 
 
-def _append_module_field(yaml_text, yaml_dict, module_name,
-                         field_name, new_val):
+def _append_module_field(yaml_text, yaml_dict, module_name, field_name,
+                         new_val):
     module_fields = yaml_dict[module_name]
     # use the last field to determine position and indentation
     assert len(module_fields) > 0, "There aren't any fields here!"
@@ -68,8 +68,7 @@ def _append_module_field(yaml_text, yaml_dict, module_name,
             new_line_number -= 1
 
     new_line = "{}{}: {}".format(indentation, field_name, new_val)
-    new_yaml_lines = (yaml_lines[:new_line_number] +
-                      [new_line] +
+    new_yaml_lines = (yaml_lines[:new_line_number] + [new_line] +
                       yaml_lines[new_line_number:])
     return "\n".join(new_yaml_lines)
 
@@ -89,15 +88,15 @@ def _parse_yaml_text(yaml_text):
 
 def _parse_events_list(events_list):
     event = events_list.pop(0)
-    if (isinstance(event, yaml.StreamStartEvent) or
-            isinstance(event, yaml.DocumentStartEvent)):
+    if (isinstance(event, yaml.StreamStartEvent)
+            or isinstance(event, yaml.DocumentStartEvent)):
         ret = _parse_events_list(events_list)
         events_list.pop(-1)
         return ret
-    elif (isinstance(event, yaml.ScalarEvent) or
-          isinstance(event, yaml.AliasEvent) or
-          isinstance(event, yaml.SequenceEndEvent) or
-          isinstance(event, yaml.MappingEndEvent)):
+    elif (isinstance(event, yaml.ScalarEvent)
+          or isinstance(event, yaml.AliasEvent)
+          or isinstance(event, yaml.SequenceEndEvent)
+          or isinstance(event, yaml.MappingEndEvent)):
         return event
     elif isinstance(event, yaml.SequenceStartEvent):
         contents = []

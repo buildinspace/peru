@@ -13,7 +13,6 @@ from .compat import makedirs
 from .error import PrintableError
 from .keyval import KeyVal
 
-
 # git output modes
 TEXT_MODE = object()
 BINARY_MODE = object()
@@ -127,8 +126,8 @@ class GitSession:
         paths = ["./" + path for path in paths]
         ls_output = await self.git(
             'ls-files', '--full-name', '-z', *paths, output_mode=BINARY_MODE)
-        await self.git('update-index', '--force-remove', '-z', '--stdin',
-                            input=ls_output)
+        await self.git(
+            'update-index', '--force-remove', '-z', '--stdin', input=ls_output)
 
     async def merge_tree_into_index(self, tree, prefix):
         # The --prefix argument to read-tree chokes on paths that contain dot
@@ -150,21 +149,20 @@ class GitSession:
         await self.git('read-tree', '-i', '--prefix', prefix_arg, tree)
 
     async def working_copy_matches_index(self):
-        diff_output = await self.git(
-            'diff-files', output_mode=BINARY_MODE)
+        diff_output = await self.git('diff-files', output_mode=BINARY_MODE)
         return len(diff_output) == 0
 
     async def get_modified_files_skipping_deletes(self):
         # We want to ignore deleted files, so we include every possible value
         # of --diff-filter except 'D'.
-        diff_output = await self.git(
-            'diff-files', '-z', '--name-only', '--diff-filter=ACMRTUXB')
+        diff_output = await self.git('diff-files', '-z', '--name-only',
+                                     '--diff-filter=ACMRTUXB')
         return [name for name in diff_output.split('\x00') if name]
 
     async def get_new_files_in_tree(self, previous_tree, new_tree):
-        added_files_output = await self.git(
-            'diff-tree', '--diff-filter=A', '--name-only', '-r', '-z',
-            previous_tree, new_tree)
+        added_files_output = await self.git('diff-tree', '--diff-filter=A',
+                                            '--name-only', '-r', '-z',
+                                            previous_tree, new_tree)
         return added_files_output.split('\x00')
 
     async def read_tree_updating_working_copy(self, tree, force):
@@ -185,14 +183,14 @@ class GitSession:
     async def get_info_for_path(self, tree, path):
         # --full-tree makes ls-tree ignore the cwd. As in list_tree_entries,
         # prepend ./ to avoid interpreting leading colons in pathspecs.
-        ls_output = await self.git(
-            'ls-tree', '--full-tree', '-z', tree, "./" + path)
+        ls_output = await self.git('ls-tree', '--full-tree', '-z', tree,
+                                   "./" + path)
         ls_lines = ls_output.strip('\x00').split('\x00')
         # Remove empty lines.
         ls_lines = list(filter(None, ls_lines))
         if len(ls_lines) == 0:
-            raise FileNotFoundError(
-                'Path "{}" not found in tree {}.'.format(path, tree))
+            raise FileNotFoundError('Path "{}" not found in tree {}.'.format(
+                path, tree))
         assert len(ls_lines) == 1
         mode, type, sha1, name = ls_lines[0].split()
         return mode, type, sha1, name
@@ -230,8 +228,8 @@ class GitSession:
         entries = {}
         for line in output.strip('\x00').split('\x00'):
             mode, type, hash, name = re.match(entry_regex, line).groups()
-            if (recursive and path is not None and
-                    len(name) < len(canonical_path) and type == TREE_TYPE):
+            if (recursive and path is not None
+                    and len(name) < len(canonical_path) and type == TREE_TYPE):
                 # In recursive mode, leave out the parents of the target dir.
                 continue
             entries[name] = TreeEntry(mode, type, hash)
@@ -239,8 +237,9 @@ class GitSession:
 
     async def make_tree_from_entries(self, entries):
         entry_format = '{} {} {}\t{}'
-        input = '\x00'.join(entry_format.format(mode, type, hash, name)
-                            for name, (mode, type, hash) in entries.items())
+        input = '\x00'.join(
+            entry_format.format(mode, type, hash, name)
+            for name, (mode, type, hash) in entries.items())
         tree = await self.git('mktree', '-z', input=input)
         return tree
 
@@ -276,8 +275,8 @@ class _Cache:
             # that I know can cause problems. We might need to add more
             # attributes here in the future. Note that other config files are
             # disabled in _git_env below.
-            attributes_path = os.path.join(
-                self.trees_path, 'info', 'attributes')
+            attributes_path = os.path.join(self.trees_path, 'info',
+                                           'attributes')
             with open(attributes_path, 'w') as attributes:
                 # Disable the 'text' attribute for all files.
                 attributes.write('* -text')
@@ -323,15 +322,19 @@ class _Cache:
             if base_tree:
                 await session.read_tree_into_index(base_tree)
             try:
-                await session.merge_tree_into_index(
-                    merge_tree, merge_path)
+                await session.merge_tree_into_index(merge_tree, merge_path)
             except GitError as e:
                 raise MergeConflictError(e.stdout) from e
             unified_tree = await session.make_tree_from_index()
             return unified_tree
 
-    async def export_tree(self, tree, dest, previous_tree=None, *, force=False,
-                    previous_index_file=None):
+    async def export_tree(self,
+                          tree,
+                          dest,
+                          previous_tree=None,
+                          *,
+                          force=False,
+                          previous_index_file=None):
         '''This method is the core of `peru sync`. If the contents of "dest"
         match "previous_tree", then export_tree() updates them to match "tree".
         If not, it raises an error and doesn't touch any files.
@@ -364,18 +367,16 @@ class _Cache:
             # have to pay the cost to recreate it.
             did_refresh = False
             if previous_index_file:
-                session = GitSession(
-                    self.trees_path, previous_index_file, dest)
+                session = GitSession(self.trees_path, previous_index_file,
+                                     dest)
                 stack.enter_context(delete_if_error(previous_index_file))
                 if not os.path.exists(previous_index_file):
                     did_refresh = True
-                    await session.read_tree_and_stats_into_index(
-                        previous_tree)
+                    await session.read_tree_and_stats_into_index(previous_tree)
             else:
                 session = stack.enter_context(self.clean_git_session(dest))
                 did_refresh = True
-                await session.read_tree_and_stats_into_index(
-                    previous_tree)
+                await session.read_tree_and_stats_into_index(previous_tree)
 
             # The fast path. If the previous tree is the same as the current
             # one, and no files have changed at all, short-circuit.
@@ -387,8 +388,7 @@ class _Cache:
             # the tree has changed, or both. If we didn't refresh the index
             # file above, we must do so now.
             if not did_refresh:
-                await session.read_tree_and_stats_into_index(
-                    previous_tree)
+                await session.read_tree_and_stats_into_index(previous_tree)
             modified = await session.get_modified_files_skipping_deletes()
             if modified and not force:
                 raise DirtyWorkingCopyError(
@@ -404,8 +404,10 @@ class _Cache:
                 # are new in `tree` already existed in the working copy.
                 new_files = await session.get_new_files_in_tree(
                     previous_tree, tree)
-                existing_new_files = [f for f in new_files if f and
-                                      os.path.exists(os.path.join(dest, f))]
+                existing_new_files = [
+                    f for f in new_files
+                    if f and os.path.exists(os.path.join(dest, f))
+                ]
                 existing_new_files.sort()
                 if existing_new_files:
                     raise DirtyWorkingCopyError(
@@ -426,8 +428,8 @@ class _Cache:
             mode, type, sha1, name = await session.get_info_for_path(
                 tree, path)
             if type == 'tree':
-                raise IsADirectoryError('Path "{}" in tree {} is a directory.'
-                                        .format(path, tree))
+                raise IsADirectoryError(
+                    'Path "{}" in tree {} is a directory.'.format(path, tree))
             assert type == 'blob'
             return (await session.read_bytes_from_file_hash(sha1))
 
@@ -493,8 +495,8 @@ class _Cache:
             subtree_base = None
             if name in entries and entries[name].type == TREE_TYPE:
                 subtree_base = entries[name].hash
-            new_subtree = await self.modify_tree(
-                subtree_base, sub_modifications)
+            new_subtree = await self.modify_tree(subtree_base,
+                                                 sub_modifications)
             if new_subtree != empty_tree:
                 entries[name] = TreeEntry(TREE_MODE, TREE_TYPE, new_subtree)
             # Delete an empty tree if it was actually a tree to begin with.
@@ -529,8 +531,8 @@ def _format_file_lines(files):
     if len(files) <= LINES_TO_SHOW:
         lines = '\n'.join(files)
     else:
-        lines = ('\n'.join(files[:LINES_TO_SHOW-1]) +
-                 '\n...{} total'.format(len(files)))
+        lines = ('\n'.join(files[:LINES_TO_SHOW - 1]) + '\n...{} total'.format(
+            len(files)))
     return lines
 
 

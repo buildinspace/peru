@@ -9,10 +9,10 @@ TESTS_DIR = os.path.join(REPO_ROOT, 'tests')
 
 
 def get_untracked_files():
-    output = subprocess.check_output(
-        ['git', 'ls-files', '--other', '--directory', '--exclude-standard',
-            '-z'],
-        cwd=REPO_ROOT)
+    output = subprocess.check_output([
+        'git', 'ls-files', '--other', '--directory', '--exclude-standard', '-z'
+    ],
+                                     cwd=REPO_ROOT)
     return set(f for f in output.split(b'\0') if f)
 
 
@@ -50,9 +50,10 @@ def main():
 
     new_untracked = get_untracked_files()
     if old_untracked != new_untracked:
-        print('Tests created untracked files:\n' +
-              '\n'.join(f.decode() for f in new_untracked - old_untracked),
-              file=sys.stderr)
+        print(
+            'Tests created untracked files:\n' + '\n'.join(
+                f.decode() for f in new_untracked - old_untracked),
+            file=sys.stderr)
         sys.exit(1)
 
     # Run the linter.

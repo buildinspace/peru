@@ -8,7 +8,6 @@ import shared
 
 
 class ParserTest(shared.PeruTest):
-
     def test_parse_empty_file(self):
         scope, imports = parse_string('')
         self.assertDictEqual(scope.modules, {})
@@ -39,9 +38,10 @@ class ParserTest(shared.PeruTest):
         self.assertIsInstance(module, Module)
         self.assertEqual(module.name, "foo")
         self.assertEqual(module.type, "sometype")
-        self.assertDictEqual(module.plugin_fields,
-                             {"url": "http://www.example.com/",
-                              "rev": "abcdefg"})
+        self.assertDictEqual(module.plugin_fields, {
+            "url": "http://www.example.com/",
+            "rev": "abcdefg"
+        })
 
     def test_parse_module_default_rule(self):
         input = dedent("""\
@@ -63,7 +63,7 @@ class ParserTest(shared.PeruTest):
         scope, imports = parse_string(input)
         self.assertDictEqual(scope.modules, {})
         self.assertDictEqual(scope.rules, {})
-        self.assertEqual(imports, {'foo': ('bar/',)})
+        self.assertEqual(imports, {'foo': ('bar/', )})
 
     def test_parse_multimap_imports(self):
         input = dedent('''\
@@ -74,7 +74,7 @@ class ParserTest(shared.PeruTest):
         scope, imports = parse_string(input)
         self.assertDictEqual(scope.modules, {})
         self.assertDictEqual(scope.rules, {})
-        self.assertEqual(imports, {'foo': ('bar/',)})
+        self.assertEqual(imports, {'foo': ('bar/', )})
 
     def test_parse_empty_imports(self):
         input = dedent('''\
@@ -95,7 +95,8 @@ class ParserTest(shared.PeruTest):
 
     def test_bad_rule_field_throw(self):
         with self.assertRaises(ParserError):
-            parse_string(dedent("""\
+            parse_string(
+                dedent("""\
                 rule foo:
                     bad_field: junk
                 """))
@@ -208,10 +209,8 @@ class ParserTest(shared.PeruTest):
             a: stuff
         ''')
         duplicates = parser._get_duplicate_keys_approximate(yaml)
-        self.assertEqual(
-            [
-                ('a', 5, 7),
-                ('a', 1, 8),
-                ('a', 8, 9),
-            ],
-            duplicates)
+        self.assertEqual([
+            ('a', 5, 7),
+            ('a', 1, 8),
+            ('a', 8, 9),
+        ], duplicates)

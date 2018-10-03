@@ -12,7 +12,6 @@ class RuntimeTest(shared.PeruTest):
             'a/b/c/junk': 'junk',
         })
         result = runtime.find_project_file(
-            os.path.join(test_dir, 'a', 'b', 'c'),
-            'find_me')
+            os.path.join(test_dir, 'a', 'b', 'c'), 'find_me')
         expected = os.path.join(test_dir, 'a', 'find_me')
         self.assertEqual(expected, result)

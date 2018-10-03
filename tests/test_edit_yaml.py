@@ -5,7 +5,6 @@ import yaml
 from peru import edit_yaml
 import shared
 
-
 yaml_template = dedent("""\
     a:
       b: [1, 2, 3]
@@ -15,7 +14,6 @@ yaml_template = dedent("""\
 
 
 class EditYamlTest(shared.PeruTest):
-
     def test_replace(self):
         start_yaml = yaml_template.format("foo")
         new_yaml = edit_yaml.set_module_field(start_yaml, "a", "c", "bar")
@@ -40,11 +38,13 @@ class EditYamlTest(shared.PeruTest):
         new_yaml = edit_yaml.set_module_field(intermediate, 'a', 'd', '.0')
         expected_yaml = start_yaml + '  c: "5"\n  d: ".0"\n'
         self.assertEqual(expected_yaml, new_yaml)
-        self.assertDictEqual(yaml.safe_load(new_yaml), {'a': {
-            'b': 'foo',
-            'c': '5',
-            'd': '.0',
-        }})
+        self.assertDictEqual(
+            yaml.safe_load(new_yaml),
+            {'a': {
+                'b': 'foo',
+                'c': '5',
+                'd': '.0',
+            }})
 
     def test_insert_with_last_field_as_dict(self):
         start_yaml = dedent("""\

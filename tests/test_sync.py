@@ -22,7 +22,6 @@ PERU_MODULE_ROOT = os.path.abspath(
 
 
 class SyncTest(shared.PeruTest):
-
     def setUp(self):
         self.test_dir = shared.create_dir()
         self.peru_dir = os.path.join(self.test_dir, '.peru')
@@ -37,18 +36,25 @@ class SyncTest(shared.PeruTest):
         with open(os.path.join(dir, DEFAULT_PERU_FILE_NAME), 'w') as f:
             f.write(yaml)
 
-    def do_integration_test(self, args, expected, *, cwd=None,
+    def do_integration_test(self,
+                            args,
+                            expected,
+                            *,
+                            cwd=None,
                             **peru_cmd_kwargs):
         if not cwd:
             cwd = self.test_dir
         output = run_peru_command(args, cwd, **peru_cmd_kwargs)
-        assert_contents(self.test_dir, expected,
-                        excludes=[DEFAULT_PERU_FILE_NAME, '.peru'])
+        assert_contents(
+            self.test_dir,
+            expected,
+            excludes=[DEFAULT_PERU_FILE_NAME, '.peru'])
         return output
 
     def test_basic_sync(self):
         module_dir = shared.create_dir({'foo': 'bar'})
-        self.write_yaml('''\
+        self.write_yaml(
+            '''\
             cp module foo:
                 path: {}
 
@@ -67,7 +73,8 @@ class SyncTest(shared.PeruTest):
 
     def test_no_cache_flag(self):
         foo_dir = shared.create_dir({'foo': 'bar'})
-        self.write_yaml('''\
+        self.write_yaml(
+            '''\
             cp module foo:
                 path: {}
 
@@ -88,7 +95,8 @@ class SyncTest(shared.PeruTest):
 
     def test_sync_from_subdir(self):
         module_dir = shared.create_dir({'foo': 'bar'})
-        self.write_yaml('''\
+        self.write_yaml(
+            '''\
             # Use a relative module path, to make sure it gets resolved
             # relative to the project root and not the dir where peru was
             # called.
@@ -101,13 +109,15 @@ class SyncTest(shared.PeruTest):
         subdir = os.path.join(self.test_dir, 'a', 'b')
         peru.compat.makedirs(subdir)
         run_peru_command(['sync'], subdir)
-        self.assertTrue(os.path.isdir(os.path.join(self.test_dir, '.peru')),
-                        msg=".peru dir didn't end up in the right place")
+        self.assertTrue(
+            os.path.isdir(os.path.join(self.test_dir, '.peru')),
+            msg=".peru dir didn't end up in the right place")
         assert_contents(os.path.join(self.test_dir, 'subdir'), {'foo': 'bar'})
 
     def test_conflicting_imports(self):
         module_dir = shared.create_dir({'foo': 'bar'})
-        self.write_yaml('''\
+        self.write_yaml(
+            '''\
             cp module foo:
                 path: {0}
 
@@ -148,12 +158,16 @@ class SyncTest(shared.PeruTest):
         dir_a = shared.create_dir({'afile': 'stuff'})
         dir_b = shared.create_dir()
         # Create the peru.yaml file for B.
-        self.write_yaml('''\
+        self.write_yaml(
+            '''\
             cp module a:
                 path: {}
-            ''', dir_a, dir=dir_b)
+            ''',
+            dir_a,
+            dir=dir_b)
         # Now create the peru.yaml file in the actual test project.
-        self.write_yaml('''\
+        self.write_yaml(
+            '''\
             imports:
                 b.a: a_via_b/
 
@@ -162,7 +176,8 @@ class SyncTest(shared.PeruTest):
             ''', dir_b)
         self.do_integration_test(['sync'], {'a_via_b/afile': 'stuff'})
         # Test the error message from an invalid module.
-        self.write_yaml('''\
+        self.write_yaml(
+            '''\
             imports:
                 b.missing_module: some_path
 
@@ -181,14 +196,18 @@ class SyncTest(shared.PeruTest):
         dir_a = shared.create_dir({'afile': 'aaa'})
         dir_b = shared.create_dir({'exports/bfile': 'bbb'})
         # Create the peru.yaml file for B.
-        self.write_yaml('''\
+        self.write_yaml(
+            '''\
             imports:
                 a: exports/where_b_put_a
             cp module a:
                 path: {}
-            ''', dir_a, dir=dir_b)
+            ''',
+            dir_a,
+            dir=dir_b)
         # Now create the peru.yaml file in the actual test project.
-        self.write_yaml('''\
+        self.write_yaml(
+            '''\
             imports:
                 b: where_c_put_b
 
@@ -197,11 +216,11 @@ class SyncTest(shared.PeruTest):
                 path: {}
                 export: exports  # omit the peru.yaml file from b
             ''', dir_b)
-        self.do_integration_test(
-            ['sync'], {'where_c_put_b/bfile': 'bbb'})
+        self.do_integration_test(['sync'], {'where_c_put_b/bfile': 'bbb'})
 
         # Repeat the same test with explicit 'recursive' settings.
-        self.write_yaml('''\
+        self.write_yaml(
+            '''\
             imports:
                 b: where_c_put_b
 
@@ -211,10 +230,11 @@ class SyncTest(shared.PeruTest):
                 export: exports  # omit the peru.yaml file from b
                 recursive: true
             ''', dir_b)
-        self.do_integration_test(
-            ['sync'], {'where_c_put_b/where_b_put_a/afile': 'aaa'})
+        self.do_integration_test(['sync'],
+                                 {'where_c_put_b/where_b_put_a/afile': 'aaa'})
 
-        self.write_yaml('''\
+        self.write_yaml(
+            '''\
             imports:
                 b: where_c_put_b
 
@@ -223,8 +243,7 @@ class SyncTest(shared.PeruTest):
                 export: exports  # omit the peru.yaml file from b
                 recursive: false
             ''', dir_b)
-        self.do_integration_test(
-            ['sync'], {'where_c_put_b/bfile': 'bbb'})
+        self.do_integration_test(['sync'], {'where_c_put_b/bfile': 'bbb'})
 
     def test_recursive_import_error(self):
         '''Errors that happen inside recursively-fetched targets should have
@@ -234,15 +253,18 @@ class SyncTest(shared.PeruTest):
         # Project NOTABLE_NAME has a BAD_MODULE in it.
         dir_notable = shared.create_dir()
         # Create the peru.yaml file for NOTABLE_NAME.
-        self.write_yaml('''\
+        self.write_yaml(
+            '''\
             imports:
                 BAD_MODULE: ./
             git module BAD_MODULE:
                 bad_field: stuff
                 # The error we get here will actually be that `url` is missing.
-            ''', dir=dir_notable)
+            ''',
+            dir=dir_notable)
         # Now make our test project import it.
-        self.write_yaml('''\
+        self.write_yaml(
+            '''\
             imports:
                 NOTABLE_NAME: ./notable
 
@@ -259,12 +281,16 @@ class SyncTest(shared.PeruTest):
         # Project B contains project A
         dir_a = shared.create_dir({'afile': 'stuff'})
         # Create project B with an unusual YAML filename.
-        dir_b = shared.create_dir({'alternate.yaml': textwrap.dedent('''\
+        dir_b = shared.create_dir({
+            'alternate.yaml':
+            textwrap.dedent('''\
             cp module a:
                 path: {}
-            '''.format(dir_a))})
+            '''.format(dir_a))
+        })
         # Now create the peru.yaml file in the actual test project.
-        self.write_yaml('''\
+        self.write_yaml(
+            '''\
             imports:
                 b.a: a_via_b/
 
@@ -297,16 +323,14 @@ class SyncTest(shared.PeruTest):
         self.do_integration_test(['sync'], {'d': ''})
 
     def test_rule_with_picked_files(self):
-        content = {name: '' for name in [
-            'foo',
-            'bar',
-            'special',
-            'baz/bing',
-            'baz/boo/a',
-            'baz/boo/b'
-        ]}
+        content = {
+            name: ''
+            for name in
+            ['foo', 'bar', 'special', 'baz/bing', 'baz/boo/a', 'baz/boo/b']
+        }
         module_dir = shared.create_dir(content)
-        self.write_yaml('''\
+        self.write_yaml(
+            '''\
             cp module foo:
                 path: {}
 
@@ -318,17 +342,21 @@ class SyncTest(shared.PeruTest):
             imports:
                 foo|filter: ./
             ''', module_dir)
-        filtered_content = {name: '' for name in [
-            'foo',
-            'special',
-            'baz/boo/a',
-            'baz/boo/b',
-        ]}
+        filtered_content = {
+            name: ''
+            for name in [
+                'foo',
+                'special',
+                'baz/boo/a',
+                'baz/boo/b',
+            ]
+        }
         self.do_integration_test(['sync'], filtered_content)
 
     def test_rule_with_picked_files_that_do_not_exist(self):
         module_dir = shared.create_dir({'foo': 'bar'})
-        self.write_yaml('''\
+        self.write_yaml(
+            '''\
             cp module foo:
                 path: {}
                 pick: idontexist
@@ -339,15 +367,13 @@ class SyncTest(shared.PeruTest):
             self.do_integration_test(['sync'], {})
 
     def test_rule_with_exported_files_that_are_not_picked(self):
-        content = {name: '' for name in [
-            'foo',
-            'bar',
-            'baz/bing',
-            'baz/boo/a',
-            'baz/boo/b'
-        ]}
+        content = {
+            name: ''
+            for name in ['foo', 'bar', 'baz/bing', 'baz/boo/a', 'baz/boo/b']
+        }
         module_dir = shared.create_dir(content)
-        self.write_yaml('''\
+        self.write_yaml(
+            '''\
             cp module foo:
                 path: {}
                 pick: foo
@@ -362,7 +388,8 @@ class SyncTest(shared.PeruTest):
     def test_rule_with_dropped_files(self):
         content = {'foo': 'one', 'bar': 'two'}
         module_dir = shared.create_dir(content)
-        self.write_yaml('''\
+        self.write_yaml(
+            '''\
             cp module foobar:
                 path: {}
 
@@ -383,7 +410,8 @@ class SyncTest(shared.PeruTest):
         '''
         content = {'foo': 'stuff'}
         module_dir = shared.create_dir(content)
-        self.write_yaml('''\
+        self.write_yaml(
+            '''\
             cp module foobar:
                 path: {}
                 drop: foo
@@ -398,7 +426,8 @@ class SyncTest(shared.PeruTest):
     def test_rule_with_executable(self):
         contents = {'a.txt': '', 'b.txt': '', 'c.foo': ''}
         module_dir = shared.create_dir(contents)
-        self.write_yaml('''\
+        self.write_yaml(
+            '''\
             cp module foo:
                 path: {}
                 executable: "*.txt"
@@ -411,7 +440,8 @@ class SyncTest(shared.PeruTest):
 
     def test_rule_with_move(self):
         module_dir = shared.create_dir({'a': 'foo', 'b/c': 'bar'})
-        self.write_yaml('''\
+        self.write_yaml(
+            '''\
             cp module foo:
                 path: {}
                 move:
@@ -424,7 +454,8 @@ class SyncTest(shared.PeruTest):
 
     def test_rule_with_move_error(self):
         module_dir = shared.create_dir()
-        self.write_yaml('''\
+        self.write_yaml(
+            '''\
             cp module foo:
                 path: {}
                 move:
@@ -433,17 +464,17 @@ class SyncTest(shared.PeruTest):
                 foo: ./
             ''', module_dir)
         with raises_gathered(peru.rule.NoMatchingFilesError) as cm:
-            self.do_integration_test(['sync'],
-                                     {'newa': 'foo', 'newb/c': 'bar'})
+            self.do_integration_test(['sync'], {
+                'newa': 'foo',
+                'newb/c': 'bar'
+            })
         assert 'doesntexist' in cm.exception.message
 
     def test_rule_with_copied_files(self):
-        content = {
-            'foo': 'foo',
-            'bar/baz': 'baz'
-        }
+        content = {'foo': 'foo', 'bar/baz': 'baz'}
         module_dir = shared.create_dir(content)
-        self.write_yaml('''\
+        self.write_yaml(
+            '''\
             cp module foo:
                 path: {}
                 copy:
@@ -466,7 +497,8 @@ class SyncTest(shared.PeruTest):
 
     def test_alternate_cache(self):
         module_dir = shared.create_dir({'foo': 'bar'})
-        self.write_yaml('''\
+        self.write_yaml(
+            '''\
             cp module foo:
                 path: {}
 
@@ -475,17 +507,16 @@ class SyncTest(shared.PeruTest):
             ''', module_dir)
         cache_dir = shared.create_dir()
         env = {'PERU_CACHE_DIR': cache_dir}
-        self.do_integration_test(['sync'], {'subdir/foo': 'bar'},
-                                 env=env)
+        self.do_integration_test(['sync'], {'subdir/foo': 'bar'}, env=env)
         self.assertTrue(os.path.exists(os.path.join(cache_dir, 'plugins')))
         self.assertTrue(os.path.exists(os.path.join(cache_dir, 'trees')))
         self.assertTrue(os.path.exists(os.path.join(cache_dir, 'keyval')))
-        self.assertFalse(os.path.exists(
-            os.path.join(self.peru_dir, 'cache')))
+        self.assertFalse(os.path.exists(os.path.join(self.peru_dir, 'cache')))
 
     def test_override(self):
         module_dir = shared.create_dir({'foo': 'bar'})
-        self.write_yaml('''\
+        self.write_yaml(
+            '''\
             cp module foo:
                 path: {}
 
@@ -533,7 +564,8 @@ class SyncTest(shared.PeruTest):
 
     def test_override_after_regular_sync(self):
         module_dir = shared.create_dir({'foo': 'bar'})
-        self.write_yaml('''\
+        self.write_yaml(
+            '''\
             cp module foo:
                 path: {}
 
@@ -553,17 +585,21 @@ class SyncTest(shared.PeruTest):
         module_a_dir = shared.create_dir({'foo': 'bar'})
         # Module B imports module A.
         module_b_dir = shared.create_dir()
-        self.write_yaml('''\
+        self.write_yaml(
+            '''\
             cp module A:
                 path: {}
 
             imports:
                 A: A/
-            ''', module_a_dir, dir=module_b_dir)
+            ''',
+            module_a_dir,
+            dir=module_b_dir)
         # Module C (in self.test_dir) imports module B, and also directly
         # imports module A. When we set an override for module A below, we'll
         # want to check that *both* of these imports get overridden.
-        self.write_yaml('''\
+        self.write_yaml(
+            '''\
             cp module B:
                 path: {}
                 recursive: true
@@ -609,8 +645,7 @@ class SyncTest(shared.PeruTest):
         # .peru/overrides/ at the root, so this tests that we resolve the
         # stored path properly.
         relative_path = os.path.relpath(override_dir, start=subdir)
-        run_peru_command(['override', 'add', 'foo', relative_path],
-                         subdir)
+        run_peru_command(['override', 'add', 'foo', relative_path], subdir)
         # Confirm that the right path is stored on disk.
         expected_stored_path = os.path.relpath(
             override_dir, start=self.test_dir)
@@ -630,8 +665,10 @@ class SyncTest(shared.PeruTest):
             imports:
                 foo: ./
             ''')
-        override_dir = shared.create_dir(
-            {'foo': 'override', '.peru/bar': 'baz'})
+        override_dir = shared.create_dir({
+            'foo': 'override',
+            '.peru/bar': 'baz'
+        })
         run_peru_command(['override', 'add', 'foo', override_dir],
                          self.test_dir)
         self.do_integration_test(['sync'], {'foo': 'override'})
@@ -675,7 +712,8 @@ class SyncTest(shared.PeruTest):
 
     def test_copy(self):
         module_dir = shared.create_dir({'foo': 'bar'})
-        self.write_yaml('''\
+        self.write_yaml(
+            '''\
             cp module foo:
                 path: {}
             ''', module_dir)
@@ -693,12 +731,16 @@ class SyncTest(shared.PeruTest):
         dir_a = shared.create_dir({'afile': 'stuff'})
         dir_b = shared.create_dir()
         # Create the peru.yaml file for B.
-        self.write_yaml('''\
+        self.write_yaml(
+            '''\
             cp module a:
                 path: {}
-            ''', dir_a, dir=dir_b)
+            ''',
+            dir_a,
+            dir=dir_b)
         # Now create the peru.yaml file in the actual test project.
-        self.write_yaml('''\
+        self.write_yaml(
+            '''\
             cp module b:
                 path: {}
             ''', dir_b)
@@ -706,7 +748,8 @@ class SyncTest(shared.PeruTest):
 
     def test_clean(self):
         module_dir = shared.create_dir({'foo': 'bar'})
-        self.write_yaml('''\
+        self.write_yaml(
+            '''\
             imports:
                 foo: ./
             cp module foo:
@@ -751,8 +794,8 @@ class SyncTest(shared.PeruTest):
         buffer = io.StringIO()
         with redirect_stderr(buffer):
             run_peru_command(['sync'], self.test_dir)
-        assert('WARNING' in buffer.getvalue())
-        assert('git module foo' in buffer.getvalue())
+        assert ('WARNING' in buffer.getvalue())
+        assert ('git module foo' in buffer.getvalue())
         # Make sure --quiet suppresses the warning.
         buffer = io.StringIO()
         with redirect_stderr(buffer):
@@ -795,7 +838,8 @@ class SyncTest(shared.PeruTest):
         '''A no-op sync should be a single git command. Also check that index
         files are deleted after any sync error.'''
         module_dir = shared.create_dir({'foo': 'bar'})
-        self.write_yaml('''\
+        self.write_yaml(
+            '''\
             cp module foo:
                 path: {}
 

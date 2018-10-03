@@ -34,8 +34,7 @@ class CacheTest(PeruTest):
             await self.cache.export_tree(self.content_tree, export_dir)
         assert_contents(export_dir, dirty_content)
         # But it should suceed with the force flag.
-        await self.cache.export_tree(
-            self.content_tree, export_dir, force=True)
+        await self.cache.export_tree(self.content_tree, export_dir, force=True)
         assert_contents(export_dir, self.content)
 
     @make_synchronous
@@ -50,7 +49,9 @@ class CacheTest(PeruTest):
                 self.content_tree, export_dir, previous_tree=self.content_tree)
         # But it should succeed with the --force flag.
         await self.cache.export_tree(
-            self.content_tree, export_dir, force=True,
+            self.content_tree,
+            export_dir,
+            force=True,
             previous_tree=self.content_tree)
         assert_contents(export_dir, self.content)
 
@@ -75,14 +76,11 @@ class CacheTest(PeruTest):
     async def test_import_with_files(self):
         # Include a leading colon, to check that we escape pathspecs correctly
         # with a leading ./
-        all_content = {'foo': '',
-                       'bar': '',
-                       COLON + 'baz/bing': ''}
+        all_content = {'foo': '', 'bar': '', COLON + 'baz/bing': ''}
         test_dir = create_dir(all_content)
         tree = await self.cache.import_tree(
             test_dir, picks=['foo', COLON + 'baz'])
-        expected_content = {'foo': '',
-                            COLON + 'baz/bing': ''}
+        expected_content = {'foo': '', COLON + 'baz/bing': ''}
         out_dir = create_dir()
         await self.cache.export_tree(tree, out_dir)
         assert_contents(out_dir, expected_content)
@@ -155,8 +153,10 @@ class CacheTest(PeruTest):
         no_conflict_dirty_content['b/c'] += ' dirty'
         no_conflict_dirty_dir = create_dir(no_conflict_dirty_content)
         with self.assertRaises(peru.cache.DirtyWorkingCopyError):
-            await self.cache.export_tree(new_tree, no_conflict_dirty_dir,
-                                              previous_tree=self.content_tree)
+            await self.cache.export_tree(
+                new_tree,
+                no_conflict_dirty_dir,
+                previous_tree=self.content_tree)
 
     @make_synchronous
     async def test_missing_files_in_previous_tree(self):
@@ -175,8 +175,8 @@ class CacheTest(PeruTest):
 
     @make_synchronous
     async def test_merge_trees(self):
-        merged_tree = await self.cache.merge_trees(
-            self.content_tree, self.content_tree, 'subdir')
+        merged_tree = await self.cache.merge_trees(self.content_tree,
+                                                   self.content_tree, 'subdir')
         expected_content = dict(self.content)
         for path, content in self.content.items():
             expected_content[os.path.join('subdir', path)] = content
@@ -186,8 +186,8 @@ class CacheTest(PeruTest):
 
         with self.assertRaises(peru.cache.MergeConflictError):
             # subdir/ is already populated, so this merge should throw.
-            await self.cache.merge_trees(
-                merged_tree, self.content_tree, 'subdir')
+            await self.cache.merge_trees(merged_tree, self.content_tree,
+                                         'subdir')
 
     @make_synchronous
     async def test_merge_with_deep_prefix(self):
@@ -206,8 +206,7 @@ class CacheTest(PeruTest):
     async def test_read_file(self):
         # Include a leading colon, to check that we escape pathspecs correctly
         # with a leading ./
-        all_content = {'a': 'foo',
-                       COLON + 'b/c': 'bar'}
+        all_content = {'a': 'foo', COLON + 'b/c': 'bar'}
         test_dir = create_dir(all_content)
         tree = await self.cache.import_tree(test_dir)
         a_content = await self.cache.read_file(tree, 'a')
@@ -235,12 +234,18 @@ class CacheTest(PeruTest):
     @make_synchronous
     async def test_import_with_specific_dir(self):
         await self.do_excludes_and_files_test(
-            excludes=[], picks=['b'], expected={'b/c': 'bar', 'b/d': 'baz'})
+            excludes=[], picks=['b'], expected={
+                'b/c': 'bar',
+                'b/d': 'baz'
+            })
 
     @make_synchronous
     async def test_import_with_excluded_file(self):
         await self.do_excludes_and_files_test(
-            excludes=['a'], picks=[], expected={'b/c': 'bar', 'b/d': 'baz'})
+            excludes=['a'], picks=[], expected={
+                'b/c': 'bar',
+                'b/d': 'baz'
+            })
 
     @make_synchronous
     async def test_import_with_excluded_dir(self):
@@ -256,41 +261,42 @@ class CacheTest(PeruTest):
     async def test_ls_tree(self):
         # Use the recursive case to get valid entries for each file. We could
         # hardcode these, but it would be messy and annoying to maintain.
-        entries = await self.cache.ls_tree(
-            self.content_tree, recursive=True)
+        entries = await self.cache.ls_tree(self.content_tree, recursive=True)
         assert entries.keys() == {'a', 'b', 'b/c', 'b/d'}
-        assert (entries['a'].type == entries['b/c'].type ==
-                entries['b/d'].type == peru.cache.BLOB_TYPE)
+        assert (entries['a'].type == entries['b/c'].type == entries['b/d'].type
+                == peru.cache.BLOB_TYPE)
         assert entries['b'].type == peru.cache.TREE_TYPE
 
         # Check the non-recursive, non-path case.
-        self.assertDictEqual(
-            {'a': entries['a'], 'b': entries['b']},
-            (await self.cache.ls_tree(self.content_tree)))
+        self.assertDictEqual({
+            'a': entries['a'],
+            'b': entries['b']
+        }, (await self.cache.ls_tree(self.content_tree)))
 
         # Check the single file case, and make sure paths are normalized.
-        self.assertDictEqual(
-            {'b/c': entries['b/c']},
-            (await self.cache.ls_tree(self.content_tree, 'b/c//./')))
+        self.assertDictEqual({
+            'b/c': entries['b/c']
+        }, (await self.cache.ls_tree(self.content_tree, 'b/c//./')))
 
         # Check the single dir case. (Trailing slash shouldn't matter, because
         # we nomalize it, but git will do the wrong thing if we forget
         # normalization.)
-        self.assertDictEqual(
-            {'b': entries['b']},
-            (await self.cache.ls_tree(self.content_tree, 'b/')))
+        self.assertDictEqual({
+            'b': entries['b']
+        }, (await self.cache.ls_tree(self.content_tree, 'b/')))
 
         # Check the recursive dir case.
-        self.assertDictEqual(
-            {'b': entries['b'], 'b/c': entries['b/c'], 'b/d': entries['b/d']},
-            (await self.cache.ls_tree(
-                self.content_tree, 'b', recursive=True)))
+        self.assertDictEqual({
+            'b': entries['b'],
+            'b/c': entries['b/c'],
+            'b/d': entries['b/d']
+        }, (await self.cache.ls_tree(self.content_tree, 'b', recursive=True)))
 
         # Make sure that we don't skip over a target file in recursive mode.
-        self.assertDictEqual(
-            {'b/c': entries['b/c']},
-            (await self.cache.ls_tree(
-                self.content_tree, 'b/c', recursive=True)))
+        self.assertDictEqual({
+            'b/c': entries['b/c']
+        }, (await self.cache.ls_tree(self.content_tree, 'b/c',
+                                     recursive=True)))
 
     @make_synchronous
     async def test_modify_tree(self):
@@ -300,32 +306,50 @@ class CacheTest(PeruTest):
         cases = []
 
         # Test regular deletions.
-        cases.append(({'a': None},
-                      {'b/c': 'bar'}))
-        cases.append(({'a//./': None},  # Paths should get normalized.
-                      {'b/c': 'bar'}))
-        cases.append(({'b': None},
-                      {'a': 'foo'}))
-        cases.append(({'b/c': None},
-                      {'a': 'foo'}))
-        cases.append(({'x/y/z': None},
-                      {'a': 'foo', 'b/c': 'bar'}))
-        cases.append(({'b/x': None},
-                      {'a': 'foo', 'b/c': 'bar'}))
+        cases.append(({'a': None}, {'b/c': 'bar'}))
+        cases.append((
+            {
+                'a//./': None
+            },  # Paths should get normalized.
+            {
+                'b/c': 'bar'
+            }))
+        cases.append(({'b': None}, {'a': 'foo'}))
+        cases.append(({'b/c': None}, {'a': 'foo'}))
+        cases.append(({'x/y/z': None}, {'a': 'foo', 'b/c': 'bar'}))
+        cases.append(({'b/x': None}, {'a': 'foo', 'b/c': 'bar'}))
         # Test the case where we try to delete below a file.
-        cases.append(({'a/x': None},
-                      {'a': 'foo', 'b/c': 'bar'}))
+        cases.append(({'a/x': None}, {'a': 'foo', 'b/c': 'bar'}))
         # Test insertions.
-        cases.append(({'b': entries['a']},
-                      {'a': 'foo', 'b': 'foo'}))
-        cases.append(({'x': entries['a']},
-                      {'a': 'foo', 'x': 'foo', 'b/c': 'bar'}))
-        cases.append(({'x': entries['b']},
-                      {'a': 'foo', 'b/c': 'bar', 'x/c': 'bar'}))
-        cases.append(({'d/e/f': entries['a']},
-                      {'a': 'foo', 'b/c': 'bar', 'd/e/f': 'foo'}))
-        cases.append(({'d/e/f': entries['b']},
-                      {'a': 'foo', 'b/c': 'bar', 'd/e/f/c': 'bar'}))
+        cases.append(({'b': entries['a']}, {'a': 'foo', 'b': 'foo'}))
+        cases.append(({
+            'x': entries['a']
+        }, {
+            'a': 'foo',
+            'x': 'foo',
+            'b/c': 'bar'
+        }))
+        cases.append(({
+            'x': entries['b']
+        }, {
+            'a': 'foo',
+            'b/c': 'bar',
+            'x/c': 'bar'
+        }))
+        cases.append(({
+            'd/e/f': entries['a']
+        }, {
+            'a': 'foo',
+            'b/c': 'bar',
+            'd/e/f': 'foo'
+        }))
+        cases.append(({
+            'd/e/f': entries['b']
+        }, {
+            'a': 'foo',
+            'b/c': 'bar',
+            'd/e/f/c': 'bar'
+        }))
 
         for modifications, result in cases:
             modified_tree = await self.cache.modify_tree(
@@ -386,12 +410,16 @@ class CacheTest(PeruTest):
         index_dir = create_dir()
         index_file = os.path.join(index_dir, 'test_index_file')
         await self.cache.export_tree(
-            self.content_tree, export_dir, previous_tree=self.content_tree,
+            self.content_tree,
+            export_dir,
+            previous_tree=self.content_tree,
             previous_index_file=index_file)
         # Finally, touch a again and rerun the export using the cached index.
         bump_mtime_one_minute()
         await self.cache.export_tree(
-            self.content_tree, export_dir, previous_tree=self.content_tree,
+            self.content_tree,
+            export_dir,
+            previous_tree=self.content_tree,
             previous_index_file=index_file)
 
     @make_synchronous

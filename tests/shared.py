@@ -15,9 +15,7 @@ from peru.async_helpers import run_task
 from peru.compat import makedirs
 import peru.main
 
-
 test_resources = Path(__file__).parent.resolve() / 'resources'
-
 
 # Colons are a reserved character on Windows, so tests that cover filenames
 # with colons need to do something else.
@@ -31,9 +29,11 @@ def make_synchronous(f):
     synchronous code, so for example test methods can be coroutines. It does
     NOT let you call coroutines as regular functions *inside* another
     coroutine. That will raise an "Event loop is running" error.'''
+
     @functools.wraps(f)
     def wrapper(*args, **kwargs):
         return run_task(f(*args, **kwargs))
+
     return wrapper
 
 
@@ -96,16 +96,24 @@ def read_dir(startdir, *, excludes=(), binary=False):
 
 
 def _format_contents(contents):
-    return ['{}: {}\n'.format(file, repr(contents[file]))
-            for file in sorted(contents.keys())]
+    return [
+        '{}: {}\n'.format(file, repr(contents[file]))
+        for file in sorted(contents.keys())
+    ]
 
 
-def assert_contents(dir, expected_contents, *, message='', excludes=(),
+def assert_contents(dir,
+                    expected_contents,
+                    *,
+                    message='',
+                    excludes=(),
                     binary=False):
     dir = Path(dir)
-    expected_contents = {Path(key): val for key, val
-                         in expected_contents.items()}
-    actual_contents = read_dir(dir, excludes=excludes,  binary=binary)
+    expected_contents = {
+        Path(key): val
+        for key, val in expected_contents.items()
+    }
+    actual_contents = read_dir(dir, excludes=excludes, binary=binary)
     if expected_contents == actual_contents:
         return
     # Make sure we didn't exclude files we were checking for.
@@ -113,13 +121,15 @@ def assert_contents(dir, expected_contents, *, message='', excludes=(),
     excluded_files = full_contents.keys() - actual_contents.keys()
     excluded_missing = expected_contents.keys() & excluded_files
     if excluded_missing:
-        raise AssertionError('EXPECTED FILES WERE EXCLUDED FROM THE TEST: {}'
-                             .format(excluded_missing))
+        raise AssertionError('EXPECTED FILES WERE EXCLUDED FROM THE TEST: {}'.
+                             format(excluded_missing))
     # Make a diff against expected and throw.
     assertion_msg = "Contents didn't match:\n" + ''.join(
-        difflib.unified_diff(_format_contents(expected_contents),
-                             _format_contents(actual_contents),
-                             fromfile='expected', tofile='actual')).strip()
+        difflib.unified_diff(
+            _format_contents(expected_contents),
+            _format_contents(actual_contents),
+            fromfile='expected',
+            tofile='actual')).strip()
     if message:
         assertion_msg += '\n' + message
     raise AssertionError(assertion_msg)
@@ -193,7 +203,8 @@ class HgRepo(Repo):
         self.run('hg', 'init')
         hgrc_path = os.path.join(content_dir, '.hg', 'hgrc')
         with open(hgrc_path, 'a') as f:
-            f.write(textwrap.dedent('''\
+            f.write(
+                textwrap.dedent('''\
                 [ui]
                 username = peru <peru>
                 '''))
@@ -208,8 +219,8 @@ class SvnRepo(Repo):
         self.url = Path(repo_dir).as_uri()
 
         self.run('svnadmin', 'create', '.')
-        self.run('svn', 'import', content_dir, self.url,
-                 '-m', 'initial commit')
+        self.run('svn', 'import', content_dir, self.url, '-m',
+                 'initial commit')
 
 
 def _check_executable(path, expectation):
@@ -217,9 +228,8 @@ def _check_executable(path, expectation):
         # Windows doesn't support the executable flag. Skip the check.
         return
     mode = Path(path).stat().st_mode
-    is_executable = (mode & stat.S_IXUSR != 0 and
-                     mode & stat.S_IXGRP != 0 and
-                     mode & stat.S_IXOTH != 0)
+    is_executable = (mode & stat.S_IXUSR != 0 and mode & stat.S_IXGRP != 0
+                     and mode & stat.S_IXOTH != 0)
     message = 'Expected {} to be {}executable.'.format(
         path, 'not ' if not expectation else '')
     assert is_executable == expectation, message
@@ -242,10 +252,10 @@ class PeruTest(unittest.TestCase):
         super().__init__(*args, **kwargs)
         # Complain if it looks like an important test function is a generator.
         for name in dir(self):
-            is_test = (name.startswith('test') or
-                       name in ('setUp', 'tearDown'))
+            is_test = (name.startswith('test')
+                       or name in ('setUp', 'tearDown'))
             is_generator = inspect.isgeneratorfunction(getattr(self, name))
             if is_test and is_generator:
                 raise TypeError("{}() is a generator, which makes it a silent "
-                                "no-op!\nUse @make_synchronous or something."
-                                .format(type(self).__name__ + '.' + name))
+                                "no-op!\nUse @make_synchronous or something.".
+                                format(type(self).__name__ + '.' + name))

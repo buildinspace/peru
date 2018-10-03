@@ -94,8 +94,12 @@ async def gather_coalescing_exceptions(coros, display, *, verbose):
         return results
 
 
-async def create_subprocess_with_handle(command, display_handle, *, shell=False, cwd,
-                                  **kwargs):
+async def create_subprocess_with_handle(command,
+                                        display_handle,
+                                        *,
+                                        shell=False,
+                                        cwd,
+                                        **kwargs):
     '''Writes subprocess output to a display handle as it comes in, and also
     returns a copy of it as a string. Throws if the subprocess returns an
     error. Note that cwd is a required keyword-only argument, on theory that
@@ -122,11 +126,19 @@ async def create_subprocess_with_handle(command, display_handle, *, shell=False,
         stderr = asyncio.subprocess.STDOUT
         if shell:
             proc = await asyncio.create_subprocess_shell(
-                command, stdin=stdin, stdout=stdout, stderr=stderr, cwd=cwd,
+                command,
+                stdin=stdin,
+                stdout=stdout,
+                stderr=stderr,
+                cwd=cwd,
                 **kwargs)
         else:
             proc = await asyncio.create_subprocess_exec(
-                *command, stdin=stdin, stdout=stdout, stderr=stderr, cwd=cwd,
+                *command,
+                stdin=stdin,
+                stdout=stdout,
+                stderr=stderr,
+                cwd=cwd,
                 **kwargs)
 
         # Read all the output from the subprocess as its comes in.
@@ -142,8 +154,8 @@ async def create_subprocess_with_handle(command, display_handle, *, shell=False,
         returncode = await proc.wait()
 
     if returncode != 0:
-        raise subprocess.CalledProcessError(
-            returncode, command, output_copy.getvalue())
+        raise subprocess.CalledProcessError(returncode, command,
+                                            output_copy.getvalue())
 
     if hasattr(decoder, 'buffer'):
         # The utf8 decoder has this attribute, but some others don't.

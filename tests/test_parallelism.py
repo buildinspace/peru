@@ -14,7 +14,6 @@ def assert_parallel(n):
 
 
 class ParallelismTest(shared.PeruTest):
-
     def setUp(self):
         # Make sure nothing is fishy with the jobs counter, and reset the max.
         plugin.debug_assert_clean_parallel_count()

@@ -43,16 +43,14 @@ class Rule:
             if self.move:
                 tree = await move_files(runtime.cache, tree, self.move)
             if self.drop:
-                tree = await drop_files(
-                    runtime.cache, tree, self.drop)
+                tree = await drop_files(runtime.cache, tree, self.drop)
             if self.pick:
                 tree = await pick_files(runtime.cache, tree, self.pick)
             if self.executable:
-                tree = await make_files_executable(
-                    runtime.cache, tree, self.executable)
+                tree = await make_files_executable(runtime.cache, tree,
+                                                   self.executable)
             if self.export:
-                tree = await get_export_tree(
-                    runtime.cache, tree, self.export)
+                tree = await get_export_tree(runtime.cache, tree, self.export)
 
             runtime.cache.keyval[key] = tree
 
@@ -77,15 +75,15 @@ async def _copy_files_modifications(_cache, tree, paths_multimap):
                 dest_is_dir = (dest_info.type == cache.TREE_TYPE)
             adjusted_dest = dest
             if dest_is_dir:
-                adjusted_dest = str(PurePosixPath(dest) /
-                                    PurePosixPath(source).name)
+                adjusted_dest = str(
+                    PurePosixPath(dest) / PurePosixPath(source).name)
             modifications[adjusted_dest] = source_info
     return modifications
 
 
 async def copy_files(_cache, tree, paths_multimap):
-    modifications = await _copy_files_modifications(
-        _cache, tree, paths_multimap)
+    modifications = await _copy_files_modifications(_cache, tree,
+                                                    paths_multimap)
     tree = await _cache.modify_tree(tree, modifications)
     return tree
 
@@ -94,8 +92,8 @@ async def move_files(_cache, tree, paths_multimap):
     # First obtain the copies from the original tree. Moves are not ordered but
     # happen all at once, so if you move a->b and b->c, the contents of c will
     # always end up being b rather than a.
-    modifications = await _copy_files_modifications(
-        _cache, tree, paths_multimap)
+    modifications = await _copy_files_modifications(_cache, tree,
+                                                    paths_multimap)
     # Now add in deletions, but be careful not to delete a file that just got
     # moved. Note that if "a" gets moved into "dir", it will end up at "dir/a",
     # even if "dir" is deleted (because modify_tree always modifies parents
@@ -156,12 +154,12 @@ async def make_files_executable(_cache, tree, globs_list):
 async def get_export_tree(_cache, tree, export_path):
     entries = await _cache.ls_tree(tree, export_path)
     if not entries:
-        raise NoMatchingFilesError('Export path "{}" doesn\'t exist.'
-                                   .format(export_path))
+        raise NoMatchingFilesError(
+            'Export path "{}" doesn\'t exist.'.format(export_path))
     entry = list(entries.values())[0]
     if entry.type != cache.TREE_TYPE:
-        raise NoMatchingFilesError('Export path "{}" is not a directory.'
-                                   .format(export_path))
+        raise NoMatchingFilesError(
+            'Export path "{}" is not a directory.'.format(export_path))
     return entry.hash
 
 

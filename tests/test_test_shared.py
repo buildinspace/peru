@@ -5,7 +5,6 @@ import shared
 
 
 class SharedTestCodeTest(shared.PeruTest):
-
     def test_create_dir(self):
         empty_dir = shared.create_dir()
         self.assertListEqual([], os.listdir(empty_dir))
@@ -25,10 +24,12 @@ class SharedTestCodeTest(shared.PeruTest):
         test_dir = shared.create_dir(content)
         read_content = shared.read_dir(test_dir)
         self.assertDictEqual(content, read_content)
-        self.assertDictEqual({Path('foo'): 'a'},
-                             shared.read_dir(test_dir, excludes=['bar']))
-        self.assertDictEqual({Path('foo'): 'a'},
-                             shared.read_dir(test_dir, excludes=['bar/baz']))
+        self.assertDictEqual({
+            Path('foo'): 'a'
+        }, shared.read_dir(test_dir, excludes=['bar']))
+        self.assertDictEqual({
+            Path('foo'): 'a'
+        }, shared.read_dir(test_dir, excludes=['bar/baz']))
 
     def test_assert_contents(self):
         content = {'foo': 'a', 'bar/baz': 'b'}

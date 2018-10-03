@@ -11,7 +11,6 @@ URL = os.environ['PERU_MODULE_URL']
 REV = os.environ['PERU_MODULE_REV'] or 'default'
 REUP = os.environ['PERU_MODULE_REUP'] or 'default'
 
-
 Result = namedtuple("Result", ["returncode", "output"])
 
 
@@ -27,8 +26,11 @@ def hg(*args, hg_dir=None, capture_output=False, checked=True):
 
     stdout = subprocess.PIPE if capture_output else None
     # Always let stderr print to the caller.
-    process = subprocess.Popen(command, stdin=subprocess.DEVNULL,
-                               stdout=stdout, universal_newlines=True)
+    process = subprocess.Popen(
+        command,
+        stdin=subprocess.DEVNULL,
+        stdout=stdout,
+        universal_newlines=True)
     output, _ = process.communicate()
     if checked and process.returncode != 0:
         sys.exit(1)
@@ -48,7 +50,8 @@ def configure(repo_path):
     # Set configs needed for cached repos.
     hgrc_path = os.path.join(repo_path, '.hg', 'hgrc')
     with open(hgrc_path, 'a') as f:
-        f.write(textwrap.dedent('''\
+        f.write(
+            textwrap.dedent('''\
             [ui]
             # prevent 'hg archive' from creating '.hg_archival.txt' files.
             archivemeta = false
@@ -61,8 +64,14 @@ def hg_pull(url, repo_path):
 
 
 def already_has_rev(repo, rev):
-    res = hg('identify', '--debug', '--rev', rev, hg_dir=repo,
-             capture_output=True, checked=False)
+    res = hg(
+        'identify',
+        '--debug',
+        '--rev',
+        rev,
+        hg_dir=repo,
+        capture_output=True,
+        checked=False)
     if res.returncode != 0:
         return False
 
@@ -88,8 +97,13 @@ def plugin_reup():
 
     clone_if_needed(URL, CACHE_PATH)
     hg_pull(URL, CACHE_PATH)
-    output = hg('identify', '--debug', '--rev', REUP, hg_dir=CACHE_PATH,
-                capture_output=True).output
+    output = hg(
+        'identify',
+        '--debug',
+        '--rev',
+        REUP,
+        hg_dir=CACHE_PATH,
+        capture_output=True).output
 
     with open(reup_output, 'w') as output_file:
         print('rev:', output.split()[0], file=output_file)

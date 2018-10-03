@@ -5,7 +5,6 @@ from shared import create_dir, assert_contents, PeruTest, make_synchronous
 
 
 class MergeTest(PeruTest):
-
     @make_synchronous
     async def setUp(self):
         self.cache_dir = create_dir()
@@ -18,11 +17,11 @@ class MergeTest(PeruTest):
 
     @make_synchronous
     async def test_merge_from_map(self):
-        imports = {'foo': ('path1',), 'bar': ('path2',)}
+        imports = {'foo': ('path1', ), 'bar': ('path2', )}
         target_trees = {'foo': self.content_tree, 'bar': self.content_tree}
 
-        merged_tree = await merge_imports_tree(
-            self.cache, imports, target_trees)
+        merged_tree = await merge_imports_tree(self.cache, imports,
+                                               target_trees)
 
         merged_dir = create_dir()
         await self.cache.export_tree(merged_tree, merged_dir)
@@ -39,8 +38,8 @@ class MergeTest(PeruTest):
         imports = {'foo': ('path1', 'path2')}
         target_trees = {'foo': self.content_tree}
 
-        merged_tree = await merge_imports_tree(
-            self.cache, imports, target_trees)
+        merged_tree = await merge_imports_tree(self.cache, imports,
+                                               target_trees)
 
         merged_dir = create_dir()
         await self.cache.export_tree(merged_tree, merged_dir)

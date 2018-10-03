@@ -30,8 +30,8 @@ class _Runtime:
         self._tmp_root = os.path.join(self.state_dir, 'tmp')
         compat.makedirs(self._tmp_root)
 
-        self.overrides = KeyVal(os.path.join(self.state_dir, 'overrides'),
-                                self._tmp_root)
+        self.overrides = KeyVal(
+            os.path.join(self.state_dir, 'overrides'), self._tmp_root)
         self._used_overrides = set()
 
         self.force = args.get('--force', False)
@@ -71,17 +71,16 @@ class _Runtime:
             self.peru_file = explicit_peru_file
             self.sync_dir = explicit_sync_dir
         elif explicit_peru_file or explicit_sync_dir:
-            raise CommandLineError(
-                'If the --file or --sync-dir is set, '
-                'the other must also be set.')
+            raise CommandLineError('If the --file or --sync-dir is set, '
+                                   'the other must also be set.')
         else:
             basename = explicit_basename or parser.DEFAULT_PERU_FILE_NAME
             self.peru_file = find_project_file(os.getcwd(), basename)
             self.sync_dir = os.path.dirname(self.peru_file)
-        self.state_dir = (args['--state-dir'] or
-                          os.path.join(self.sync_dir, '.peru'))
-        self.cache_dir = (args['--cache-dir'] or env.get('PERU_CACHE_DIR') or
-                          os.path.join(self.state_dir, 'cache'))
+        self.state_dir = (args['--state-dir']
+                          or os.path.join(self.sync_dir, '.peru'))
+        self.cache_dir = (args['--cache-dir'] or env.get('PERU_CACHE_DIR')
+                          or os.path.join(self.state_dir, 'cache'))
 
     def tmp_dir(self):
         dir = tempfile.TemporaryDirectory(dir=self._tmp_root)
@@ -134,8 +133,8 @@ class _Runtime:
             return
         self.display.print('syncing with overrides:')
         for name in names:
-            self.display.print('  {}: {}'.format(
-                name, self.get_override(name)))
+            self.display.print('  {}: {}'.format(name,
+                                                 self.get_override(name)))
 
     def warn_unused_overrides(self):
         if self.quiet or self.no_overrides:

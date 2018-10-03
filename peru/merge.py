@@ -28,16 +28,16 @@ async def merge_imports_tree(cache, imports, target_trees, base_tree=None):
                     unified_tree, target_trees[target], path)
             except MergeConflictError as e:
                 message = 'Merge conflict in import "{}" at "{}":\n\n{}'
-                e.message = message.format(
-                    target, path, textwrap.indent(e.message, '  '))
+                e.message = message.format(target, path,
+                                           textwrap.indent(e.message, '  '))
                 raise
     cache.keyval[key] = unified_tree
     return unified_tree
 
 
 def _cache_key(imports, target_trees, base_tree):
-    tree_paths = tuple((target_trees[target], paths) for
-                       target, paths in imports.items())
+    tree_paths = tuple(
+        (target_trees[target], paths) for target, paths in imports.items())
     return compute_key({
         'base_tree': base_tree,
         'tree_paths': tree_paths,

@@ -87,6 +87,7 @@ class VerboseDisplay(BaseDisplay):
     '''Waits until jobs are finished and then prints all of their output at
     once, to make sure jobs don't get interleaved. We use '===' as a delimiter
     to try to separate jobs from one another, and from other output.'''
+
     def _job_started(self, job_id):
         print('===', 'started', self.titles[job_id], '===', file=self.output)
 
@@ -101,6 +102,7 @@ class VerboseDisplay(BaseDisplay):
 class FancyDisplay(BaseDisplay):
     '''Prints a multi-line, real-time display of all the latest output lines
     from each job.'''
+
     def __init__(self, *args):
         super().__init__(*args)
         # Every time we draw we need to erase the lines that were printed

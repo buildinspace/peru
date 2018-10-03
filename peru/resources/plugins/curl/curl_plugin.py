@@ -40,7 +40,7 @@ def format_bytes(num_bytes):
             # Truncate floats instead of rounding.
             float_str = str(num_bytes / threshold)
             decimal_index = float_str.index('.')
-            truncated_float = float_str[:decimal_index+2]
+            truncated_float = float_str[:decimal_index + 2]
             return truncated_float + unit
     return '{}B'.format(num_bytes)
 
@@ -64,8 +64,9 @@ def download_file(request, output_file, stdout=sys.stdout):
         if file_size:
             percentage = ' {}%'.format(round(100 * bytes_read / file_size))
             total_kb = '/' + format_bytes(file_size)
-        print('downloaded{} {}{}'.format(percentage, kb_downloaded, total_kb),
-              file=stdout)
+        print(
+            'downloaded{} {}{}'.format(percentage, kb_downloaded, total_kb),
+            file=stdout)
     return digest.hexdigest()
 
 
@@ -88,8 +89,10 @@ def plugin_sync(url, sha1):
             digest = download_file(request, output_file)
 
     if sha1 and digest != sha1:
-        print('Bad checksum!\n     url: {}\nexpected: {}\n  actual: {}'
-              .format(url, sha1, digest), file=sys.stderr)
+        print(
+            'Bad checksum!\n     url: {}\nexpected: {}\n  actual: {}'.format(
+                url, sha1, digest),
+            file=sys.stderr)
         sys.exit(1)
 
     try:

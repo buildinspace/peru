@@ -23,53 +23,49 @@ class GlobTest(shared.PeruTest):
         ]
         for input, output in cases:
             self.assertEqual(
-                output,
-                glob.split_on_stars_interpreting_backslashes(input),
+                output, glob.split_on_stars_interpreting_backslashes(input),
                 'Failed split for input {}'.format(input))
 
     def test_glob_to_path_regex(self):
         Case = collections.namedtuple('Case', ['glob', 'matches', 'excludes'])
         cases = [
-            Case(glob='a/b/c',
-                 matches=['a/b/c'],
-                 excludes=['a/b', 'a/b/c/', '/a/b/c', 'a/b/c/d']),
+            Case(
+                glob='a/b/c',
+                matches=['a/b/c'],
+                excludes=['a/b', 'a/b/c/', '/a/b/c', 'a/b/c/d']),
             # * should be able to match nothing.
-            Case(glob='a/*b/c',
-                 matches=['a/b/c', 'a/xb/c'],
-                 excludes=['a/x/c', 'a/c', 'a//c']),
+            Case(
+                glob='a/*b/c',
+                matches=['a/b/c', 'a/xb/c'],
+                excludes=['a/x/c', 'a/c', 'a//c']),
             # But * by itself should never match an empty path component.
-            Case(glob='a/*/c',
-                 matches=['a/b/c', 'a/boooo/c', 'a/*/c'],
-                 excludes=['a/c', 'a/b/d/c', 'a//c']),
+            Case(
+                glob='a/*/c',
+                matches=['a/b/c', 'a/boooo/c', 'a/*/c'],
+                excludes=['a/c', 'a/b/d/c', 'a//c']),
             # Similarly, ** does not match empty path components. It's tempting
             # to allow this, but we never want '**/c' to match '/c'.
-            Case(glob='a/**/c',
-                 matches=['a/b/c', 'a/d/e/f/g/c', 'a/c'],
-                 excludes=['a/b/c/d', 'x/a/c', 'a//c']),
-            Case(glob='a/**/**/c',
-                 matches=['a/b/c', 'a/d/e/f/g/c', 'a/c'],
-                 excludes=['a/b/c/d', 'x/a/c', 'a//c']),
-            Case(glob='**/c',
-                 matches=['a/b/c', 'c'],
-                 excludes=['/c', 'c/d']),
-            Case(glob='**/*/c',
-                 matches=['a/b/c', 'a/c'],
-                 excludes=['c', '/c']),
+            Case(
+                glob='a/**/c',
+                matches=['a/b/c', 'a/d/e/f/g/c', 'a/c'],
+                excludes=['a/b/c/d', 'x/a/c', 'a//c']),
+            Case(
+                glob='a/**/**/c',
+                matches=['a/b/c', 'a/d/e/f/g/c', 'a/c'],
+                excludes=['a/b/c/d', 'x/a/c', 'a//c']),
+            Case(glob='**/c', matches=['a/b/c', 'c'], excludes=['/c', 'c/d']),
+            Case(
+                glob='**/*/c', matches=['a/b/c', 'a/c'], excludes=['c', '/c']),
             # Leading slashes should be preserved if present.
-            Case(glob='/a',
-                 matches=['/a'],
-                 excludes=['a']),
-            Case(glob='/**/c',
-                 matches=['/a/b/c', '/c'],
-                 excludes=['c', 'a/b/c']),
+            Case(glob='/a', matches=['/a'], excludes=['a']),
+            Case(
+                glob='/**/c',
+                matches=['/a/b/c', '/c'],
+                excludes=['c', 'a/b/c']),
             # Make sure special characters are escaped properly.
-            Case(glob='a|b',
-                 matches=['a|b'],
-                 excludes=['a', 'b']),
+            Case(glob='a|b', matches=['a|b'], excludes=['a', 'b']),
             # Test escaped * characters.
-            Case(glob='a\\*',
-                 matches=['a*'],
-                 excludes=['a', 'aa']),
+            Case(glob='a\\*', matches=['a*'], excludes=['a', 'aa']),
         ]
         for case in cases:
             regex = glob.glob_to_path_regex(case.glob)

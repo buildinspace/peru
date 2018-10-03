@@ -15,7 +15,10 @@ def svn(*args, svn_dir=None, capture_output=False):
     stdout = subprocess.PIPE if capture_output else None
     # Always let stderr print to the caller.
     process = subprocess.Popen(
-        command, stdin=subprocess.DEVNULL, stdout=stdout, cwd=svn_dir,
+        command,
+        stdin=subprocess.DEVNULL,
+        stdout=stdout,
+        cwd=svn_dir,
         universal_newlines=True)
     output, _ = process.communicate()
     if process.returncode != 0:
@@ -38,13 +41,8 @@ def remote_head_rev(url):
 def plugin_sync():
     # Just fetch the target revision and strip the metadata.
     # Plugin-level caching for Subversion is futile.
-    svn(
-        'export',
-        '--force',
-        '--revision',
-        os.environ['PERU_MODULE_REV'] or 'HEAD',
-        os.environ['PERU_MODULE_URL'],
-        os.environ['PERU_SYNC_DEST'])
+    svn('export', '--force', '--revision', os.environ['PERU_MODULE_REV']
+        or 'HEAD', os.environ['PERU_MODULE_URL'], os.environ['PERU_SYNC_DEST'])
 
 
 def plugin_reup():
