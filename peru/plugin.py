@@ -7,6 +7,7 @@ import tempfile
 import yaml
 
 from .async_helpers import create_subprocess_with_handle
+from .async_exit_stack import AsyncExitStack
 from . import cache
 from . import compat
 from .compat import makedirs
@@ -60,7 +61,7 @@ async def _plugin_job(plugin_context, module_type, module_fields, command, env,
                       display_handle):
     # We take several locks and other context managers in here. Using an
     # AsyncExitStack saves us from indentation hell.
-    async with contextlib.AsyncExitStack() as stack:
+    async with AsyncExitStack() as stack:
         definition = _get_plugin_definition(module_type, module_fields,
                                             command)
         exe = _get_plugin_exe(definition, command)
@@ -188,7 +189,7 @@ def _plugin_env(plugin_context, plugin_definition, module_fields, command,
 
 
 def _noop_lock():
-    return contextlib.AsyncExitStack()  # a no-op context manager
+    return AsyncExitStack()  # a no-op context manager
 
 
 def _plugin_cache_lock(plugin_context, definition, module_fields):
