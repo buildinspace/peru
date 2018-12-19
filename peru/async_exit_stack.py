@@ -31,6 +31,7 @@ class AsyncExitStack:
     def _create_cb_wrapper(callback, *args, **kwds):
         def _exit_wrapper(exc_type, exc, tb):
             callback(*args, **kwds)
+
         return _exit_wrapper
 
     ### AsyncExitStack staticmethods
@@ -43,6 +44,7 @@ class AsyncExitStack:
     def _create_async_cb_wrapper(callback, *args, **kwds):
         async def _exit_wrapper(exc_type, exc, tb):
             await callback(*args, **kwds)
+
         return _exit_wrapper
 
     ### _BaseExitStack methods
@@ -170,6 +172,7 @@ class AsyncExitStack:
         # We manipulate the exception state so it behaves as though
         # we were actually nesting multiple with statements
         frame_exc = sys.exc_info()[1]
+
         def _fix_exception_context(new_exc, old_exc):
             # Context may not be correct, so find the end of the chain
             while 1:
