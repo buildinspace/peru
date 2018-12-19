@@ -107,6 +107,7 @@ class PluginsTest(shared.PeruTest):
         with open(os.path.join(self.content_dir, '.gitmodules')) as f:
             expected_content['.gitmodules'] = f.read()
         self.do_plugin_test('git', {'url': self.content_dir}, expected_content)
+
         # Now move the submodule forward. Make sure it gets fetched again.
         shared.write_files(submodule_dir, {'more': 'stuff'})
         submodule_repo.run('git', 'add', '-A')
@@ -135,6 +136,25 @@ class PluginsTest(shared.PeruTest):
         content_repo.run('git', 'revert', '--no-edit', 'HEAD')
         fields = {'url': self.content_dir, 'submodules': 'false'}
         self.do_plugin_test('git', fields, expected_content)
+
+    def test_git_plugin_with_relative_submodule(self):
+        content_repo = GitRepo(self.content_dir)
+        # Same autocrlf workaround as above.
+        content_repo.run('git', 'config', 'core.autocrlf', 'false')
+
+        # Similar to above, but this time we use a relative path.
+        submodule_dir = shared.create_dir({'another': 'file'})
+        GitRepo(submodule_dir)
+        submodule_basename = os.path.basename(submodule_dir)
+        relative_path = "../" + submodule_basename
+        content_repo.run('git', 'submodule', 'add', '-q', relative_path,
+                         'subdir/')
+        content_repo.run('git', 'commit', '-m', 'submodule commit')
+        expected_content = self.content.copy()
+        expected_content['subdir/another'] = 'file'
+        with open(os.path.join(self.content_dir, '.gitmodules')) as f:
+            expected_content['.gitmodules'] = f.read()
+        self.do_plugin_test('git', {'url': self.content_dir}, expected_content)
 
     def test_git_plugin_multiple_fetches(self):
         content_repo = GitRepo(self.content_dir)

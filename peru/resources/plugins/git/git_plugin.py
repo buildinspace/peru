@@ -7,16 +7,6 @@ import os
 import subprocess
 import sys
 
-URL = os.environ['PERU_MODULE_URL']
-REV = os.environ['PERU_MODULE_REV'] or 'master'
-REUP = os.environ['PERU_MODULE_REUP'] or 'master'
-
-# Because peru gives each plugin a unique cache dir based on its cacheable
-# fields (in this case, url) we could clone directly into cache_root. However,
-# because the git plugin needs to handle git submodules as well, it still has
-# to separate things out by repo url.
-CACHE_ROOT = os.environ['PERU_PLUGIN_CACHE']
-
 Result = namedtuple("Result", ["returncode", "output"])
 
 
@@ -55,9 +45,16 @@ def clone_if_needed(url):
 
 
 def repo_cache_path(url):
+    # Because peru gives each plugin a unique cache dir based on its cacheable
+    # fields (in this case, url) we could clone directly into cache_root.
+    # However, because the git plugin needs to handle git submodules as well,
+    # it still has to separate things out by repo url.
+    CACHE_ROOT = os.environ['PERU_PLUGIN_CACHE']
+
     # If we just concatenate the escaped repo URL into the path, we start to
     # run up against the 260-character path limit on Windows.
     url_hash = hashlib.sha1(url.encode()).hexdigest()
+
     return os.path.join(CACHE_ROOT, url_hash)
 
 
@@ -98,10 +95,10 @@ def checkout_tree(url, rev, dest):
     # an empty commit.
     git('--work-tree=' + dest, 'read-tree', rev, git_dir=repo_path)
     git('--work-tree=' + dest, 'checkout-index', '--all', git_dir=repo_path)
-    checkout_submodules(repo_path, rev, dest)
+    checkout_submodules(url, repo_path, rev, dest)
 
 
-def checkout_submodules(repo_path, rev, work_tree):
+def checkout_submodules(parent_url, repo_path, rev, work_tree):
     if os.environ['PERU_MODULE_SUBMODULES'] == 'false':
         return
 
@@ -114,7 +111,10 @@ def checkout_submodules(repo_path, rev, work_tree):
     for section in parser.sections():
         sub_relative_path = parser[section]['path']
         sub_full_path = os.path.join(work_tree, sub_relative_path)
-        sub_url = parser[section]['url']
+        raw_sub_url = parser[section]['url']
+        # Submodules can begin with ./ or ../, in which case they're relative
+        # to the parent's URL. Handle this case.
+        sub_url = expand_relative_submodule_url(raw_sub_url, parent_url)
         ls_tree = git(
             'ls-tree',
             rev,
@@ -128,31 +128,58 @@ def checkout_submodules(repo_path, rev, work_tree):
         # followed by `git add`, instead of the smarter `git mv`/`git rm`. If
         # we run into one of these missing submodules, just skip it.
         if len(ls_tree.strip()) == 0:
-            print('WARNING: sudmodule ' + sub_relative_path +
+            print('WARNING: submodule ' + sub_relative_path +
                   ' is configured in .gitmodules, but missing in the repo')
             continue
         sub_rev = ls_tree.split()[2]
         checkout_tree(sub_url, sub_rev, sub_full_path)
 
 
-def plugin_sync():
-    checkout_tree(URL, REV, os.environ['PERU_SYNC_DEST'])
+# According to comments in its own source code, git's implementation of
+# relative submodule URLs is full of unintended corner cases. See:
+# https://github.com/git/git/blob/v2.20.1/builtin/submodule--helper.c#L135
+#
+# We absolutely give up on trying to replicate their logic -- which probably
+# isn't stable in any case -- and instead we just leave the dots in and let the
+# host make sense of it. A quick sanity check on GitHub confirmed that that
+# seems to work for now.
+def expand_relative_submodule_url(raw_sub_url, parent_url):
+    if not raw_sub_url.startswith("./") and not raw_sub_url.startswith("../"):
+        return raw_sub_url
+    new_path = parent_url
+    if not new_path.endswith("/"):
+        new_path += "/"
+    new_path += raw_sub_url
+    return new_path
 
 
-def plugin_reup():
+def plugin_sync(url, rev):
+    checkout_tree(url, rev, os.environ['PERU_SYNC_DEST'])
+
+
+def plugin_reup(url, reup):
     reup_output = os.environ['PERU_REUP_OUTPUT']
-    repo_path = clone_if_needed(URL)
-    git_fetch(URL, repo_path)
+    repo_path = clone_if_needed(url)
+    git_fetch(url, repo_path)
     output = git(
-        'rev-parse', REUP, git_dir=repo_path, capture_output=True).output
+        'rev-parse', reup, git_dir=repo_path, capture_output=True).output
     with open(reup_output, 'w') as out_file:
         print('rev:', output.strip(), file=out_file)
 
 
-command = os.environ['PERU_PLUGIN_COMMAND']
-if command == 'sync':
-    plugin_sync()
-elif command == 'reup':
-    plugin_reup()
-else:
-    raise RuntimeError('Unknown command: ' + repr(command))
+def main():
+    URL = os.environ['PERU_MODULE_URL']
+    REV = os.environ['PERU_MODULE_REV'] or 'master'
+    REUP = os.environ['PERU_MODULE_REUP'] or 'master'
+
+    command = os.environ['PERU_PLUGIN_COMMAND']
+    if command == 'sync':
+        plugin_sync(URL, REV)
+    elif command == 'reup':
+        plugin_reup(URL, REUP)
+    else:
+        raise RuntimeError('Unknown command: ' + repr(command))
+
+
+if __name__ == "__main__":
+    main()
