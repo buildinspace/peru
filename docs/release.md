@@ -8,9 +8,11 @@ Notes to self about making a release:
 6. `twine upload dist/*`
   - Full instructions here: https://packaging.python.org/tutorials/packaging-projects
 7. Bump the AUR package.
-  - `git clone ssh+git://aur@aur.archlinux.org/peru-git`
-    - Probably don't touch this one if it's just a version bump.
-    - `makepkg -d && mksrcinfo`
-    - Commit and push.
   - `git clone ssh+git://aur@aur.archlinux.org/peru`
+    - Update the pkgver and pkgrel.
+    - Update the package hash with the help of `makepkg -g`.
+    - `makepkg -d && makepkg --printsrcinfo > .SRCINFO`
+    - Commit and push.
+  - `git clone ssh+git://aur@aur.archlinux.org/peru-git`
+    - Same procedure, but leave this one alone if it's just a version bump.
 8. Poke Sean to update the Ubuntu PPA :)
