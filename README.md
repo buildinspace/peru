@@ -46,9 +46,7 @@ need to use `sudo` with that, and Python 3's pip might be called `pip3`.
 Also, if you have to use Python 3.3 or 3.4, those were supported up to
 peru 1.1.4.
 
-On Ubuntu, you can install also `peru` from [our
-PPA](https://launchpad.net/~buildinspace/+archive/ubuntu/peru). On Arch,
-you can install `peru` [from the
+On Arch, you can install `peru` [from the
 AUR](https://aur.archlinux.org/packages/peru).
 
 ## Getting Started
