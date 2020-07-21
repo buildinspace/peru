@@ -6,9 +6,6 @@ python:
   - "3.8"
   - "3.9-dev"
   - "nightly"
-jobs:
-  allow_failures:
-    - python: nightly
 install:
   - pip install -r ./requirements-dev.txt
   - pip install coveralls
