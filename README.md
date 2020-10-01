@@ -257,6 +257,14 @@ the fancy example above:
 - `export`: A subdirectory that peru should treat as the root of the
   module tree. Everything else is dropped, including parent directories.
 
+Note that these fields always take effect in the order listed above, regardless
+of the order they're given in `peru.yaml`. For example, a `move` is always
+performed before a `pick`. Also note that these fields can't be given twice.
+For example, instead of using two separate `move` fields (one of which would be
+ignored), use a single `move` field containing a list of moves. In practice,
+things work this way because these fields are parsed as keys in a dictionary,
+which don't preserve ordering and can't repeat.
+
 Besides using those fields in your modules, you can also use them in "named
 rules", which let you transform one module in multiple ways. For example, say
 you want the `asyncio` subdir from the Tulip project, but you also want the
