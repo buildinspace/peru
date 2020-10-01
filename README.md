@@ -261,7 +261,7 @@ Note that these fields always take effect in the order listed above, regardless
 of the order they're given in `peru.yaml`. For example, a `move` is always
 performed before a `pick`. Also note that these fields can't be given twice.
 For example, instead of using two separate `move` fields (one of which would be
-ignored), use a single `move` field containing a list of moves. In practice,
+ignored), use a single `move` field containing multiple moves. In practice,
 things work this way because these fields are parsed as keys in a dictionary,
 which don't preserve ordering and can't repeat.
 
