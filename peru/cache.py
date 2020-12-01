@@ -51,7 +51,7 @@ class GitSession:
         self.index_file = index_file
         self.working_copy = working_copy
 
-    async def git(self, *args, input=None, output_mode=TEXT_MODE):
+    async def git(self, *args, input=None, output_mode=TEXT_MODE, cwd=None):
         global DEBUG_GIT_COMMAND_COUNT
         DEBUG_GIT_COMMAND_COUNT += 1
         command = ['git']
@@ -63,6 +63,7 @@ class GitSession:
             input = input.encode()
         process = await asyncio.subprocess.create_subprocess_exec(
             *command,
+            cwd=cwd,
             env=self.git_env(),
             stdin=asyncio.subprocess.PIPE,
             stdout=asyncio.subprocess.PIPE,
@@ -177,8 +178,14 @@ class GitSession:
             await self.git('read-tree', '-m', '-u', tree)
 
     async def checkout_files_from_index(self):
-        'This recreates any deleted files.'
-        await self.git('checkout-index', '--all')
+        # This recreates any deleted files. As far as I can tell,
+        # checkout-index has no equivalent of the --full-tree flag we use with
+        # ls-tree below. Instead, the --all flag seems to respect the directory
+        # from which it's invoked, and only check out files below that
+        # directory. This, this is currently the only command we invoke with an
+        # explicit cwd. Original bug report:
+        # https://github.com/buildinspace/peru/issues/210
+        await self.git('checkout-index', '--all', cwd=self.working_copy)
 
     async def get_info_for_path(self, tree, path):
         # --full-tree makes ls-tree ignore the cwd. As in list_tree_entries,
