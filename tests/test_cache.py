@@ -172,6 +172,18 @@ class CacheTest(PeruTest):
         await self.cache.export_tree(
             self.content_tree, export_dir, previous_tree=self.content_tree)
         assert_contents(export_dir, self.content)
+        # This should work even if we run it from a subdirectory of
+        # content_tree. (Past buggy behavior here:
+        # https://github.com/buildinspace/peru/issues/210.)
+        prev_dir = os.getcwd()
+        try:
+            os.remove(os.path.join(export_dir, 'a'))
+            os.chdir(os.path.join(export_dir, 'b'))
+            await self.cache.export_tree(
+                self.content_tree, export_dir, previous_tree=self.content_tree)
+            assert_contents(export_dir, self.content)
+        finally:
+            os.chdir(prev_dir)
 
     @make_synchronous
     async def test_merge_trees(self):
