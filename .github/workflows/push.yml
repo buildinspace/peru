@@ -28,5 +28,5 @@ jobs:
     - name: Install hg and svn
       if: matrix.os == 'macOS-latest'
       run: brew install subversion mercurial
-    - run: pip install -r ./requirements-dev.txt
+    - run: pip3 install -r ./requirements-dev.txt
     - run: ./test.py -v
