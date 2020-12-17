@@ -1,4 +1,4 @@
-# peru [![Build Status](https://travis-ci.org/buildinspace/peru.svg?branch=master)](https://travis-ci.org/buildinspace/peru) [![Build status](https://ci.appveyor.com/api/projects/status/mtrwkyv6ji95unr9/branch/master?svg=true)](https://ci.appveyor.com/project/oconnor663/peru) [![Coverage Status](https://img.shields.io/coveralls/buildinspace/peru.svg)](https://coveralls.io/r/buildinspace/peru) [![PyPI version](https://badge.fury.io/py/peru.svg)](https://badge.fury.io/py/peru)
+# peru [![Actions Status](https://github.com/buildinspace/peru/workflows/tests/badge.svg)](https://github.com/buildinspace/peru/actions) [![Build Status](https://travis-ci.org/buildinspace/peru.svg?branch=master)](https://travis-ci.org/buildinspace/peru) [![Build status](https://ci.appveyor.com/api/projects/status/mtrwkyv6ji95unr9/branch/master?svg=true)](https://ci.appveyor.com/project/oconnor663/peru) [![Coverage Status](https://img.shields.io/coveralls/buildinspace/peru.svg)](https://coveralls.io/r/buildinspace/peru) [![PyPI version](https://badge.fury.io/py/peru.svg)](https://badge.fury.io/py/peru)
 
 ##### Maybe sometimes better than copy-paste.
 
