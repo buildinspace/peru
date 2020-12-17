@@ -2,6 +2,7 @@ from collections import namedtuple
 import contextlib
 import os
 import subprocess
+import sys
 import tempfile
 
 import yaml
@@ -57,6 +58,55 @@ async def plugin_get_reup_fields(plugin_context, module_type, module_fields,
     return fields
 
 
+# Normally we prefer to execute plugins directly. This is pretty reliable on
+# Unix, where scripts can specify their interpreter with a shebang line.
+# However, it's not as reliable on Windows, because the extension-interpreter
+# mapping is a global config. In my experience, installing and uninstalling a
+# series of different Python interepreter versions on a Windows machine can
+# break that association, and as a result break peru, in confusing ways. (Tests
+# have also been broken by default for this reason on every Windows CI provider
+# I've ever tried.)
+#
+# To work around this problem, we apply an extra heuristic on Windows: If a
+# plugin executable filename ends in .py, assume that we should re-execute the
+# current interpreter (sys.executable) to run that file, rather than relying on
+# the system shell to find the interpreter. This fixes peru on systems with
+# broken Python configs, and it makes no difference in the vast majority of
+# other cases.
+#
+# For users who want to control this heuristic (either to disable it, or to
+# force the same behavior on Unix), we define the PERU_REEXEC_PYTHON env var.
+def _plugin_command(plugin_exe):
+    config = os.environ.get("PERU_REEXEC_PYTHON", "default")
+    if config == "always":
+        reexec_heuristic = True
+    elif config == "never":
+        reexec_heuristic = False
+    elif config == "default":
+        reexec_heuristic = (os.name == 'nt')  # Windows
+    else:
+        raise RuntimeError("Unrecognized value for PERU_REEXEC_PYTHON", config)
+
+    is_py_file = os.path.splitext(plugin_exe)[1] == ".py"
+
+    if reexec_heuristic and is_py_file:
+        # This is a .py file, and we're going to re-exec the current
+        # interpreter to run it. This branch is the default for .py files on
+        # Windows. On Unix, this requires PERU_REEXEC_PYTHON=always.
+        return [sys.executable, plugin_exe], False
+    elif os.name == 'nt':
+        # This is Windows, but we're not going to re-exec the current
+        # interpreter, either because this isn't a .py file or because
+        # PERU_REEXEC_PYTHON=never. To allow the shell to find an interpreter,
+        # we have to escape the path into a shell string and execute the child
+        # process in shell mode.
+        return subprocess.list2cmdline([plugin_exe]), True
+    else:
+        # Execute the file directly. This is the default on Unix and for
+        # non-.py files on Windows.
+        return [plugin_exe], False
+
+
 async def _plugin_job(plugin_context, module_type, module_fields, command, env,
                       display_handle):
     # We take several locks and other context managers in here. Using an
@@ -64,11 +114,10 @@ async def _plugin_job(plugin_context, module_type, module_fields, command, env,
     async with AsyncExitStack() as stack:
         definition = _get_plugin_definition(module_type, module_fields,
                                             command)
-        exe = _get_plugin_exe(definition, command)
+        plugin_exe = _get_plugin_exe(definition, command)
 
-        # For Windows to run scripts with the right interpreter, we need to run
-        # as a shell command, rather than exec.
-        shell_command_line = subprocess.list2cmdline([exe])
+        # The PERU_REEXEC_PYTHON heuristic happens here.
+        plugin_command, is_shell_mode = _plugin_command(plugin_exe)
 
         complete_env = _plugin_env(plugin_context, definition, module_fields,
                                    command, stack)
@@ -99,11 +148,11 @@ async def _plugin_job(plugin_context, module_type, module_fields, command, env,
 
         try:
             await create_subprocess_with_handle(
-                shell_command_line,
+                plugin_command,
                 display_handle,
                 cwd=plugin_context.cwd,
                 env=complete_env,
-                shell=True)
+                shell=is_shell_mode)
         except subprocess.CalledProcessError as e:
             raise PluginRuntimeError(module_type, module_fields, e.returncode,
                                      e.output)
