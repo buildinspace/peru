@@ -1,6 +1,0 @@
-{
-  "project_id" : "peru",
-  "conduit_uri" : "https://phabricator.buildinspace.com",
-  "arc.feature.start.default" : "origin/master",
-  "git.default-relative-commit": "HEAD^"
-}

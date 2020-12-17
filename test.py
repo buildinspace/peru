@@ -12,7 +12,7 @@ def get_untracked_files():
     output = subprocess.check_output([
         'git', 'ls-files', '--other', '--directory', '--exclude-standard', '-z'
     ],
-                                     cwd=REPO_ROOT)
+        cwd=REPO_ROOT)
     return set(f for f in output.split(b'\0') if f)
 
 
@@ -36,6 +36,8 @@ def main():
     env = os.environ.copy()
     env['PYTHONPATH'] = REPO_ROOT
     args = sys.argv[1:]
+    # We no longer run --with-coverage in CI, so this branch might bitrot over
+    # time.
     if len(args) > 0 and '--with-coverage' in args:
         args.remove('--with-coverage')
         command_start = ['coverage', 'run']
