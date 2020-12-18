@@ -22,14 +22,16 @@ jobs:
       uses: actions/setup-python@v1
       with:
         python-version: ${{ matrix.python-version }}
-    - name: Set up Homebrew
-      uses: Homebrew/actions/setup-homebrew@master
-      if: matrix.os == 'macOS-latest'
-    - name: Install hg and svn
-      if: matrix.os == 'macOS-latest'
-      run: brew install subversion mercurial
-    - run: pip3 install -r ./requirements-dev.txt
-    - run: python3 --version && python3 test.py -v
+    # Confirm that the `python` maps to the version we just installed.
+    # PowerShell on Windows does this differently than the Unix shells.
+    - run: which python ; python --version ; which pip ; pip --version
       if: matrix.os != 'windows-latest'
-    - run: python --version && python test.py -v
+    - run: get-command python ; python --version ; get-command pip ; pip --version
       if: matrix.os == 'windows-latest'
+    # macOS doesn't currently have Mercurial installed by default.
+    - run: pip install wheel && pip install mercurial
+      if: matrix.os == 'macOS-latest'
+    # Install test dependencies, like flake8.
+    - run: pip install -r ./requirements-dev.txt
+    # Run tests.
+    - run: python test.py -v
