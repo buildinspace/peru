@@ -1,0 +1,4 @@
+sync exe: bat_plugin.bat
+required fields:
+    - filename
+    - message
