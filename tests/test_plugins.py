@@ -326,9 +326,15 @@ class PluginsTest(shared.PeruTest):
     def test_cp_plugin(self):
         self.do_plugin_test("cp", {"path": self.content_dir}, self.content)
 
-    @unittest.skipIf(os.name == 'nt', 'the rsync plugin is written in bash')
+    @unittest.skipIf(os.name == 'nt', 'the rsync plugin is Unix-only')
     def test_rsync_plugin(self):
         self.do_plugin_test("rsync", {"path": self.content_dir}, self.content)
+
+    @unittest.skipIf(os.name != 'nt', 'the bat plugin is Windows-only')
+    def test_bat_plugin(self):
+        self.do_plugin_test(
+            "bat", {"filename": "xyz", "message": "hello Windows"},
+            {"xyz": "hello Windows\n"})
 
     def test_empty_plugin(self):
         self.do_plugin_test("empty", {}, {})
