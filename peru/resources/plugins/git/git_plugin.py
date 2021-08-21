@@ -4,6 +4,7 @@ from collections import namedtuple
 import configparser
 import hashlib
 import os
+import re
 import subprocess
 import sys
 
@@ -167,10 +168,33 @@ def plugin_reup(url, reup):
         print('rev:', output.strip(), file=out_file)
 
 
+def git_default_branch(url) -> str:
+    """
+    With a list of common default branches names, it checks against
+    the available branch list if this possible default branch exists.
+    By default git used to take master as default branch, but newer versions
+    tend to use main, even trunk or development can be found.
+
+    Args:
+        url (str): url from the target repository to be checked.
+    Returns:
+        str: returns a possible match for the git default branch.
+    """
+    repo_path = clone_if_needed(url)
+    default_branches_list = ['master', 'main', 'trunk', 'development']
+    for branch in default_branches_list:
+        output = git(
+            'branch', '-a', git_dir=repo_path, capture_output=True).output
+        parse_output = re.search(r'' + re.escape(branch) + '', output)
+        if parse_output:
+            return branch
+    return 'master'
+
+
 def main():
     URL = os.environ['PERU_MODULE_URL']
-    REV = os.environ['PERU_MODULE_REV'] or 'master'
-    REUP = os.environ['PERU_MODULE_REUP'] or 'master'
+    REV = os.environ['PERU_MODULE_REV'] or git_default_branch(URL)
+    REUP = os.environ['PERU_MODULE_REUP'] or git_default_branch(URL)
 
     command = os.environ['PERU_PLUGIN_COMMAND']
     if command == 'sync':
