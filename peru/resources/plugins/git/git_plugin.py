@@ -4,7 +4,6 @@ from collections import namedtuple
 import configparser
 import hashlib
 import os
-import re
 import subprocess
 import sys
 
@@ -181,20 +180,20 @@ def git_default_branch(url) -> str:
         str: returns a possible match for the git default branch.
     """
     repo_path = clone_if_needed(url)
-    default_branches_list = ['master', 'main', 'trunk', 'development']
+    default_branches_list = ['master', 'main']
     for branch in default_branches_list:
-        output = git(
-            'branch', '-a', git_dir=repo_path, capture_output=True).output
-        parse_output = re.search(r'' + re.escape(branch) + '', output)
-        if parse_output:
+        output = git('show-ref', '--verify', '--quiet', 'refs/heads/' + branch, 
+                    git_dir=repo_path, checked=False, capture_output=True)
+        if output.returncode == 0:
             return branch
     return 'master'
 
 
 def main():
     URL = os.environ['PERU_MODULE_URL']
-    REV = os.environ['PERU_MODULE_REV'] or git_default_branch(URL)
-    REUP = os.environ['PERU_MODULE_REUP'] or git_default_branch(URL)
+    default_branch = git_default_branch(URL)
+    REV = os.environ['PERU_MODULE_REV'] or default_branch
+    REUP = os.environ['PERU_MODULE_REUP'] or default_branch
 
     command = os.environ['PERU_PLUGIN_COMMAND']
     if command == 'sync':
