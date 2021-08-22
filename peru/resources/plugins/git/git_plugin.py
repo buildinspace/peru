@@ -165,10 +165,9 @@ def plugin_reup(url, reup):
 
 def git_default_branch(url) -> str:
     """
-    With a list of common default branches names, it checks against
-    the available branch list if this possible default branch exists.
-    By default git used to take master as default branch, but newer versions
-    tend to use main, even trunk or development can be found.
+    This function checks if the default branch is master.
+    If it is not found, then it assumes it is main.
+    For other default branches, user should use the 'rev' option.
 
     Args:
         url (str): url from the target repository to be checked.
@@ -176,13 +175,12 @@ def git_default_branch(url) -> str:
         str: returns a possible match for the git default branch.
     """
     repo_path = clone_if_needed(url)
-    default_branches_list = ['master', 'main']
-    for branch in default_branches_list:
-        output = git('show-ref', '--verify', '--quiet', 'refs/heads/' + branch,
-                     git_dir=repo_path, checked=False, capture_output=True)
-        if output.returncode == 0:
-            return branch
-    return 'master'
+    output = git('show-ref', '--verify', '--quiet', 'refs/heads/master',
+                 git_dir=repo_path, checked=False, capture_output=True)
+    if output.returncode == 0:
+        return 'master'
+    else:
+        return 'main'
 
 
 def main():
