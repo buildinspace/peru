@@ -40,6 +40,8 @@ def has_clone(url):
 def clone_if_needed(url):
     repo_path = repo_cache_path(url)
     if not has_clone(url):
+        # We look for this print in test, to count the number of clones we did.
+        print('git clone ' + url)
         git('clone', '--mirror', '--progress', url, repo_path)
     return repo_path
 
@@ -56,12 +58,6 @@ def repo_cache_path(url):
     url_hash = hashlib.sha1(url.encode()).hexdigest()
 
     return os.path.join(CACHE_ROOT, url_hash)
-
-
-def clone_and_maybe_print(url):
-    if not has_clone(url):
-        print('git clone ' + url)
-    return clone_if_needed(url)
 
 
 def git_fetch(url, repo_path):
@@ -88,7 +84,7 @@ def already_has_rev(repo, rev):
 
 
 def checkout_tree(url, rev, dest):
-    repo_path = clone_and_maybe_print(url)
+    repo_path = clone_if_needed(url)
     if not already_has_rev(repo_path, rev):
         git_fetch(url, repo_path)
     # If we just use `git checkout rev -- .` here, we get an error when rev is
@@ -182,8 +178,8 @@ def git_default_branch(url) -> str:
     repo_path = clone_if_needed(url)
     default_branches_list = ['master', 'main']
     for branch in default_branches_list:
-        output = git('show-ref', '--verify', '--quiet', 'refs/heads/' + branch, 
-                    git_dir=repo_path, checked=False, capture_output=True)
+        output = git('show-ref', '--verify', '--quiet', 'refs/heads/' + branch,
+                     git_dir=repo_path, checked=False, capture_output=True)
         if output.returncode == 0:
             return branch
     return 'master'

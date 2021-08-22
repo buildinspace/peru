@@ -68,7 +68,7 @@ class PluginsTest(shared.PeruTest):
     def test_git_plugin(self):
         GitRepo(self.content_dir)
         self.do_plugin_test("git", {"url": self.content_dir}, self.content)
-    
+
     def test_git_default_branch(self):
         GitRepo(self.content_dir, init_default_branch='main')
         self.do_plugin_test("git", {"url": self.content_dir}, self.content)
