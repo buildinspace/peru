@@ -186,14 +186,10 @@ class Repo:
 
 
 class GitRepo(Repo):
-    def __init__(self, content_dir, init_default_branch=None):
+    def __init__(self, content_dir, init_default_branch='master'):
         super().__init__(content_dir)
 
-        branch_args = []
-        if init_default_branch is not None:
-            branch_args = ['--initial-branch', init_default_branch]
-        # Note the * character. This has no effect if the list is empty.
-        self.run('git', 'init', *branch_args)
+        self.run('git', 'init', '--initial-branch', init_default_branch)
         self.run('git', 'config', 'user.name', 'peru')
         self.run('git', 'config', 'user.email', 'peru')
         self.run('git', 'add', '-A')
