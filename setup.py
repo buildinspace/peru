@@ -11,7 +11,7 @@ import fastentrypoints
 # https://packaging.python.org/en/latest/distributing.html
 
 project_root = os.path.dirname(__file__)
-peru_sh_path = os.path.join(project_root, 'peru.sh')
+readme_file = os.path.join(project_root, 'README.md')
 module_root = os.path.join(project_root, 'peru')
 version_file = os.path.join(module_root, 'VERSION')
 
@@ -40,6 +40,11 @@ def get_install_requires():
     return dependencies
 
 
+def readme_text():
+    with open(readme_file) as f:
+        return f.read().strip()
+
+
 setuptools.setup(
     name='peru',
     description='A tool for fetching code',
@@ -54,4 +59,6 @@ setuptools.setup(
         'peru=peru.main:main',
     ]},
     install_requires=get_install_requires(),
+    long_description=readme_text(),
+    long_description_content_type='text/markdown',
 )
