@@ -112,7 +112,7 @@ curl module pathogen:
 
 git module vim-solarized:
     url: https://github.com/altercation/vim-colors-solarized
-    # Fetch this exact commit, instead of master.
+    # Fetch this exact commit, instead of master or main.
     rev: 7a7e5c8818d717084730133ed6b84a3ffc9d0447
 ```
 
@@ -130,8 +130,8 @@ install Pathogen.
 
 The `vim-solarized` module gets copied into its own directory under `bundle`,
 which is where Pathogen will look for it. Note that it has an explicit `rev`
-field, which tells peru to fetch that exact revision, rather than the
-default branch (`master` in git). That's a **Super Serious Best Practice™**,
+field, which tells peru to fetch that exact revision, rather than the default
+branch (`master` or `main` in git). That's a **Super Serious Best Practice™**,
 because it means your dependencies will always be consistent, even when you
 look at commits from a long time ago.
 
@@ -171,14 +171,14 @@ index 15c758d..7f0e26b 100644
 
 Peru made three changes:
 - The `dircolors` module, which didn't have a `rev` before, just got one. By
-  default for `git`, this is the current `master`. To change that, you can set
-  the `reup` field to the name of a different branch.
+  default for `git`, this is the current `master` or `main`. To change that,
+  you can set the `reup` field to the name of a different branch.
 - The `pathogen` module got a `sha1` field. Unlike `git`, a `curl` module is
   plain old HTTP, so it's stuck downloading whatever file is at the `url`. But
   it will check this hash after the download is finished, and it will raise an
   error if there's a mismatch.
 - The `vim-solarized` module had a hash before, but it's been updated. Again,
-  the new value came from `master` by default.
+  the new value comes from `master` or `main` by default.
 
 At this point, you'll probably want to make a new commit of `peru.yaml` to
 record the version bumps. You can do this every so often to keep your plugins
