@@ -186,10 +186,10 @@ class Repo:
 
 
 class GitRepo(Repo):
-    def __init__(self, content_dir):
+    def __init__(self, content_dir, init_default_branch='master'):
         super().__init__(content_dir)
 
-        self.run('git', 'init')
+        self.run('git', 'init', '--initial-branch', init_default_branch)
         self.run('git', 'config', 'user.name', 'peru')
         self.run('git', 'config', 'user.email', 'peru')
         self.run('git', 'add', '-A')

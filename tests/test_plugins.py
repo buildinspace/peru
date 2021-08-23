@@ -69,6 +69,10 @@ class PluginsTest(shared.PeruTest):
         GitRepo(self.content_dir)
         self.do_plugin_test("git", {"url": self.content_dir}, self.content)
 
+    def test_git_default_branch(self):
+        GitRepo(self.content_dir, init_default_branch='main')
+        self.do_plugin_test("git", {"url": self.content_dir}, self.content)
+
     def test_empty_git_rev(self):
         empty_dir = shared.create_dir()
         GitRepo(empty_dir)
