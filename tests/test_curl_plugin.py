@@ -2,6 +2,7 @@ import hashlib
 import importlib.machinery
 import io
 from os.path import abspath, join, dirname
+import urllib
 
 import peru
 import shared
@@ -100,3 +101,14 @@ class CurlPluginTest(shared.PeruTest):
             tar_archive = shared.test_resources / (case + '.tar')
             with self.assertRaises(curl_plugin.EvilArchiveError):
                 curl_plugin.extract_tar(str(tar_archive), dest)
+
+    def test_request_has_user_agent_header(self):
+        actual = curl_plugin.build_request("http://example.test")
+        print(actual.header_items())
+        self.assertTrue(actual.has_header("User-agent"))
+        ua_header = actual.get_header("User-agent")
+        peru_component, urllib_component = ua_header.split(' ')
+        _, peru_version = peru_component.split('/')
+        _, urllib_version = urllib_component.split('/')
+        self.assertEqual(peru.main.get_version(), peru_version)
+        self.assertEqual(urllib.request.__version__, urllib_version)
