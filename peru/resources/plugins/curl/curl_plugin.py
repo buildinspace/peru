@@ -15,14 +15,18 @@ import urllib.request
 import zipfile
 
 
-def build_request(url):
-    request = Request(url)
+def add_user_agent_to_request(request):
     components = [
         "peru/%s" % peru.main.get_version(),
         urllib.request.URLopener.version
     ]
     request.add_header("User-agent", " ".join(components))
     return request
+
+
+def build_request(url):
+    request = Request(url)
+    return add_user_agent_to_request(request)
 
 
 def get_request_filename(request):
