@@ -15,14 +15,10 @@ import urllib.request
 import zipfile
 
 
-def peru_version():
-    return peru.main.get_version()
-
-
 def build_request(url):
     request = Request(url)
     components = [
-        f"peru/{peru_version()}",
+        "peru/%s" % peru.main.get_version(),
         urllib.request.URLopener.version
     ]
     request.add_header("User-agent", " ".join(components))
