@@ -104,7 +104,6 @@ class CurlPluginTest(shared.PeruTest):
 
     def test_request_has_user_agent_header(self):
         actual = curl_plugin.build_request("http://example.test")
-        print(actual.header_items())
         self.assertTrue(actual.has_header("User-agent"))
         ua_header = actual.get_header("User-agent")
         peru_component, urllib_component = ua_header.split(' ')
