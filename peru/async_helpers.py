@@ -10,23 +10,28 @@ import traceback
 
 from .error import PrintableError
 
-# The default event loop on Windows doesn't support subprocesses, so we need to
-# use the proactor loop. See:
+
+# Prior to Python 3.8 (which switched to the ProactorEventLoop by default on
+# Windows), the default event loop on Windows doesn't support subprocesses, so
+# we need to use the proactor loop. See:
 # https://docs.python.org/3/library/asyncio-eventloops.html#available-event-loops
 # Because the event loop is essentially a global variable, we have to set this
 # at import time. Otherwise asyncio objects that get instantiated early
 # (particularly Locks and Semaphores) could grab a reference to the wrong loop.
 # TODO: Importing for side effects isn't very clean. Find a better way.
 if os.name == 'nt':
-    asyncio.set_event_loop(asyncio.ProactorEventLoop())
+    EVENT_LOOP = asyncio.ProactorEventLoop()
+else:
+    EVENT_LOOP = asyncio.new_event_loop()
+asyncio.set_event_loop(EVENT_LOOP)
 
 # We also need to make sure the event loop is explicitly closed, to avoid a bug
 # in _UnixSelectorEventLoop.__del__. See http://bugs.python.org/issue23548.
-atexit.register(asyncio.get_event_loop().close)
+atexit.register(EVENT_LOOP.close)
 
 
 def run_task(coro):
-    return asyncio.get_event_loop().run_until_complete(coro)
+    return EVENT_LOOP.run_until_complete(coro)
 
 
 class GatheredExceptions(PrintableError):

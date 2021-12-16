@@ -1,7 +1,8 @@
-import asyncio
 import io
 import re
 import sys
+
+from . import async_helpers
 
 # The display classes deal with output from subprocesses. The FancyDisplay
 # gives a multi-line, real-time view of each running process that looks nice in
@@ -176,7 +177,7 @@ class FancyDisplay(BaseDisplay):
         if self._draw_later_handle:
             # There is already a draw pending.
             return
-        self._draw_later_handle = asyncio.get_event_loop().call_later(
+        self._draw_later_handle = async_helpers.EVENT_LOOP.call_later(
             0.1, self._draw)
 
     def _cancel_draw_later(self):

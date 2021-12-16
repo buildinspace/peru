@@ -8,7 +8,10 @@ import tempfile
 
 import docopt
 
+# Unfortunately we need to make sure to keep this import above the others,
+# because async_helpers needs to set the global event loop at import time.
 from .async_helpers import gather_coalescing_exceptions, run_task
+
 from . import compat
 from .error import PrintableError
 from . import imports
