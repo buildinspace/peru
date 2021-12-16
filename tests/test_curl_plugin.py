@@ -1,17 +1,19 @@
 import hashlib
-import importlib.machinery
+import importlib.util
 import io
 from os.path import abspath, join, dirname
 
 import peru
 import shared
 
+# https://docs.python.org/3/library/importlib.html#importing-a-source-file-directly
 curl_plugin_path = abspath(
     join(
         dirname(peru.__file__), 'resources', 'plugins', 'curl',
         'curl_plugin.py'))
-loader = importlib.machinery.SourceFileLoader("curl_plugin", curl_plugin_path)
-curl_plugin = loader.load_module()
+spec = importlib.util.spec_from_file_location("curl_plugin", curl_plugin_path)
+curl_plugin = importlib.util.module_from_spec(spec)
+spec.loader.exec_module(curl_plugin)
 
 
 class MockRequest:

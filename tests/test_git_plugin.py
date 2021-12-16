@@ -4,12 +4,14 @@ from os.path import abspath, join, dirname
 import peru
 import shared
 
+# https://docs.python.org/3/library/importlib.html#importing-a-source-file-directly
 git_plugin_path = abspath(
     join(
         dirname(peru.__file__), 'resources', 'plugins', 'git',
         'git_plugin.py'))
-loader = importlib.machinery.SourceFileLoader("git_plugin", git_plugin_path)
-git_plugin = loader.load_module()
+spec = importlib.util.spec_from_file_location("git_plugin", git_plugin_path)
+git_plugin = importlib.util.module_from_spec(spec)
+spec.loader.exec_module(git_plugin)
 
 
 # NOTE: The sync/reup functionality for the git plugin is tested in
