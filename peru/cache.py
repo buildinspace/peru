@@ -154,10 +154,11 @@ class GitSession:
         return len(diff_output) == 0
 
     async def get_modified_files_skipping_deletes(self):
-        # We want to ignore deleted files, so we include every possible value
-        # of --diff-filter except 'D'.
+        # We want to ignore deleted files, so we exclude only deletes using
+        # 'd' instead of including all of the capital letter forms.
+        # https://git-scm.com/docs/git-diff#Documentation/git-diff.txt---diff-filterACDMRTUXB82308203
         diff_output = await self.git('diff-files', '-z', '--name-only',
-                                     '--diff-filter=ACMRTUXB')
+                                     '--diff-filter=d')
         return [name for name in diff_output.split('\x00') if name]
 
     async def get_new_files_in_tree(self, previous_tree, new_tree):
