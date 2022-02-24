@@ -33,9 +33,13 @@ It also happens to be an anagram for "[reup](#magical-updates)".
 
 ## Installation
 
-Peru supports Linux, Mac, and Windows. It requires **python** (3.5 or later)
+Peru supports Linux, macOS, and Windows. It requires **python** (3.5 or later)
 and **git**, and optionally **hg** and **svn** if you want fetch from those
-types of repos. Use [pip](https://pip.pypa.io/en/latest/) to install it:
+types of repos. 
+
+### Using `pip`
+
+Use [pip](https://pip.pypa.io/en/latest/) to install it:
 
 ```bash
 pip install peru
@@ -46,8 +50,14 @@ need to use `sudo` with that, and Python 3's pip might be called `pip3`.
 Also, if you have to use Python 3.3 or 3.4, those were supported up to
 peru 1.1.4.
 
-On Arch, you can install `peru` [from the
+### Using OS package managers
+
+On Arch Linux, you can install `peru` [from the
 AUR](https://aur.archlinux.org/packages/peru).
+
+Homebrew has a [Peru formula](https://formulae.brew.sh/formula/peru) for macOS
+and Linux. `brew install peru` will install it running on the latest Python
+version that Homebrew supports.
 
 ## Getting Started
 
