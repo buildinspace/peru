@@ -33,9 +33,16 @@ It also happens to be an anagram for "[reup](#magical-updates)".
 
 ## Installation
 
-Peru supports Linux, macOS, and Windows. It requires **python** (3.5 or later)
-and **git**, and optionally **hg** and **svn** if you want fetch from those
-types of repos. 
+Peru supports Linux, macOS, and Windows. It requires:
+
+* `python` 3.5 or later
+* `git`, any version
+* optionally, if you want fetch from these types of repos:
+  * `hg`, any version
+  * `svn`, any version
+
+`git` is required even if you are not retrieving a git-based module because
+Peru uses it internally.
 
 ### Using `pip`
 
@@ -49,6 +56,8 @@ Note that depending on how Python is set up on your machine, you might
 need to use `sudo` with that, and Python 3's pip might be called `pip3`.
 Also, if you have to use Python 3.3 or 3.4, those were supported up to
 peru 1.1.4.
+
+Don't forget to install `git`, too, however is appropriate for your OS.
 
 ### Using OS package managers
 
