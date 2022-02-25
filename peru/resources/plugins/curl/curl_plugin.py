@@ -9,8 +9,24 @@ import sys
 import tarfile
 from urllib.error import HTTPError, URLError
 from urllib.parse import urlsplit
+from urllib.request import Request
+import peru.main
 import urllib.request
 import zipfile
+
+
+def add_user_agent_to_request(request):
+    components = [
+        "peru/%s" % peru.main.get_version(),
+        urllib.request.URLopener.version
+    ]
+    request.add_header("User-agent", " ".join(components))
+    return request
+
+
+def build_request(url):
+    request = Request(url)
+    return add_user_agent_to_request(request)
 
 
 def get_request_filename(request):
@@ -80,7 +96,7 @@ def plugin_sync(url, sha1):
         # Download directly to the destination dir.
         download_dir = dest
 
-    with urllib.request.urlopen(url) as request:
+    with urllib.request.urlopen(build_request(url)) as request:
         filename = os.environ['PERU_MODULE_FILENAME']
         if not filename:
             filename = get_request_filename(request)
@@ -151,7 +167,7 @@ class EvilArchiveError(RuntimeError):
 
 def plugin_reup(url, sha1):
     reup_output = os.environ['PERU_REUP_OUTPUT']
-    with urllib.request.urlopen(url) as request:
+    with urllib.request.urlopen(build_request(url)) as request:
         digest = download_file(request, None)
     with open(reup_output, 'w') as output_file:
         print('sha1:', digest, file=output_file)
