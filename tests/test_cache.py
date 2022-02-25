@@ -1,5 +1,6 @@
 import os
 import time
+import unittest
 
 import peru.cache
 from shared import assert_contents, create_dir, make_synchronous, PeruTest, \
@@ -93,6 +94,10 @@ class CacheTest(PeruTest):
         await self.cache.export_tree(tree, out_dir)
         assert_contents(out_dir, expected_content)
 
+    @unittest.skip(
+        "broken by Git 2.34, "
+        "see https://github.com/buildinspace/peru/issues/221"
+    )
     @make_synchronous
     async def test_export_with_existing_files(self):
         # Create a dir with an existing file that doesn't conflict.
