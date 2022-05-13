@@ -52,6 +52,10 @@ peru 1.1.4.
 
 ### Using OS package managers
 
+<a href="https://repology.org/project/peru/versions">
+    <img src="https://repology.org/badge/vertical-allrepos/peru.svg" alt="Packaging status" align="right">
+</a>
+
 On Arch Linux, you can install `peru` [from the
 AUR](https://aur.archlinux.org/packages/peru).
 
