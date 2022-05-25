@@ -139,12 +139,6 @@ class GitSession:
         assert '..' not in prefix_path.parts
         prefix_arg = prefix_path.as_posix()
         prefix_arg = '' if prefix_arg == '.' else prefix_arg
-        # The git docs say that a --prefix value must end in a slash. That
-        # doesn't seem to be true in practice, but better safe than sorry. Note
-        # that git treats '--prefix=/' as the root of the tree, so this doesn't
-        # break that case.
-        if not prefix_arg.endswith('/'):
-            prefix_arg += '/'
         # Normally read-tree with --prefix wants to make sure changes don't
         # stomp on the working copy. The -i flag ignores the working copy.
         await self.git('read-tree', '-i', '--prefix', prefix_arg, tree)
