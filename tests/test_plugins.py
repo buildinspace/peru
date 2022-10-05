@@ -7,6 +7,7 @@ import os
 from pathlib import Path
 import shutil
 import subprocess
+import sys
 import textwrap
 import unittest
 
@@ -14,6 +15,9 @@ from peru.async_helpers import run_task
 import peru.plugin as plugin
 import shared
 from shared import SvnRepo, GitRepo, HgRepo, assert_contents
+
+
+HG_MINIMUM_PYTHON_VERSION = (3, 6)
 
 
 class TestDisplayHandle(io.StringIO):
@@ -78,6 +82,10 @@ class PluginsTest(shared.PeruTest):
         GitRepo(empty_dir)
         self.do_plugin_test('git', {'url': empty_dir}, {})
 
+    @unittest.skipIf(
+        sys.version_info < HG_MINIMUM_PYTHON_VERSION,
+        "Python too old for hg",
+    )
     def test_hg_plugin(self):
         HgRepo(self.content_dir)
         self.do_plugin_test("hg", {"url": self.content_dir}, self.content)
@@ -182,6 +190,10 @@ class PluginsTest(shared.PeruTest):
         self.assertEqual(output.count("git clone"), 0)
         self.assertEqual(output.count("git fetch"), 1)
 
+    @unittest.skipIf(
+        sys.version_info < HG_MINIMUM_PYTHON_VERSION,
+        "Python too old for hg",
+    )
     def test_hg_plugin_multiple_fetches(self):
         content_repo = HgRepo(self.content_dir)
         head = content_repo.run('hg', 'identify', '--debug', '-r',
@@ -230,6 +242,10 @@ class PluginsTest(shared.PeruTest):
                                              plugin_fields)
         self.assertDictEqual(expected_output, output)
 
+    @unittest.skipIf(
+        sys.version_info < HG_MINIMUM_PYTHON_VERSION,
+        "Python too old for hg",
+    )
     def test_hg_plugin_reup(self):
         repo = HgRepo(self.content_dir)
         default_tip = repo.run('hg', 'identify', '--debug', '-r',
