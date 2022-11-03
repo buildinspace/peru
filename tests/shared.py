@@ -180,8 +180,13 @@ class Repo:
     def __init__(self, path):
         self.path = path
 
-    def run(self, *command):
-        output = subprocess.check_output(command, cwd=self.path)
+    def run(self, *command, env=None):
+        full_env = None
+        if env is not None:
+            full_env = dict(os.environ)
+            for key, val in env.items():
+                full_env[key] = val
+        output = subprocess.check_output(command, cwd=self.path, env=full_env)
         return output.decode('utf8').strip()
 
 

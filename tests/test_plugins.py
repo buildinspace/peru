@@ -112,7 +112,7 @@ class PluginsTest(shared.PeruTest):
         submodule_dir = shared.create_dir({'another': 'file'})
         submodule_repo = GitRepo(submodule_dir)
         content_repo.run('git', 'submodule', 'add', '-q', submodule_dir,
-                         'subdir/')
+                         'subdir/', env={"GIT_ALLOW_PROTOCOL": "file"})
         content_repo.run('git', 'commit', '-m', 'submodule commit')
         expected_content = self.content.copy()
         expected_content['subdir/another'] = 'file'
@@ -160,7 +160,7 @@ class PluginsTest(shared.PeruTest):
         submodule_basename = os.path.basename(submodule_dir)
         relative_path = "../" + submodule_basename
         content_repo.run('git', 'submodule', 'add', '-q', relative_path,
-                         'subdir/')
+                         'subdir/', env={"GIT_ALLOW_PROTOCOL": "file"})
         content_repo.run('git', 'commit', '-m', 'submodule commit')
         expected_content = self.content.copy()
         expected_content['subdir/another'] = 'file'
