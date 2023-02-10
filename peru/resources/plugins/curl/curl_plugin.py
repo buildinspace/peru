@@ -126,13 +126,17 @@ def plugin_sync(url, sha1):
 
 def extract_tar(archive_path, dest):
     with tarfile.open(archive_path) as t:
-        validate_filenames(info.path for info in t.getmembers())
+        for info in t.getmembers():
+            validate_filename(info.path)
+            if info.issym():
+                validate_symlink(info.path, info.linkname)
         t.extractall(dest)
 
 
 def extract_zip(archive_path, dest):
     with zipfile.ZipFile(archive_path) as z:
-        validate_filenames(z.namelist())
+        for name in z.namelist():
+            validate_filename(name)
         z.extractall(dest)
         # Set file permissions. Tar does this by default, but with zip we need
         # to do it ourselves.
@@ -153,11 +157,30 @@ def extract_zip(archive_path, dest):
                     os.chmod(os.path.join(dest, info.filename), 0o755)
 
 
-def validate_filenames(names):
-    for name in names:
-        path = pathlib.PurePosixPath(name)
-        if path.is_absolute() or '..' in path.parts:
-            raise EvilArchiveError('Illegal path in archive: ' + name)
+def validate_filename(name):
+    path = pathlib.PurePosixPath(name)
+    if path.is_absolute() or ".." in path.parts:
+        raise EvilArchiveError("Illegal path in archive: " + name)
+
+
+def validate_symlink(name, target):
+    # We might do this twice but that's fine.
+    validate_filename(name)
+
+    allowed_parent_parts = len(pathlib.PurePosixPath(name).parts) - 1
+
+    target_path = pathlib.PurePosixPath(target)
+    if target_path.is_absolute():
+        raise EvilArchiveError("Illegal symlink target in archive: " + target)
+    leading_parent_parts = 0
+    for part in target_path.parts:
+        if part != "..":
+            break
+        leading_parent_parts += 1
+    if leading_parent_parts > allowed_parent_parts:
+        raise EvilArchiveError("Illegal symlink target in archive: " + target)
+    if ".." in target_path.parts[leading_parent_parts:]:
+        raise EvilArchiveError("Illegal symlink target in archive: " + target)
 
 
 class EvilArchiveError(RuntimeError):

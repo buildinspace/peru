@@ -104,6 +104,21 @@ class CurlPluginTest(shared.PeruTest):
             with self.assertRaises(curl_plugin.EvilArchiveError):
                 curl_plugin.extract_tar(str(tar_archive), dest)
 
+    def test_evil_symlink_archives(self):
+        """Even worse than archives containing bad paths, an archive could
+        contain a *symlink* pointing to a bad path. Then a subsequent entry in
+        the *same* archive could write through the symlink."""
+        dest = shared.create_dir()
+        for case in ["illegal_symlink_dots", "illegal_symlink_absolute"]:
+            tar_archive = shared.test_resources / (case + ".tar")
+            with self.assertRaises(curl_plugin.EvilArchiveError):
+                curl_plugin.extract_tar(str(tar_archive), dest)
+        # But leading dots should be allowed in symlinks, as long as they don't
+        # escape the root of the archive.
+        for case in ["legal_symlink_dots"]:
+            tar_archive = shared.test_resources / (case + ".tar")
+            curl_plugin.extract_tar(str(tar_archive), dest)
+
     def test_request_has_user_agent_header(self):
         actual = curl_plugin.build_request("http://example.test")
         self.assertTrue(actual.has_header("User-agent"))
