@@ -35,6 +35,7 @@ jobs:
       if: matrix.os != 'windows-latest'
     - run: get-command python ; python --version ; get-command pip ; pip --version
       if: matrix.os == 'windows-latest'
+    - run: git --version
     # macOS doesn't currently have Mercurial installed by default.
     - run: pip install wheel && pip install mercurial
       if: matrix.os == 'macOS-latest'
