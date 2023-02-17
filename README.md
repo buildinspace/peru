@@ -136,7 +136,7 @@ git module vim-solarized:
 
 git module dracula:
     url: https://github.com/dracula/vim
-    fetch-tags: true
+    reup-tag: true
     rev: v1.5.0
 ```
 
@@ -194,7 +194,7 @@ index 15c758d..7f0e26b 100644
 
  git module dracula:
      url: https://github.com/dracula/vim
-     fetch-tags: true
+     reup-tag: true
 -    rev: v1.5.0
 +    rev: v2.0.0
 ```
@@ -242,7 +242,7 @@ For cloning repos. These types all provide the same fields:
 - `rev`: optional, the specific revision/branch/tag to fetch
 - `reup`: optional, the branch/tag to get the latest rev from when running
   `peru reup`
-- `fetch-tags`: optional, whether to fetch the latest tag instead of the latest commit hash when running `peru reup`
+- `reup-tag`: optional, whether to update the rev with the latest tag instead of the latest commit hash when running `peru reup`
 
 The `git` type also supports setting `submodules: false` to skip
 fetching git submodules. Otherwise they're included by default.
