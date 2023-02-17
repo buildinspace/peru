@@ -6,5 +6,6 @@ optional fields:
     - rev
     - reup
     - submodules
+    - fetch-tags
 cache fields:
     - url
