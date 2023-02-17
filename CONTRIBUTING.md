@@ -80,6 +80,17 @@ If you are working on a new feature please add tests to ensure the feature works
 
 Tests are stored in `peru/tests` and verify the current implementation to see how your test will fit in.
 
+## Installing Locally
+
+To test your changes, you can install/uninstall the project locally:
+
+```bash
+make install
+```
+```bash
+make uninstall
+```
+
 ## Making a Pull Request
 
 Once you have made your changes and are ready to make a Pull Request please ensure tests and linting pass locally before pushing to GitHub.

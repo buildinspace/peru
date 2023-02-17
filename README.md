@@ -133,6 +133,11 @@ git module vim-solarized:
     url: https://github.com/altercation/vim-colors-solarized
     # Fetch this exact commit, instead of master or main.
     rev: 7a7e5c8818d717084730133ed6b84a3ffc9d0447
+
+git module dracula:
+    url: https://github.com/dracula/vim
+    fetch-tags: true
+    rev: v1.5.0
 ```
 
 The contents of the `dircolors` module are copied to the root of our repo. The
@@ -186,6 +191,12 @@ index 15c758d..7f0e26b 100644
      url: https://github.com/altercation/vim-colors-solarized
 -    rev: 7a7e5c8818d717084730133ed6b84a3ffc9d0447
 +    rev: 528a59f26d12278698bb946f8fb82a63711eec21
+
+ git module dracula:
+     url: https://github.com/dracula/vim
+     fetch-tags: true
+-    rev: v1.5.0
++    rev: v2.0.0
 ```
 
 Peru made three changes:
@@ -231,6 +242,7 @@ For cloning repos. These types all provide the same fields:
 - `rev`: optional, the specific revision/branch/tag to fetch
 - `reup`: optional, the branch/tag to get the latest rev from when running
   `peru reup`
+- `fetch-tags`: optional, whether to fetch the latest tag instead of the latest commit hash when running `peru reup`
 
 The `git` type also supports setting `submodules: false` to skip
 fetching git submodules. Otherwise they're included by default.
