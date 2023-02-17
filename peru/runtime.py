@@ -61,9 +61,12 @@ class _Runtime:
         self.cache = await cache.Cache(self.cache_dir)
 
     def _set_paths(self, args, env):
-        explicit_peru_file = args['--file']
-        explicit_sync_dir = args['--sync-dir']
         explicit_basename = args['--file-basename']
+        explicit_peru_file = os.path.abspath(
+            args['--file']) if args['--file'] else None
+        explicit_sync_dir = os.path.abspath(
+            args['--sync-dir']) if args['--sync-dir'] else None
+
         if explicit_peru_file and explicit_basename:
             raise CommandLineError(
                 'Cannot use both --file and --file-basename at the same time.')
@@ -77,15 +80,16 @@ class _Runtime:
             basename = explicit_basename or parser.DEFAULT_PERU_FILE_NAME
             self.peru_file = find_project_file(os.getcwd(), basename)
             self.sync_dir = explicit_sync_dir
-
         else:
             basename = explicit_basename or parser.DEFAULT_PERU_FILE_NAME
             self.peru_file = find_project_file(os.getcwd(), basename)
             self.sync_dir = os.path.dirname(self.peru_file)
-        self.state_dir = (args['--state-dir']
-                          or os.path.join(self.sync_dir, '.peru'))
-        self.cache_dir = (args['--cache-dir'] or env.get('PERU_CACHE_DIR')
-                          or os.path.join(self.state_dir, 'cache'))
+
+        self.state_dir = os.path.abspath(
+            args['--state-dir']) if args['--state-dir'] else os.path.join(self.sync_dir, '.peru')
+
+        self.cache_dir = os.path.abspath(
+            args['--cache-dir']) if args['--cache-dir'] else os.path.join(self.state_dir, 'cache')
 
     def tmp_dir(self):
         dir = tempfile.TemporaryDirectory(dir=self._tmp_root)
