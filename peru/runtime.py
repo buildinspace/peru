@@ -70,9 +70,14 @@ class _Runtime:
         if explicit_peru_file and explicit_sync_dir:
             self.peru_file = explicit_peru_file
             self.sync_dir = explicit_sync_dir
-        elif explicit_peru_file or explicit_sync_dir:
-            raise CommandLineError('If the --file or --sync-dir is set, '
-                                   'the other must also be set.')
+        elif explicit_peru_file and not explicit_sync_dir:
+            self.peru_file = explicit_peru_file
+            self.sync_dir = os.path.dirname(self.peru_file)
+        elif not explicit_peru_file and explicit_sync_dir:
+            basename = explicit_basename or parser.DEFAULT_PERU_FILE_NAME
+            self.peru_file = find_project_file(os.getcwd(), basename)
+            self.sync_dir = explicit_sync_dir
+
         else:
             basename = explicit_basename or parser.DEFAULT_PERU_FILE_NAME
             self.peru_file = find_project_file(os.getcwd(), basename)
