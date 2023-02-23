@@ -85,11 +85,17 @@ class _Runtime:
             self.peru_file = find_project_file(os.getcwd(), basename)
             self.sync_dir = os.path.dirname(self.peru_file)
 
-        self.state_dir = os.path.abspath(
-            args['--state-dir']) if args['--state-dir'] else os.path.join(self.sync_dir, '.peru')
+        if args['--state-dir']:
+            self.state_dir = os.path.abspath(args['--state-dir'])
+        else:
+            self.state_dir = os.path.join(self.sync_dir, '.peru')
 
-        self.cache_dir = os.path.abspath(
-            args['--cache-dir']) if args['--cache-dir'] else os.path.join(self.state_dir, 'cache')
+        if args['--cache-dir']:
+            self.cache_dir = os.path.abspath(args['--cache-dir'])
+        elif env.get('PERU_CACHE_DIR'):
+            self.cache_dir = env.get('PERU_CACHE_DIR')
+        else:
+            self.cache_dir = os.path.join(self.state_dir, 'cache')
 
     def tmp_dir(self):
         dir = tempfile.TemporaryDirectory(dir=self._tmp_root)
