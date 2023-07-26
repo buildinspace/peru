@@ -10,14 +10,18 @@ import tarfile
 from urllib.error import HTTPError, URLError
 from urllib.parse import urlsplit
 from urllib.request import Request
-import peru.main
 import urllib.request
 import zipfile
+
+try:
+    from peru.main import get_version
+except ModuleNotFoundError:
+    get_version = None
 
 
 def add_user_agent_to_request(request):
     components = [
-        "peru/%s" % peru.main.get_version(),
+        "peru/%s" % get_version() if get_version else "peru",
         urllib.request.URLopener.version
     ]
     request.add_header("User-agent", " ".join(components))
