@@ -13,15 +13,8 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        python-version: ["3.5", "3.6", "3.7", "3.8", "3.9", "3.10", "3.11", "3.12"]
+        python-version: ["3.8", "3.9", "3.10", "3.11", "3.12"]
         os: [ubuntu-latest, windows-latest, macOS-latest]
-        exclude:
-          # No longer supported on GitHub CI.
-          - python-version: 3.5
-            os: "ubuntu-latest"
-          - python-version: 3.6
-            os: "ubuntu-latest"
-
 
     steps:
     - uses: actions/checkout@v4
