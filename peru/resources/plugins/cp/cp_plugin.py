@@ -1,9 +1,11 @@
 #! /usr/bin/env python3
 
-import distutils.dir_util
 import os
+import shutil
 
-distutils.dir_util.copy_tree(
+shutil.copytree(
     os.environ['PERU_MODULE_PATH'],
     os.environ['PERU_SYNC_DEST'],
-    preserve_symlinks=True)
+    symlinks=True,
+    dirs_exist_ok=True,
+)
