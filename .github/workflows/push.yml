@@ -29,7 +29,9 @@ jobs:
     - run: get-command python ; python --version ; get-command pip ; pip --version
       if: matrix.os == 'windows-latest'
     - run: git --version
-    # macOS doesn't currently have Mercurial installed by default.
+    # macOS doesn't currently have hg or svnadmin installed by default.
+    - run: brew install subversion
+      if: matrix.os == 'macOS-latest'
     - run: pip install wheel && pip install mercurial
       if: matrix.os == 'macOS-latest'
     # Install test dependencies, like flake8.
