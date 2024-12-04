@@ -130,7 +130,16 @@ def extract_tar(archive_path, dest):
             validate_filename(info.path)
             if info.issym():
                 validate_symlink(info.path, info.linkname)
-        t.extractall(dest)
+        # Python 3.12 added the `filter` kwarg, which should make our
+        # validation redundant. (It was also added to patch releases of earlier
+        # Python versions.) Python 3.13 made it a warning to omit this
+        # argument, because Python 3.14 will change the default to "data".
+        # That's the behavior we want, and specifying it here lets us get it on
+        # Python 3.12/3.13 and silences the warning.
+        kwargs = {}
+        if sys.version_info >= (3, 12):
+            kwargs["filter"] = "data"
+        t.extractall(dest, **kwargs)
 
 
 def extract_zip(archive_path, dest):
