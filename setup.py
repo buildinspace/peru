@@ -34,7 +34,7 @@ def get_all_resources_filepaths():
 
 
 def get_install_requires():
-    dependencies = ['docopt', 'PyYAML']
+    dependencies = ['docopt-ng', 'PyYAML']
     if sys.version_info < (3, 5):
         raise RuntimeError('The minimum supported Python version is 3.5.')
     return dependencies

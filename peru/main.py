@@ -316,7 +316,7 @@ def merged_args_dicts(global_args, subcommand_args):
 
 
 def docopt_parse_args(argv):
-    args = docopt.docopt(__doc__, argv, help=False, options_first=True)
+    args = docopt.docopt(__doc__, argv, default_help=False, options_first=True)
     command = args['<command>']
     # Skip further parsing for cases like `peru badcommand` (because there is
     # no docopt), `peru help <cmd>` (because help is a fake command also with
@@ -325,7 +325,10 @@ def docopt_parse_args(argv):
     if command in COMMAND_DOCS and not args['--help']:
         command_doc = COMMAND_DOCS[command]
         command_argv = [command] + args['<args>']
-        command_args = docopt.docopt(command_doc, command_argv, help=False)
+        command_args = docopt.docopt(
+            command_doc,
+            command_argv,
+            default_help=False)
         args = merged_args_dicts(args, command_args)
     return args
 
