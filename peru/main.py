@@ -6,7 +6,8 @@ import os
 import sys
 import tempfile
 
-import docopt
+# vendored
+from . import docopt
 
 # Unfortunately we need to make sure to keep this import above the others,
 # because async_helpers needs to set the global event loop at import time.

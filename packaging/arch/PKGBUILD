@@ -13,7 +13,7 @@ pkgrel=1
 arch=('any')
 # Asyncio and pathlib are standard in Python 3.4, so they're not in the
 # dependencies list.
-depends=(python python-yaml python-docopt git)
+depends=(python python-yaml git)
 makedepends=(python-setuptools)
 optdepends=(
   'mercurial: fetching from hg repos'

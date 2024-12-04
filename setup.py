@@ -34,7 +34,7 @@ def get_all_resources_filepaths():
 
 
 def get_install_requires():
-    dependencies = ['docopt-ng', 'PyYAML']
+    dependencies = ['PyYAML']
     if sys.version_info < (3, 5):
         raise RuntimeError('The minimum supported Python version is 3.5.')
     return dependencies
@@ -53,7 +53,7 @@ setuptools.setup(
     author="Jack O'Connor <oconnor663@gmail.com>, "
     "Sean Olson <olson.sean.k@gmail.com>",
     license='MIT',
-    packages=['peru'],
+    packages=['peru', 'peru.docopt'],
     package_data={'peru': get_all_resources_filepaths()},
     entry_points={'console_scripts': [
         'peru=peru.main:main',
