@@ -153,12 +153,16 @@ def plugin_sync(url, rev):
     checkout_tree(url, rev, os.environ['PERU_SYNC_DEST'])
 
 
-def plugin_reup(url, reup):
+def plugin_reup(url, reup, reup_tag):
     reup_output = os.environ['PERU_REUP_OUTPUT']
     repo_path = clone_if_needed(url)
     git_fetch(url, repo_path)
-    output = git(
-        'rev-parse', reup, git_dir=repo_path, capture_output=True).output
+    if reup_tag:
+        output = git('describe', '--tags', '--abbrev=0', git_dir=repo_path,
+                     capture_output=True).output
+    else:
+        output = git(
+            'rev-parse', reup, git_dir=repo_path, capture_output=True).output
     with open(reup_output, 'w') as out_file:
         print('rev:', output.strip(), file=out_file)
 
@@ -188,12 +192,13 @@ def main():
     default_branch = git_default_branch(URL)
     REV = os.environ['PERU_MODULE_REV'] or default_branch
     REUP = os.environ['PERU_MODULE_REUP'] or default_branch
+    REUP_TAG = os.environ['PERU_MODULE_REUP-TAG'] == 'true'
 
     command = os.environ['PERU_PLUGIN_COMMAND']
     if command == 'sync':
         plugin_sync(URL, REV)
     elif command == 'reup':
-        plugin_reup(URL, REUP)
+        plugin_reup(URL, REUP, REUP_TAG)
     else:
         raise RuntimeError('Unknown command: ' + repr(command))
 
