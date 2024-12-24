@@ -58,24 +58,19 @@ async def plugin_get_reup_fields(plugin_context, module_type, module_fields,
     return fields
 
 
-# Normally we prefer to execute plugins directly. This is pretty reliable on
-# Unix, where scripts can specify their interpreter with a shebang line.
-# However, it's not as reliable on Windows, because the extension-interpreter
-# mapping is a global config. In my experience, installing and uninstalling a
-# series of different Python interepreter versions on a Windows machine can
-# break that association, and as a result break peru, in confusing ways. (Tests
-# have also been broken by default for this reason on every Windows CI provider
-# I've ever tried.)
+# In theory we execute plugins as opaque binaries, and the OS can run them
+# however it sees fit (shebang lines on Unix, file extension associations on
+# Windows). However in practice, all of our plugins are Python scripts, and
+# we'd rather execute them with the same interpreter that we're currently
+# running. That avoids unrelaiable file association configs on Windows
+# (especially when multiple versions of Python are installed), and it also
+# avoids problems on Unix where e.g. pipx installs peru in a sandbox, where
+# naively re-exec'ed scripts can't find it.
 #
-# To work around this problem, we apply an extra heuristic on Windows: If a
-# plugin executable filename ends in .py, assume that we should re-execute the
-# current interpreter (sys.executable) to run that file, rather than relying on
-# the system shell to find the interpreter. This fixes peru on systems with
-# broken Python configs, and it makes no difference in the vast majority of
-# other cases.
-#
-# For users who want to control this heuristic (either to disable it, or to
-# force the same behavior on Unix), we define the PERU_REEXEC_PYTHON env var.
+# So when a plugin executable filename ends in .py, by default we assume that
+# we should re-execute the current interpreter (sys.executable) to run that
+# file. For users who want to disable this heuristic, we define the
+# PERU_REEXEC_PYTHON env var.
 def _plugin_command(plugin_exe):
     config = os.environ.get("PERU_REEXEC_PYTHON", "default")
     if config == "always":
@@ -83,7 +78,7 @@ def _plugin_command(plugin_exe):
     elif config == "never":
         reexec_heuristic = False
     elif config == "default":
-        reexec_heuristic = (os.name == 'nt')  # Windows
+        reexec_heuristic = True
     else:
         raise RuntimeError("Unrecognized value for PERU_REEXEC_PYTHON", config)
 
