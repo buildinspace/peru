@@ -4,3 +4,4 @@ __pycache__
 peru.egg-info
 build/
 dist/
+.venv/

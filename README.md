@@ -328,13 +328,11 @@ control where peru puts things. Flags always take precedence.
 
 - `--file=<file>`: The path to your peru YAML file. By default peru
   looks for `peru.yaml` in the current directory or one of its parents.
-  This setting tells peru to use a specific file. If set, `--sync-dir`
-  must also be set.
+  This setting tells peru to use a specific file.
 - `--sync-dir=<dir>`: The path that all `imports` are interpreted
   relative to. That is, if you import a module to `./`, the contents of
   that module go directly in the sync dir. By default this is the
-  directory containing your `peru.yaml` file. If set, `--file` must also
-  be set.
+  directory containing your `peru.yaml` file.
 - `--state-dir=<dir>`: The directory where peru stashes all of its state
   metadata, and also the parent of the cache dir. By default this is
   `.peru` inside the sync dir. You should not share this directory

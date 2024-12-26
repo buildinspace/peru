@@ -46,11 +46,6 @@ class PathsTest(shared.PeruTest):
         shared.run_peru_command(['sync'], self.cwd)
         self.assert_success(self.project_dir, self.state_dir, self.cache_dir)
 
-    def test_peru_file_and_sync_dir_must_be_set_together(self):
-        for command in [['--sync-dir=junk', 'sync'], ['--file=junk', 'sync']]:
-            with self.assertRaises(CommandLineError):
-                shared.run_peru_command(command, cwd=self.cwd)
-
     def test_file_and_file_basename_incompatible(self):
         with self.assertRaises(CommandLineError):
             shared.run_peru_command([
