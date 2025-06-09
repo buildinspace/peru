@@ -29,7 +29,9 @@ jobs:
     - run: get-command python ; python --version ; get-command pip ; pip --version
       if: matrix.os == 'windows-latest'
     - run: git --version
-    # macOS doesn't currently have hg or svnadmin installed by default.
+    # Make sure Subversion and Mercurial are installed on Windows and macOS.
+    - run: sudo apt-get update && sudo apt-get install -y subversion mercurial
+      if: matrix.os == 'ubuntu-latest'
     - run: brew install subversion
       if: matrix.os == 'macOS-latest'
     - run: pip install wheel && pip install mercurial
