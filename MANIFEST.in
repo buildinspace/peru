@@ -1,2 +1,0 @@
-# Without this line, the PyPI source distribution will be missing fastentrypoints.
-include fastentrypoints.py
