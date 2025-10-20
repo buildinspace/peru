@@ -16,11 +16,12 @@ import zipfile
 
 
 def add_user_agent_to_request(request):
-    components = [
-        "peru/%s" % peru.main.get_version(),
-        urllib.request.URLopener.version
-    ]
-    request.add_header("User-agent", " ".join(components))
+    version = peru.main.get_version()
+    pymajor = sys.version_info.major
+    pyminor = sys.version_info.minor
+    request.add_header(
+        "User-agent", f"peru/{version} Python-urllib/{pymajor}.{pyminor}"
+    )
     return request
 
 
