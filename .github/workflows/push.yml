@@ -18,25 +18,20 @@ jobs:
 
     steps:
     - uses: actions/checkout@v4
-    - name: Set up Python ${{ matrix.python-version }}
-      uses: actions/setup-python@v5
-      with:
-        python-version: ${{ matrix.python-version }}
-    # Confirm that the `python` maps to the version we just installed.
-    # PowerShell on Windows does this differently than the Unix shells.
-    - run: which python ; python --version ; which pip ; pip --version
-      if: matrix.os != 'windows-latest'
-    - run: get-command python ; python --version ; get-command pip ; pip --version
-      if: matrix.os == 'windows-latest'
+    - uses: astral-sh/setup-uv@v5
     - run: git --version
-    # Make sure Subversion and Mercurial are installed on Windows and macOS.
-    - run: sudo apt-get update && sudo apt-get install -y subversion mercurial
+    # Make sure Subversion (including `svnadmin`) and Mercurial are installed
+    # on Windows and macOS. I'd prefer `uv tool install mercurial`, but the
+    # `hg` binary that that installs crashes on Windows for some reason. We
+    # don't need Mercurial to use the same Python version that we're using.
+    # Also Choco and WinGet seem to fail to put `hg` in the PATH for some
+    # reason.
+    - run: pip install mercurial
+    - run: sudo apt-get update && sudo apt-get install -y subversion
       if: matrix.os == 'ubuntu-latest'
-    - run: brew install subversion mercurial
+    - run: brew install subversion
       if: matrix.os == 'macOS-latest'
-    - run: choco install -y --no-progress sliksvn && pip install mercurial
+    - run: choco install -y --no-progress sliksvn
       if: matrix.os == 'windows-latest'
-    # Install test dependencies, like flake8.
-    - run: pip install -r ./requirements-dev.txt
     # Run tests.
-    - run: python test.py -v
+    - run: uv run --python ${{ matrix.python-version }} test.py -v
