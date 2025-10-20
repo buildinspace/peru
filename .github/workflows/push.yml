@@ -32,10 +32,10 @@ jobs:
     # Make sure Subversion and Mercurial are installed on Windows and macOS.
     - run: sudo apt-get update && sudo apt-get install -y subversion mercurial
       if: matrix.os == 'ubuntu-latest'
-    - run: brew install subversion
+    - run: brew install subversion mercurial
       if: matrix.os == 'macOS-latest'
-    - run: pip install wheel && pip install mercurial
-      if: matrix.os == 'macOS-latest'
+    - run: choco install -y --no-progress sliksvn && pip install mercurial
+      if: matrix.os == 'windows-latest'
     # Install test dependencies, like flake8.
     - run: pip install -r ./requirements-dev.txt
     # Run tests.
