@@ -1,6 +1,6 @@
 [project]
 name = "peru"
-version = "1.3.4"
+dynamic = ["version"]
 description = "A tool for fetching code"
 readme = "README.md"
 license = "MIT"
