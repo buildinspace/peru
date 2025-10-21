@@ -1,0 +1,40 @@
+[project]
+name = "peru"
+dynamic = ["version"]
+description = "A tool for fetching code"
+readme = "README.md"
+license = "MIT"
+authors = [
+    { name = "Jack O'Connor", email = "oconnor663@gmail.com" },
+    { name = "Sean Olson", email = "olson.sean.k@gmail.com" },
+]
+requires-python = ">=3.8"
+dependencies = [
+    "PyYAML",
+]
+
+[project.urls]
+Repository = "https://github.com/buildinspace/peru"
+
+[project.scripts]
+peru = "peru.main:main"
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build]
+include = [
+    "peru/**/*.py",
+    "peru/VERSION",
+    "peru/resources/**/*",
+]
+
+[tool.hatch.version]
+path = "peru/VERSION"
+pattern = "(?P<version>.+)"
+
+[dependency-groups]
+dev = [
+    "flake8",
+]
