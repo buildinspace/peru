@@ -4,9 +4,8 @@ Notes to self about making a release:
 2. Make a tag pointing to that commit named after the new version.
 3. `git push && git push --tags`
 4. Copy the commit message to https://groups.google.com/forum/#!forum/peru-tool.
-5. `python3 setup.py sdist`
-6. `twine upload dist/*`
-  - Full instructions here: https://packaging.python.org/tutorials/packaging-projects
+5. `uv build`
+6. `uvx twine upload dist/*`
 7. Bump the AUR package.
   - `git clone ssh+git://aur@aur.archlinux.org/peru`
     - Update the pkgver and pkgrel.
