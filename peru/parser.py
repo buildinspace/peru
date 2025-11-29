@@ -50,7 +50,7 @@ def _extract_named_rules(blob, name_prefix):
                 raise ParserError('Rule "{}" already exists.'.format(name))
             inner_blob = typesafe_pop(blob, field)
             inner_blob = {} if inner_blob is None else inner_blob
-            rule = _extract_rule(name_prefix + name, inner_blob)
+            rule = _extract_rule(name, inner_blob, name_prefix)
             if inner_blob:
                 raise ParserError("Unknown rule fields: " +
                                   ", ".join(inner_blob.keys()))
@@ -58,7 +58,7 @@ def _extract_named_rules(blob, name_prefix):
     return scope
 
 
-def _extract_rule(name, blob):
+def _extract_rule(name, blob, name_prefix):
     _validate_name(name)
     if 'build' in blob:
         raise ParserError(
@@ -76,12 +76,12 @@ def _extract_rule(name, blob):
     export = typesafe_pop(blob, 'export', None)
     if not any((copy, move, executable, drop, pick, export)):
         return None
-    rule = Rule(name, copy, move, executable, drop, pick, export)
+    rule = Rule(name_prefix + name, copy, move, executable, drop, pick, export)
     return rule
 
 
 def _extract_default_rule(blob):
-    return _extract_rule("<default>", blob)
+    return _extract_rule("<default>", blob, "")
 
 
 def _extract_modules(blob, name_prefix):
